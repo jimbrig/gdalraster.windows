@@ -263,7 +263,7 @@ install_gdalraster <- function(
   makevars <- c(
     GDAL_HOME = gdal_home,
     PKG_CPPFLAGS = paste0("-I\"", file.path(gdal_home, "include"), "\""),
-    PKG_LIBS = paste0("-L\"", file.path(gdal_home, "lib"), "\" -lgdal")
+    PKG_LIBS = paste0("-L\"", file.path(gdal_home, "lib"), "\" -lgdal -Wl,--allow-multiple-definition")
   )
 
   path_sep <- .Platform$path.sep
@@ -277,17 +277,38 @@ install_gdalraster <- function(
   )
 
   cli::cli_alert_info("installing {.pkg gdalraster} from source into {.path {lib}}")
-  withr::with_makevars(new = makevars, assignment = "=", {
-    withr::with_envvar(env_vars, {
-      utils::install.packages(
-        pkgs = tarball,
-        repos = NULL,
-        type = "source",
-        lib = lib,
-        dependencies = isTRUE(upgrade)
-      )
+  rlang::try_fetch(
+    withr::with_makevars(new = makevars, assignment = "=", {
+      withr::with_envvar(env_vars, {
+        utils::install.packages(
+          pkgs = tarball,
+          repos = NULL,
+          type = "source",
+          lib = lib,
+          dependencies = isTRUE(upgrade)
+        )
+      })
     })
+  , error = function(cnd) {
+    cli::cli_abort(
+      c(
+        "Failed to install {.pkg gdalraster} from source.",
+        "x" = "{conditionMessage(cnd)}"
+      ),
+      parent = cnd,
+      call = rlang::caller_env()
+    )
   })
+
+  if (!dir.exists(file.path(lib, "gdalraster"))) {
+    cli::cli_abort(
+      c(
+        "gdalraster source install did not produce an installed package.",
+        "i" = "Library path: {.path {lib}}"
+      ),
+      call = rlang::caller_env()
+    )
+  }
 
   cli::cli_alert_success("installed {.pkg gdalraster} to {.path {lib}}")
   invisible(lib)
