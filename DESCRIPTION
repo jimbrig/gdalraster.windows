@@ -1,20 +1,24 @@
 Package: gdalraster.windows
 Title: Windows GDAL Runtime and gdalraster Bootstrap Tools
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R:
     person("Jimmy", "Briggs", , "jimmy.briggs@jimbrig.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-7489-8787"))
 Description: Installs and activates a self-contained GDAL runtime on
     Windows and provides helpers to install gdalraster from source against
     that GDAL instead of the default Rtools GDAL.
 License: MIT + file LICENSE
-Imports: 
+Imports:
     cli,
     gdalraster,
     httr2,
     rlang,
     tools,
-    utils
+    utils,
+    withr
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
 Roxygen: list(markdown = TRUE)

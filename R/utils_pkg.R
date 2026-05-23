@@ -1,4 +1,3 @@
-
 #  ------------------------------------------------------------------------
 #
 # Title : package utilities
@@ -60,8 +59,33 @@ gdal_share_proj_dir <- function(gdal_home = default_gdal_home()) {
 
 #' @keywords internal
 #' @noRd
+gdal_dll_candidates <- function(gdal_home = default_gdal_home()) {
+  bin_dir <- gdal_bin_dir(gdal_home)
+  if (!dir.exists(bin_dir)) {
+    return(character())
+  }
+
+  list.files(
+    path = bin_dir,
+    pattern = "^libgdal-[0-9]+\\.dll$",
+    full.names = TRUE
+  )
+}
+
+#' @keywords internal
+#' @noRd
 gdal_dll_path <- function(gdal_home = default_gdal_home()) {
-  file.path(gdal_bin_dir(gdal_home), "libgdal-39.dll")
+  dlls <- gdal_dll_candidates(gdal_home = gdal_home)
+  if (length(dlls) < 1L) {
+    return(file.path(gdal_bin_dir(gdal_home), "libgdal-39.dll"))
+  }
+  dlls[[1]]
+}
+
+#' @keywords internal
+#' @noRd
+default_gdalraster_lib <- function() {
+  file.path(tools::R_user_dir(pkg_name(), which = "data"), "library")
 }
 
 # validation ------------------------------------------------------------------------------------------------------
@@ -130,7 +154,7 @@ resolve_release_asset <- function(repo, tag = "latest", asset_pattern = "\\.zip$
   release_req <- httr2::request(github_release_url(repo = repo, tag = tag))
   release_req <- httr2::req_user_agent(
     release_req,
-    user_agent = paste0(pkg_name(), "/", pkg_version())
+    paste0(pkg_name(), "/", pkg_version())
   )
   release_req <- httr2::req_error(
     release_req,

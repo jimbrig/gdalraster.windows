@@ -1,15 +1,14 @@
 # ============================================================================
-# build.yml — Build self-contained GDAL Windows binaries, then build
-#             gdalraster + this wrapper package against them, producing
-#             a distributable Windows binary R package (.zip).
+# build.yml — Build self-contained GDAL Windows binaries, publish a durable
+#             GDAL release asset, then verify gdalraster builds against it.
 #
 # Triggers:
 #   - workflow_dispatch  : manually, with configurable GDAL version + force flag
 #   - push to tag        : gdal-v* (e.g. git tag gdal-v3.13.0)
 #
 # Jobs:
-#   build-gdal      → compiles GDAL from source in UCRT64 MSYS2
-#   build-r-package → builds gdalraster + gdal.win binary against that GDAL
+#   build-gdal         → compiles GDAL from source in UCRT64 MSYS2
+#   verify-gdalraster  → builds gdalraster binary against that GDAL
 #
 # Artefact strategy:
 #   Intermediate (job-to-job): upload-artifact@v5  retention=3d  no compression
@@ -22,7 +21,7 @@
 #                    that only change the R package side.
 # ============================================================================
 
-name: Build GDAL + gdalraster (Windows)
+name: Build GDAL + verify gdalraster (Windows)
 
 on:
   workflow_dispatch:
@@ -41,6 +40,12 @@ on:
         description: 'R version to build against'
         required: false
         default: 'release'
+      publish_release:
+        description: 'Publish/update durable GitHub release asset'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['false', 'true']
 
   push:
     tags:
@@ -89,9 +94,11 @@ jobs:
           # Normalise: strip leading 'v' for filesystem paths, keep 'v' for git
           $ver_bare = $ver.TrimStart('v')
           $artifact = "gdal-ucrt64-${ver}"
+          $release_tag = "gdal-v${ver_bare}"
           echo "artifact=${artifact}"   >> $env:GITHUB_OUTPUT
           echo "gdal_ver=${ver}"        >> $env:GITHUB_OUTPUT
           echo "gdal_ver_bare=${ver_bare}" >> $env:GITHUB_OUTPUT
+          echo "release_tag=${release_tag}" >> $env:GITHUB_OUTPUT
           echo "bundle_dir=${{ github.workspace }}\gdal-bundle" >> $env:GITHUB_OUTPUT
 
       # ── 2. MSYS2 UCRT64 environment ──────────────────────────────────────
@@ -244,7 +251,7 @@ jobs:
       # Zipped separately here so it has a clean name and isn't double-zipped
       # by upload-artifact's own wrapping.
       - name: Create distributable GDAL bundle zip
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.publish_release == 'true'
         shell: pwsh
         run: |
           $zip = "gdal-ucrt64-${{ steps.names.outputs.gdal_ver }}-windows-x64.zip"
@@ -253,10 +260,10 @@ jobs:
           Write-Host "Release asset: ${zip} (${mb} MB)"
 
       - name: Publish GDAL bundle to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.publish_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name:             ${{ github.ref_name }}
+          tag_name:             ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.names.outputs.release_tag }}
           name:                 "GDAL ${{ steps.names.outputs.gdal_ver }} — Windows UCRT64"
           draft:                false
           prerelease:           false
@@ -274,20 +281,30 @@ jobs:
             | `--kill-at` | (linker) | Correct stdcall symbol decoration for MinGW DLLs |
             | Static GCC/stdc++/winpthread | (linker) | No Rtools or MSYS2 required at runtime |
 
-            ### Install R package
+            ### Runtime bundle asset
+            Download:
+            `gdal-ucrt64-${{ steps.names.outputs.gdal_ver }}-windows-x64.zip`
+
+            Release tag:
+            `${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.names.outputs.release_tag }}`
+
+            This release contains only the GDAL runtime bundle.
+            `gdalraster.windows` package installation/build is handled separately.
+
+            ### R package usage (local machine)
             ```r
-            install.packages(
-              "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gdal.win_VERSION.zip",
-              repos = NULL, type = "win.binary"
+            gdalraster.windows::install_gdal_runtime(
+              repo = "${{ github.repository }}",
+              tag = "${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.names.outputs.release_tag }}"
             )
             ```
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# JOB 2 — Build R package against GDAL bundle
+# JOB 2 — Verify gdalraster builds against GDAL bundle
 # ─────────────────────────────────────────────────────────────────────────────
-  build-r-package:
-    name: "Build R package (gdalraster + gdal.win)"
+  verify-gdalraster-build:
+    name: "Verify gdalraster build against GDAL bundle"
     runs-on: windows-latest
     needs: build-gdal
 
@@ -351,7 +368,7 @@ jobs:
           Write-Host "Makevars.win written:"
           Get-Content $mk
 
-      # ── 5. Install R package dependencies (deps only, not gdalraster itself) ──
+      # ── 5. Install gdalraster dependencies only ───────────────────────────
       # pak::pak() with dependencies=TRUE and no_deps for the package itself
       # so we get all Imports/Suggests installed as binaries but don't waste
       # time building gdalraster from source here (we do that in step 6).
@@ -396,29 +413,16 @@ jobs:
             stop("FATAL: R CMD INSTALL failed for gdalraster source build.", call. = FALSE)
           }
 
-      # ── 7. Build gdal.win wrapper package binary ──────────────────────────
-      - name: Build gdal.win package binary
-        shell: Rscript {0}
-        run: |
-          r_exe <- file.path(R.home("bin"), "R")
-          status <- system2(
-            command = r_exe,
-            args = c("CMD", "INSTALL", "--build", "--preclean", "--no-test-load", ".")
-          )
-          if (!identical(status, 0L)) {
-            stop("FATAL: R CMD INSTALL failed for wrapper package build.", call. = FALSE)
-          }
-
-      # ── 8. Collect both .zip files ────────────────────────────────────────
+      # ── 7. Collect built gdalraster binary ────────────────────────────────
       - name: Collect built binaries
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Get-ChildItem *.zip | Move-Item -Destination dist/
+          Get-ChildItem "gdalraster_*.zip" | Move-Item -Destination dist/
           Write-Host "Built packages:"
           Get-ChildItem dist/ | Select-Object Name, @{N='MB';E={[math]::Round($_.Length/1MB,2)}}
 
-      # ── 9. Smoke test runtime + Algorithm API in a clean install path ──────
+      # ── 8. Smoke test runtime + Algorithm API in a clean install path ──────
       - name: Smoke test built binaries
         shell: Rscript {0}
         run: |
@@ -441,39 +445,16 @@ jobs:
             stopifnot(length(algs) > 0)
           }
 
-      # ── 10. Upload R binaries as workflow artifact ────────────────────────
+      # ── 9. Upload gdalraster binary as workflow artifact ───────────────────
       # compression-level: 0 — .zip files do not benefit from re-compression.
-      # retention-days: 30   — longer than GDAL bundle; these are the primary
-      #                         output and may need re-downloading for testing.
-      - name: Upload R package binaries artifact
+      # retention-days: 14   — verification output, not primary distribution.
+      - name: Upload gdalraster verification artifact
         id: upload-r
         uses: actions/upload-artifact@v5
         with:
-          name:              r-windows-binaries-${{ needs.build-gdal.outputs.gdal-version }}
+          name:              gdalraster-build-verify-${{ needs.build-gdal.outputs.gdal-version }}
           path:              dist/*.zip
           compression-level: 0
-          retention-days:    30
+          retention-days:    14
           if-no-files-found: error
 
-      # ── 11. Attach R binaries to GitHub Release (tag pushes only) ─────────
-      - name: Publish R binaries to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name:                ${{ github.ref_name }}
-          fail_on_unmatched_files: true
-          files:                   dist/*.zip
-          body: |
-            ### R Package (Windows Binary)
-
-            Pre-built against the GDAL ${{ needs.build-gdal.outputs.gdal-version }} bundle above.
-            No compilation required on the user side.
-
-            ```r
-            # Install (replace VERSION with actual package version below)
-            install.packages(
-              "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gdal.win_VERSION.zip",
-              repos = NULL,
-              type  = "win.binary"
-            )
-            ```

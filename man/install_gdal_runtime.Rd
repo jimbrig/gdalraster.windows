@@ -5,11 +5,11 @@
 \title{Install precompiled GDAL runtime from GitHub release}
 \usage{
 install_gdal_runtime(
-  repo,
+  repo = "jimbrig/gdalraster.windows",
   tag = "latest",
-  asset_pattern = "gdal.*\\\\.zip$",
+  asset_pattern = "gdal-(bundle|ucrt64)-.*\\\\.zip$",
   gdal_home = default_gdal_home(),
-  overwrite = TRUE
+  overwrite = FALSE
 )
 }
 \arguments{

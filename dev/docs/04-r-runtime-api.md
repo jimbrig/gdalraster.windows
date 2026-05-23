@@ -19,7 +19,7 @@ Configures runtime home for current session via:
 - R option (`mode = "option"`)
 - environment variable (`mode = "env"`)
 
-### `install_gdal_runtime(repo, tag = "latest", asset_pattern, gdal_home, overwrite = TRUE)`
+### `install_gdal_runtime(repo = "jimbrig/gdalraster.windows", tag = "latest", asset_pattern, gdal_home, overwrite = FALSE)`
 
 - resolves release metadata through GitHub API
 - downloads matching zip asset
@@ -31,7 +31,23 @@ Configures runtime home for current session via:
 - ensures runtime paths/files exist
 - prepends runtime `bin` directory to `PATH`
 - sets `GDAL_DATA`, `PROJ_LIB`, and `PROJ_DATA` when available
-- optionally preloads `libgdal-39.dll`
+- optionally preloads `libgdal-*.dll` discovered in runtime `bin/`
+
+### `load_gdal_dll(gdal_home = default_gdal_home(), quiet = FALSE)`
+
+- convenience wrapper for `activate_gdal_runtime(..., preload = TRUE)`
+
+### `install_gdalraster(gdal_home, lib, source_tarball = NULL, repo = "firelab/gdalraster", ref = "HEAD", ...)`
+
+- installs `gdalraster` from source on the local machine
+- uses `withr::with_makevars()` + `withr::with_envvar()` so compile/link settings are scoped to the install call
+- defaults to an isolated library path under this package's user data directory
+
+### `load_gdalraster(lib = default_gdalraster_lib(), gdal_home = default_gdal_home(), quiet = FALSE)`
+
+- activates bundled runtime
+- prepends isolated library path to `.libPaths()`
+- attaches `gdalraster`
 
 ### `verify_gdalraster_runtime(lib.loc = NULL, activate_runtime = TRUE, gdal_home = default_gdal_home())`
 
@@ -47,17 +63,13 @@ Configures runtime home for current session via:
 ## minimal user flow
 
 ```r
-gdalraster.windows::install_gdal_runtime(
-  repo = "jimbrig/gdalraster.windows",
-  tag = "latest",
-  asset_pattern = "gdal-ucrt64-.*\\.zip$"
-)
-
-gdalraster.windows::activate_gdal_runtime()
+gdalraster.windows::install_gdal_runtime()
+gdalraster.windows::install_gdalraster()
+gdalraster.windows::load_gdalraster()
 gdalraster.windows::verify_gdalraster_runtime()
 ```
 
 ## implementation notes
 
-- runtime checks are currently pinned to `libgdal-39.dll`
+- runtime checks discover `libgdal-*.dll` dynamically
 - package intentionally aborts on non-Windows platforms
