@@ -1,51 +1,74 @@
 # AGENTS.md
 
-## repo mission
+## primary outcome
 
-`gdalraster.windows` builds and distributes a Windows GDAL runtime for reliable `gdalraster` algorithm usage, and provides R helpers to install, activate, and verify that runtime.
+Enable `gdalraster` Algorithm API to work reliably from R on Windows.
 
-## high-priority outcomes
+Target user flow:
 
-1. keep Windows runtime activation reliable (`PATH`, `GDAL_DATA`, `PROJ_LIB`, `PROJ_DATA`, `libgdal-39.dll` loadability)
-2. keep CI outputs reproducible and release-ready
-3. keep docs aligned with actual runtime model and package/API behavior
+```r
+pak::pak("jimbrig/gdalraster.windows")
+gdalraster.windows::install_gdalraster()
+gdalraster.windows::load_gdalraster()
+gdalraster::gdal_global_reg_names()
+```
 
-## stable focus areas
+Also support explicit load flow:
 
-- CI workflow for GDAL build, bundle assembly, and release artifacts
-- build and bundling scripts for dependency closure checks
-- companion runtime activation helpers in the R package
-- curated docs in [`dev/docs/`](dev/docs) as the canonical narrative layer
+```r
+gdalraster.windows::load_gdal_dll()
+library(gdalraster)
+gdalraster::gdal_global_reg_names()
+```
 
-## working conventions
+## required system behavior
 
-- prefer small, focused documentation or code updates that keep naming and behavior consistent across workflow, package, and README
-- do not assume prototype `gdal.win` content under `dev/temp` is current production behavior
-- when changing runtime behavior, update [`README.md`](README.md) and relevant files under [`dev/docs/`](dev/docs) in the same change
-- keep comments sparse and practical
-- avoid destructive git operations unless explicitly requested
+1. Build modern GDAL (currently 3.13+) from source in Windows CI using MSYS2 UCRT64 / Rtools45-compatible MinGW toolchain.
+2. Build with required features for this project, including `muparser`, and keep runtime self-contained.
+3. Produce a standalone GDAL runtime bundle archive with:
+   - a top-level GDAL runtime DLL (`libgdal-*.dll`)
+   - all required non-Windows dependent DLLs
+   - required runtime data directories (`share/gdal`, `share/proj`)
+4. Build `gdalraster` from source against that bundled GDAL runtime.
+5. Ensure runtime loading is configured so `gdalraster` resolves bundled DLL dependencies at runtime (without relying on a matching user-installed Rtools environment).
+6. Verify success with `gdalraster::gdal_global_reg_names()` returning non-empty output.
 
-## r development guidance
+## source of truth
 
-- prefer modern package-style R with explicit namespacing (`pkg::fn()`) outside base functions
-- use `cli` for user-facing messages and errors (`cli::cli_alert_*()`, `cli::cli_abort()`)
-- use `rlang` call context in validations/errors when helpful (`rlang::caller_env()`, `rlang::caller_arg()`)
-- use `withr` for temporary env/options/path state in tests and helpers; avoid leaking session state
-- keep startup/runtime behavior explicit and reversible (path/env changes should be deliberate and scoped)
-- favor small, testable helper functions over long procedural setup blocks
+- CI workflow and scripts are authoritative for build/release behavior:
+  - [`.github/workflows/build.yml`](.github/workflows/build.yml)
+  - [`tools/build_gdal.sh`](tools/build_gdal.sh)
+  - [`tools/collect_dlls.sh`](tools/collect_dlls.sh)
+- `dev/temp` contains useful history, not production truth.
 
-## evidence discipline
+## execution priorities
 
-- treat issue comments and drafts as claims, not facts, until cross-checked
-- separate root cause from parallel contributors (for this project: algorithm registry static-registration bug vs muparser availability)
-- prefer primary sources for assertions:
-  - upstream issue/PR threads
-  - release notes
-  - official docs
-- if a claim is uncertain, label it as provisional rather than definitive
+1. Keep CI from-scratch builds green and reproducible.
+2. Keep dependency-closure checks strict and meaningful.
+3. Keep docs aligned with actual behavior.
+4. Implement R helper ergonomics only after CI/runtime contract is stable.
 
-## validation checklist after substantive changes
+## decision hygiene
 
-- verify references to package name are `gdalraster.windows` unless intentionally describing historical prototype content
-- if CI/build logic is changed, sanity-check docs in [`README.md`](README.md) and [`dev/docs/`](dev/docs)
-- if runtime helper behavior changes, verify docs still describe current behavior without over-specifying internal implementation
+- default to expert preflight before major changes:
+  - likely failure modes
+  - mitigation options and trade-offs
+  - cache impact and rerun implications
+  - confidence and unknowns
+- do not assume repo notes are correct for external toolchain behavior; validate critical claims using upstream primary sources (official docs, release notes, upstream issues/PRs).
+- when uncertain, label statements as provisional and ask for clarification instead of guessing.
+
+## R package implementation constraints
+
+- use modern package-style R with explicit namespacing.
+- use `cli` for user-facing messaging and `cli::cli_abort()` for errors.
+- use `rlang::caller_env()` and `rlang::caller_arg()` in validators/errors.
+- use `withr` for scoped state (`with_makevars`, env vars, lib paths); avoid leaking persistent session/user config.
+- default source-install target for `gdalraster` must be non-destructive (isolated library path), not overwrite existing user/global installs unless explicitly requested.
+
+## editing conventions
+
+- prefer focused, robust changes over one-off patches.
+- keep comments sparse and practical.
+- avoid destructive git operations unless explicitly requested.
+- when behavior changes, update relevant docs in [`README.md`](README.md) and [`dev/docs/`](dev/docs) in the same change.
