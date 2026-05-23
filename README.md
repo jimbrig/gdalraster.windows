@@ -20,21 +20,40 @@ pak::pak("jimbrig/gdalraster.windows")
 ## Default workflow (R)
 
 ```r
-# 1) install runtime from release asset (or optional local fallback zip)
-gdalraster.windows::install_gdal_runtime(
-  repo = "jimbrig/gdalraster.windows",
-  tag = "gdal-v3.13.0"
-)
+# baseline with default gdalraster on windows can be empty
+library(gdalraster)
+gdalraster::gdal_global_reg_names()
+#> character(0)   # typical before custom runtime + rebuild
+
+# 1) download and install the GDAL runtime bundle (defaults to latest release)
+gdalraster.windows::install_gdal_runtime()
 
 # 2) build gdalraster from source against that runtime
+# default installs to an isolated package-managed library path
 gdalraster.windows::install_gdalraster()
 
-# 3) activate runtime and load gdalraster
+# optional: build to your active library instead
+# gdalraster.windows::install_gdalraster(lib = .libPaths()[1])
+
+# 3) load GDAL DLL first, then load custom gdalraster
+gdalraster.windows::load_gdal_dll()
 gdalraster.windows::load_gdalraster()
 
 # 4) verify algorithm api availability
 out <- gdalraster.windows::verify_gdalraster_runtime()
 out$algorithm_count
+
+# direct check
+gdalraster::gdal_global_reg_names()
+#> [1] "raster info" "raster pipeline" ...
+```
+
+## Optional startup hook (.Rprofile)
+
+```r
+# writes a managed hook block that loads the GDAL DLL and prepends
+# the custom gdalraster library path at session startup
+gdalraster.windows::add_gdal_rprofile_hook()
 ```
 
 ## Quick start (runtime bundle only)

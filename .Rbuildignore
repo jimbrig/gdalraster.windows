@@ -18,3 +18,4 @@
 ^\.Rprofile$
 ^CHANGELOG\.md$
 ^\.build$
+^gdalraster\.windows\.code-workspace$

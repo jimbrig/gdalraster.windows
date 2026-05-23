@@ -52,6 +52,15 @@ Configures runtime home for current session via:
 - prepends isolated library path to `.libPaths()`
 - attaches `gdalraster`
 
+### `gdal_rprofile_snippet(gdal_home = default_gdal_home(), lib = default_gdalraster_lib())`
+
+- returns a startup snippet that loads GDAL DLL first and prepends custom `lib`
+
+### `add_gdal_rprofile_hook(rprofile = "~/.Rprofile", gdal_home, lib, dry_run = FALSE)`
+
+- writes/updates a managed hook block in `.Rprofile`
+- supports a persistent startup path for DLL preload + custom library precedence
+
 ### `verify_gdalraster_runtime(lib.loc = NULL, activate_runtime = TRUE, gdal_home = default_gdal_home())`
 
 - optionally activates runtime

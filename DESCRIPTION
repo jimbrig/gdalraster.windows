@@ -10,13 +10,13 @@ Description: Installs and activates a self-contained GDAL runtime on
 License: MIT + file LICENSE
 Imports:
     cli,
+    gdalraster,
     httr2,
     rlang,
     tools,
     utils,
     withr
 Suggests:
-    gdalraster,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Encoding: UTF-8
