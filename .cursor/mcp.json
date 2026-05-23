@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "stdio",
+      "command": "bunx",
+      "args": ["--bun", "-y", "@modelcontextprotocol/server-github"],
+      "envFile": "${workspaceFolder}/.cursor/mcp.env",
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PAT}"
+      }
+    }
+  }
+}
