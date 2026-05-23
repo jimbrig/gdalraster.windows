@@ -1,0 +1,64 @@
+name: R CMD CHECK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  r-cmd-check:
+    name: R CMD CHECK (windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Configure git line endings
+        run: git config --global core.autocrlf input
+
+      - uses: actions/checkout@v4
+
+      - name: Setup R and Rtools45
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          rtools-version: "45"
+          use-public-rspm: true
+
+      - name: Setup pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Install package dependencies
+        shell: Rscript {0}
+        run: |
+          install.packages("pak", repos = "https://cloud.r-project.org")
+          pak::pak(c("rcmdcheck", "roxygen2", "testthat"), ask = FALSE, upgrade = FALSE)
+
+      - name: Verify docs are up to date
+        shell: Rscript {0}
+        run: |
+          roxygen2::roxygenise()
+          status <- system2("git", c("diff", "--exit-code", "--", "man", "NAMESPACE"))
+          if (!identical(status, 0L)) {
+            stop("Roxygen output is out of date. Run roxygen2::roxygenise() and commit changes.", call. = FALSE)
+          }
+
+      - name: Run R CMD CHECK
+        shell: Rscript {0}
+        run: |
+          rcmdcheck::rcmdcheck(
+            args = c("--no-manual", "--as-cran"),
+            error_on = "warning",
+            check_dir = "check"
+          )
+
+      - name: Upload check artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: r-cmd-check-windows
+          path: check/
+          if-no-files-found: ignore

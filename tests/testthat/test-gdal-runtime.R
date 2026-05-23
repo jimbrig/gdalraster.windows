@@ -94,6 +94,29 @@ testthat::test_that("install_gdal_runtime uses fallback zip when release lookup 
   )
 })
 
+testthat::test_that("install_gdal_runtime errors when release fails and no fallback is available", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  testthat::local_mocked_bindings(
+    resolve_release_asset = function(...) {
+      cli::cli_abort("forced release lookup failure for test")
+    },
+    .env = asNamespace("gdalraster.windows")
+  )
+
+  gdal_home <- withr::local_tempdir()
+  testthat::expect_error(
+    gdalraster.windows::install_gdal_runtime(
+      repo = "jimbrig/gdalraster.windows",
+      tag = "latest",
+      gdal_home = gdal_home,
+      overwrite = TRUE,
+      fallback_zip = NULL
+    ),
+    "Failed to download GDAL runtime from GitHub release"
+  )
+})
+
 testthat::test_that("load_gdalraster fails clearly when isolated lib missing package", {
   testthat::skip_if_not(.Platform$OS.type == "windows")
 

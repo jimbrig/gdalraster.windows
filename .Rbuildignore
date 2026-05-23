@@ -17,3 +17,4 @@
 ^\.Renviron$
 ^\.Rprofile$
 ^CHANGELOG\.md$
+^\.build$
