@@ -4,9 +4,10 @@
 #
 # Takes the cmake-installed GDAL tree (INSTALL_DIR) and produces a bundle
 # (BUNDLE_DIR) containing:
-#   bin/    — libgdal-39.dll + all non-Windows transitive deps
-#   include/ — public headers (for compiling against the bundle)
-#   lib/     — import libraries (.dll.a) (for linking against the bundle)
+#   bin/      — libgdal-39.dll + all non-Windows transitive deps
+#   include/  — public headers (for compiling against the bundle)
+#   lib/      — import libraries (.dll.a) (for linking against the bundle)
+#   share/    — gdal/proj runtime data files
 #
 # The goal is that BUNDLE_DIR/bin/*.dll should load with zero external deps
 # beyond standard Windows system DLLs (kernel32, msvcrt, ucrtbase, etc.)
@@ -27,7 +28,7 @@ echo "  Output: ${BUNDLE_DIR}"
 echo "============================================"
 
 # ── Create bundle structure ───────────────────────────────────────────────────
-mkdir -p "${BUNDLE_DIR}/bin" "${BUNDLE_DIR}/include" "${BUNDLE_DIR}/lib"
+mkdir -p "${BUNDLE_DIR}/bin" "${BUNDLE_DIR}/include" "${BUNDLE_DIR}/lib" "${BUNDLE_DIR}/share"
 
 # ── Copy headers and import libraries ────────────────────────────────────────
 echo ""
@@ -36,6 +37,11 @@ cp -r "${INSTALL_DIR}/include/." "${BUNDLE_DIR}/include/"
 # Copy only .dll.a (import libs) and .la — not static .a (too large, not needed)
 find "${INSTALL_DIR}/lib" \( -name "*.dll.a" -o -name "*.la" \) \
     -exec cp {} "${BUNDLE_DIR}/lib/" \;
+
+# Runtime data required for GDAL/PROJ behavior
+if [[ -d "${INSTALL_DIR}/share" ]]; then
+    cp -r "${INSTALL_DIR}/share/." "${BUNDLE_DIR}/share/"
+fi
 
 # ── Copy primary DLLs from install prefix ────────────────────────────────────
 echo ""
@@ -95,11 +101,12 @@ REMAINING=$(ntldd -R "${GDAL_DLL}" \
 
 if [[ -n "${REMAINING}" ]]; then
     echo ""
-    echo "WARNING: The following external deps could not be bundled:"
+    echo "FATAL: The following external deps could not be bundled:"
     echo "${REMAINING}"
     echo ""
     echo "These may cause LoadLibrary failures on machines without Rtools/MSYS2."
-    echo "Consider adding the relevant packages to the build_gdal.sh install list."
+    echo "Adjust package install set and dependency collection until only Windows system DLLs remain external."
+    exit 1
 else
     echo ""
     echo "✓ PASS — Bundle is fully self-contained (no external non-Windows deps)"

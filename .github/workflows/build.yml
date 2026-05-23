@@ -141,7 +141,23 @@ jobs:
             mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-muparser
             mingw-w64-ucrt-x86_64-pkgconf
-            mingw-w64-ucrt-x86_64-ntldd-git
+            mingw-w64-ucrt-x86_64-gdal
+            mingw-w64-ucrt-x86_64-ntldd
+
+      - name: Refresh UCRT64 package state and print key versions
+        shell: msys2 {0}
+        run: |
+          pacman -Syu --noconfirm
+          pacman -Qi \
+            mingw-w64-ucrt-x86_64-gdal \
+            mingw-w64-ucrt-x86_64-proj \
+            mingw-w64-ucrt-x86_64-geos \
+            mingw-w64-ucrt-x86_64-muparser \
+            mingw-w64-ucrt-x86_64-libxml2 \
+            mingw-w64-ucrt-x86_64-libdeflate \
+            mingw-w64-ucrt-x86_64-crypto++ \
+            mingw-w64-ucrt-x86_64-ntldd \
+            | sed -n '1,260p'
 
       # ── 3. GDAL build cache (keyed on version + script hash) ─────────────
       # This lets the R package job re-run without rebuilding GDAL.
