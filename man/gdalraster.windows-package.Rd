@@ -4,9 +4,9 @@
 \name{gdalraster.windows-package}
 \alias{gdalraster.windows}
 \alias{gdalraster.windows-package}
-\title{gdalraster.windows: What the Package Does (One Line, Title Case)}
+\title{gdalraster.windows: Windows GDAL Runtime and gdalraster Bootstrap Tools}
 \description{
-What the package does (one paragraph).
+Installs and activates a self-contained GDAL runtime on Windows and provides helpers to install gdalraster from source against that GDAL instead of the default Rtools GDAL.
 }
 \author{
 \strong{Maintainer}: Jimmy Briggs \email{jimmy.briggs@jimbrig.com} (\href{https://orcid.org/0000-0002-7489-8787}{ORCID})
