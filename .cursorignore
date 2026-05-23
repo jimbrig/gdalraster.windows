@@ -1,1 +1,6 @@
 man/
+!dev/
+!dev/**
+!dev/temp/
+!dev/temp/**
+
