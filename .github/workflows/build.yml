@@ -146,7 +146,7 @@ jobs:
             mingw-w64-ucrt-x86_64-hdf5
             mingw-w64-ucrt-x86_64-netcdf
             mingw-w64-ucrt-x86_64-geos
-            mingw-w64-ucrt-x86_64-spatialite
+            mingw-w64-ucrt-x86_64-libspatialite
             mingw-w64-ucrt-x86_64-poppler
             mingw-w64-ucrt-x86_64-openjpeg2
             mingw-w64-ucrt-x86_64-libwebp
