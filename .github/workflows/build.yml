@@ -379,20 +379,35 @@ jobs:
           )
 
       - name: Build gdalraster binary against bundled GDAL
-        shell: pwsh
+        shell: Rscript {0}
         run: |
-          $src = Get-ChildItem -Filter "gdalraster_*.tar.gz" | Select-Object -First 1
-          if (-not $src) {
-            Write-Error "FATAL: gdalraster source tarball not found."
-            exit 1
+          src <- Sys.glob("gdalraster_*.tar.gz")
+          if (!length(src)) {
+            stop("FATAL: gdalraster source tarball not found.", call. = FALSE)
           }
-          Write-Host "Building: $($src.Name)"
-          R CMD INSTALL --build --preclean --no-test-load $src.Name
+          src <- src[[1]]
+          cat("Building:", src, "\n")
+          r_exe <- file.path(R.home("bin"), "R")
+          status <- system2(
+            command = r_exe,
+            args = c("CMD", "INSTALL", "--build", "--preclean", "--no-test-load", src)
+          )
+          if (!identical(status, 0L)) {
+            stop("FATAL: R CMD INSTALL failed for gdalraster source build.", call. = FALSE)
+          }
 
       # ── 7. Build gdal.win wrapper package binary ──────────────────────────
       - name: Build gdal.win package binary
-        shell: pwsh
-        run: R CMD INSTALL --build --preclean --no-test-load .
+        shell: Rscript {0}
+        run: |
+          r_exe <- file.path(R.home("bin"), "R")
+          status <- system2(
+            command = r_exe,
+            args = c("CMD", "INSTALL", "--build", "--preclean", "--no-test-load", ".")
+          )
+          if (!identical(status, 0L)) {
+            stop("FATAL: R CMD INSTALL failed for wrapper package build.", call. = FALSE)
+          }
 
       # ── 8. Collect both .zip files ────────────────────────────────────────
       - name: Collect built binaries
