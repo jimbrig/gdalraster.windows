@@ -101,6 +101,22 @@ jobs:
       #                            wrong headers/libs to be picked up silently.
       # cache: true              — default; caches MSYS2 installation between runs.
       #                            Key derived from package list automatically.
+      #
+      # Package rationale:
+      #   proj            — REQUIRED: GDAL hard-dep; CMake fails without it
+      #   gdal            — provides pre-built headers/libs as reference; our build
+      #                     replaces the runtime DLL but headers are reused
+      #   libxml2         — GDAL XML parsing (GML, KML, WFS, etc.)
+      #   xerces-c        — GDAL XML validation (GML schemas)
+      #   libdeflate      — faster DEFLATE for GeoTIFF/COG
+      #   libtiff         — GeoTIFF raster support
+      #   libgeotiff      — GeoTIFF coordinate metadata
+      #   sqlite3         — GPKG, FlatGeobuf, MBTiles, GDAL internal use
+      #   curl            — /vsicurl/, cloud drivers (S3, GCS, Azure)
+      #   zlib            — general compression
+      #   muparser        — Algorithmic API (gdal_global_reg_names fix)
+      #   pkgconf         — pkg-config shim used by cmake find-modules
+      #   ntldd-git       — walk PE import tree to find transitive DLL deps
       - name: Setup MSYS2 UCRT64
         id: msys2
         uses: msys2/setup-msys2@v2
@@ -108,12 +124,21 @@ jobs:
           msystem:   UCRT64
           update:    true
           path-type: minimal
-          # cache: true is the default — no need to state it explicitly
           install: >-
             git
             mingw-w64-ucrt-x86_64-toolchain
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-proj
+            mingw-w64-ucrt-x86_64-gdal
+            mingw-w64-ucrt-x86_64-libxml2
+            mingw-w64-ucrt-x86_64-xerces-c
+            mingw-w64-ucrt-x86_64-libdeflate
+            mingw-w64-ucrt-x86_64-libtiff
+            mingw-w64-ucrt-x86_64-libgeotiff
+            mingw-w64-ucrt-x86_64-sqlite3
+            mingw-w64-ucrt-x86_64-curl
+            mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-muparser
             mingw-w64-ucrt-x86_64-pkgconf
             mingw-w64-ucrt-x86_64-ntldd-git
@@ -300,15 +325,18 @@ jobs:
           Write-Host "Makevars.win written:"
           Get-Content $mk
 
-      # ── 5. Install R dependencies (excluding gdalraster itself) ──────────
+      # ── 5. Install R package dependencies (deps only, not gdalraster itself) ──
+      # pak::pak() with dependencies=TRUE and no_deps for the package itself
+      # so we get all Imports/Suggests installed as binaries but don't waste
+      # time building gdalraster from source here (we do that in step 6).
       - name: Install R package dependencies
         shell: Rscript {0}
         run: |
-          # pak provides fast, parallel, dependency-aware installs
           install.packages("pak", repos = "https://cloud.r-project.org")
-          # Install all of gdalraster's dependencies but NOT gdalraster itself —
-          # we'll build that from source against our GDAL in the next step.
-          pak::pak("firelab/gdalraster", dependencies = TRUE, upgrade = FALSE)
+          pak::pak("firelab/gdalraster", dependencies = TRUE, upgrade = FALSE, ask = FALSE)
+          # Remove gdalraster itself — step 6 rebuilds it from source against our GDAL.
+          # Deps installed above are already binaries and won't be touched.
+          remove.packages("gdalraster")
 
       # ── 6. Build gdalraster from source against bundled GDAL ─────────────
       # Downloads the gdalraster source tarball from CRAN, then builds it
@@ -317,7 +345,6 @@ jobs:
       - name: Download gdalraster source
         shell: Rscript {0}
         run: |
-          # Download source tarball — avoids needing git or remotes
           download.packages(
             "gdalraster",
             destdir = ".",
@@ -326,21 +353,20 @@ jobs:
           )
 
       - name: Build gdalraster binary against bundled GDAL
-        shell: cmd
+        shell: pwsh
         run: |
-          FOR /F "tokens=*" %%f IN ('dir /b gdalraster_*.tar.gz') DO SET SRC=%%f
-          IF "%SRC%"=="" (
-            echo FATAL: gdalraster source tarball not found.
-            exit /b 1
-          )
-          echo Building: %SRC%
-          "C:\R\bin\x64\R.exe" CMD INSTALL --build --preclean --no-test-load "%SRC%"
+          $src = Get-ChildItem -Filter "gdalraster_*.tar.gz" | Select-Object -First 1
+          if (-not $src) {
+            Write-Error "FATAL: gdalraster source tarball not found."
+            exit 1
+          }
+          Write-Host "Building: $($src.Name)"
+          R CMD INSTALL --build --preclean --no-test-load $src.Name
 
       # ── 7. Build gdal.win wrapper package binary ──────────────────────────
       - name: Build gdal.win package binary
-        shell: cmd
-        run: |
-          "C:\R\bin\x64\R.exe" CMD INSTALL --build --preclean --no-test-load .
+        shell: pwsh
+        run: R CMD INSTALL --build --preclean --no-test-load .
 
       # ── 8. Collect both .zip files ────────────────────────────────────────
       - name: Collect built binaries
