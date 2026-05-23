@@ -132,30 +132,64 @@ echo "  (should list ONLY Windows system DLLs)"
 echo "============================================"
 
 bundle_bin_norm="$(echo "${BUNDLE_DIR}/bin" | tr '\\' '/' | tr '[:upper:]' '[:lower:]')"
-REMAINING="$(
-    ntldd -R "${GDAL_DLL}" \
-        | awk -v bundle_bin="${bundle_bin_norm}" '
-            {
-                raw = $0
-                low = tolower(raw)
-                if (low ~ /^[[:space:]]*$/) next
-                if (low ~ /c:\/windows\//) next
-                if (low ~ /\\windows\\/) next
-                if (low ~ /\/system32\//) next
-                if (low ~ /\\system32\\/) next
-                if (low ~ /api-ms-/) next
-                if (low ~ /ext-ms-/) next
-                gsub(/\\/, "/", low)
-                if (index(low, bundle_bin) > 0) next
-                print raw
-            }
-        ' || true
-)"
+allowed_not_found_regex='^(api-ms-.*|ext-ms-.*|ms-win-.*|pdmutilities\.dll|hvsifiletrust\.dll|wpaxholder\.dll|azureattestmanager\.dll|azureattestnormal\.dll|wtdccm\.dll|wtdsensor\.dll)$'
+remaining_lines=()
 
-if [[ -n "${REMAINING}" ]]; then
+while IFS='|' read -r entry_type dll_name dep_path; do
+    [[ -z "${entry_type}" ]] && continue
+
+    dll_lower="$(echo "${dll_name}" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ "${entry_type}" == "NOTFOUND" ]]; then
+        if [[ "${dll_lower}" =~ ${allowed_not_found_regex} ]]; then
+            continue
+        fi
+        remaining_lines+=("${dll_name} => not found")
+        continue
+    fi
+
+    dep_norm="$(echo "${dep_path}" | tr '\\' '/' | tr '[:upper:]' '[:lower:]')"
+    dep_base="$(basename "${dep_path}")"
+
+    if [[ "${dep_norm}" == *"/windows/"* ]]; then
+        continue
+    fi
+    if [[ "${dep_norm}" == *"/system32/"* ]]; then
+        continue
+    fi
+    if [[ "${dep_norm}" == api-ms-* || "${dep_norm}" == ext-ms-* ]]; then
+        continue
+    fi
+    if [[ "${dep_norm}" == *"${bundle_bin_norm}"* ]]; then
+        continue
+    fi
+    # ntldd can resolve to /ucrt64/bin due PATH precedence even when the same
+    # DLL basename has already been copied into the bundle.
+    if [[ -f "${BUNDLE_DIR}/bin/${dep_base}" ]]; then
+        continue
+    fi
+
+    remaining_lines+=("${dll_name} => ${dep_path}")
+done < <(
+    ntldd -R "${GDAL_DLL}" \
+        | awk '
+            {
+                if ($2 != "=>") next
+                dll = $1
+                dep = $3
+                if (dep == "not" && tolower($4) == "found") {
+                    print "NOTFOUND|" dll "|"
+                } else {
+                    print "RESOLVED|" dll "|" dep
+                }
+            }
+        '
+)
+
+if (( ${#remaining_lines[@]} > 0 )); then
     echo ""
     echo "FATAL: The following external deps could not be bundled:"
-    echo "${REMAINING}"
+    printf '%s\n' "${remaining_lines[@]}"
     echo ""
     echo "These may cause LoadLibrary failures on machines without Rtools/MSYS2."
     echo "Adjust package install set and dependency collection until only Windows system DLLs remain external."
