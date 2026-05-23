@@ -83,25 +83,46 @@ if [[ -z "${GDAL_DLL}" ]]; then
     exit 1
 fi
 
-ntldd -R "${GDAL_DLL}" \
-    | grep -i '/ucrt64/' \
-    | grep -iv 'C:/Windows' \
-    | grep -iv 'system32' \
-    | grep -iv 'api-ms-' \
-    | grep -iv 'ext-ms-' \
-    | awk '{print $3}' \
-    | sort -u \
-    | while IFS= read -r dep; do
+# Note: with "set -euo pipefail", grep returns 1 when there are no matches.
+# That is valid here, so we parse defensively and never fail on "no deps found".
+deps_to_copy="$(
+    ntldd -R "${GDAL_DLL}" \
+        | awk '
+            {
+                # Keep only lines with resolved "dll => path (" shape.
+                if ($2 != "=>") next
+                dep = $3
+                low = tolower(dep)
+                # Keep UCRT64 deps regardless of slash style.
+                if (low !~ /[\\\/]ucrt64[\\\/]/) next
+                # Exclude Windows/system API-set paths.
+                if (low ~ /c:[\\\/]windows[\\\/]/) next
+                if (low ~ /[\\\/]system32[\\\/]/) next
+                if (low ~ /api-ms-/) next
+                if (low ~ /ext-ms-/) next
+                print dep
+            }
+        ' \
+        | sort -u || true
+)"
+
+if [[ -z "${deps_to_copy}" ]]; then
+    echo "    (no additional /ucrt64 deps reported by ntldd)"
+else
+    while IFS= read -r dep; do
+        [[ -z "${dep}" ]] && continue
         if [[ -f "${dep}" ]]; then
-            dest="${BUNDLE_DIR}/bin/$(basename ${dep})"
+            dep_base="$(basename "${dep}")"
+            dest="${BUNDLE_DIR}/bin/${dep_base}"
             if [[ ! -f "${dest}" ]]; then
                 cp "${dep}" "${dest}"
-                echo "    + Bundled: $(basename ${dep})"
+                echo "    + Bundled: ${dep_base}"
             fi
         else
             echo "    ? Skipped (not a file): ${dep}"
         fi
-    done
+    done <<< "${deps_to_copy}"
+fi
 
 # ── Verify: remaining external deps should be Windows-only ────────────────────
 echo ""
@@ -110,13 +131,26 @@ echo "  Verification — External deps remaining"
 echo "  (should list ONLY Windows system DLLs)"
 echo "============================================"
 
-REMAINING=$(ntldd -R "${GDAL_DLL}" \
-    | grep -iv 'C:/Windows' \
-    | grep -iv 'system32' \
-    | grep -iv 'api-ms-' \
-    | grep -iv 'ext-ms-' \
-    | grep -iv "${BUNDLE_DIR}/bin" \
-    | grep -v "^$" || true)
+bundle_bin_norm="$(echo "${BUNDLE_DIR}/bin" | tr '\\' '/' | tr '[:upper:]' '[:lower:]')"
+REMAINING="$(
+    ntldd -R "${GDAL_DLL}" \
+        | awk -v bundle_bin="${bundle_bin_norm}" '
+            {
+                raw = $0
+                low = tolower(raw)
+                if (low ~ /^[[:space:]]*$/) next
+                if (low ~ /c:\/windows\//) next
+                if (low ~ /\\windows\\/) next
+                if (low ~ /\/system32\//) next
+                if (low ~ /\\system32\\/) next
+                if (low ~ /api-ms-/) next
+                if (low ~ /ext-ms-/) next
+                gsub(/\\/, "/", low)
+                if (index(low, bundle_bin) > 0) next
+                print raw
+            }
+        ' || true
+)"
 
 if [[ -n "${REMAINING}" ]]; then
     echo ""
