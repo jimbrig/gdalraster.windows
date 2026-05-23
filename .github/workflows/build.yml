@@ -51,8 +51,7 @@ on:
 permissions:
   contents: write
 
-# Centralise version so both jobs see the same value.
-# Tag pushes derive the version by stripping the 'gdal-' prefix.
+# Centralise defaults for manual runs.
 env:
   GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.0' }}
   R_VERSION:    ${{ github.event.inputs.r_version    || 'release' }}
@@ -62,7 +61,7 @@ env:
 # ─────────────────────────────────────────────────────────────────────────────
 jobs:
   build-gdal:
-    name: "Build GDAL ${{ github.event.inputs.gdal_version || 'v3.13.0' }}"
+    name: "Build GDAL"
     runs-on: windows-latest
 
     outputs:
@@ -84,6 +83,9 @@ jobs:
         shell: pwsh
         run: |
           $ver = "${{ env.GDAL_VERSION }}"
+          if ("${{ github.event_name }}" -eq "push" -and "${{ github.ref }}".StartsWith("refs/tags/gdal-v")) {
+            $ver = "${{ github.ref_name }}" -replace '^gdal-', ''
+          }
           # Normalise: strip leading 'v' for filesystem paths, keep 'v' for git
           $ver_bare = $ver.TrimStart('v')
           $artifact = "gdal-ucrt64-${ver}"
@@ -116,7 +118,7 @@ jobs:
       #   zlib            — general compression
       #   muparser        — Algorithmic API (gdal_global_reg_names fix)
       #   pkgconf         — pkg-config shim used by cmake find-modules
-      #   ntldd-git       — walk PE import tree to find transitive DLL deps
+      #   ntldd           — walk PE import tree to find transitive DLL deps
       - name: Setup MSYS2 UCRT64
         id: msys2
         uses: msys2/setup-msys2@v2
@@ -140,8 +142,16 @@ jobs:
             mingw-w64-ucrt-x86_64-curl
             mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-muparser
+            mingw-w64-ucrt-x86_64-arrow
+            mingw-w64-ucrt-x86_64-hdf5
+            mingw-w64-ucrt-x86_64-netcdf
+            mingw-w64-ucrt-x86_64-geos
+            mingw-w64-ucrt-x86_64-spatialite
+            mingw-w64-ucrt-x86_64-poppler
+            mingw-w64-ucrt-x86_64-openjpeg2
+            mingw-w64-ucrt-x86_64-libwebp
+            mingw-w64-ucrt-x86_64-libjxl
             mingw-w64-ucrt-x86_64-pkgconf
-            mingw-w64-ucrt-x86_64-gdal
             mingw-w64-ucrt-x86_64-ntldd
 
       - name: Refresh UCRT64 package state and print key versions
@@ -168,7 +178,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: gdal-bundle
-          key: gdal-bundle-${{ env.GDAL_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
+          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-${{ runner.os }}-${{ hashFiles('tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
 
       # ── 4. Build GDAL from source (skipped on cache hit) ─────────────────
       - name: Build GDAL from source
@@ -176,7 +186,7 @@ jobs:
         if: steps.gdal-cache-restore.outputs.cache-hit != 'true' || github.event.inputs.force_rebuild_gdal == 'true'
         shell: msys2 {0}
         env:
-          GDAL_VER:    ${{ env.GDAL_VERSION }}
+          GDAL_VER:    ${{ steps.names.outputs.gdal_ver }}
           BUNDLE_DIR:  ${{ github.workspace }}/gdal-bundle
           INSTALL_DIR: ${{ github.workspace }}/gdal-install
         run: bash tools/build_gdal.sh
@@ -196,19 +206,19 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: gdal-bundle
-          key: gdal-bundle-${{ env.GDAL_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
+          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-${{ runner.os }}-${{ hashFiles('tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
 
       # ── 7. Verify bundle integrity ────────────────────────────────────────
       - name: Verify GDAL bundle
         shell: pwsh
         run: |
-          $dll = "gdal-bundle\bin\libgdal-39.dll"
-          if (-not (Test-Path $dll)) {
-            Write-Error "FATAL: libgdal-39.dll not found. Bundle assembly failed."
+          $dll = Get-ChildItem "gdal-bundle\bin\libgdal-*.dll" | Select-Object -First 1
+          if (-not $dll) {
+            Write-Error "FATAL: No libgdal-*.dll found. Bundle assembly failed."
             exit 1
           }
-          $mb = [math]::Round((Get-Item $dll).Length / 1MB, 1)
-          Write-Host "✓ libgdal-39.dll found (${mb} MB)"
+          $mb = [math]::Round($dll.Length / 1MB, 1)
+          Write-Host "✓ $($dll.Name) found (${mb} MB)"
           Write-Host "`nBundle DLL inventory:"
           Get-ChildItem "gdal-bundle\bin\*.dll" |
             Select-Object Name, @{N='MB';E={[math]::Round($_.Length/1MB,2)}} |
@@ -237,7 +247,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: |
-          $zip = "gdal-ucrt64-${{ env.GDAL_VERSION }}-windows-x64.zip"
+          $zip = "gdal-ucrt64-${{ steps.names.outputs.gdal_ver }}-windows-x64.zip"
           Compress-Archive -Path "gdal-bundle\*" -DestinationPath $zip -CompressionLevel Optimal
           $mb = [math]::Round((Get-Item $zip).Length / 1MB, 1)
           Write-Host "Release asset: ${zip} (${mb} MB)"
@@ -247,14 +257,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name:             ${{ github.ref_name }}
-          name:                 "GDAL ${{ env.GDAL_VERSION }} — Windows UCRT64"
+          name:                 "GDAL ${{ steps.names.outputs.gdal_ver }} — Windows UCRT64"
           draft:                false
           prerelease:           false
           generate_release_notes: true
           fail_on_unmatched_files: true
-          files:                "gdal-ucrt64-${{ env.GDAL_VERSION }}-windows-x64.zip"
+          files:                "gdal-ucrt64-${{ steps.names.outputs.gdal_ver }}-windows-x64.zip"
           body: |
-            ## Self-contained GDAL ${{ env.GDAL_VERSION }} for Windows (UCRT64/MinGW)
+            ## Self-contained GDAL ${{ steps.names.outputs.gdal_ver }} for Windows (UCRT64/MinGW)
 
             Built with:
             | Flag | Value | Why |
@@ -312,13 +322,13 @@ jobs:
         id: verify-gdal
         shell: pwsh
         run: |
-          $dll = "gdal-bundle\bin\libgdal-39.dll"
-          if (-not (Test-Path $dll)) {
+          $dll = Get-ChildItem "gdal-bundle\bin\libgdal-*.dll" | Select-Object -First 1
+          if (-not $dll) {
             Write-Error "FATAL: GDAL bundle DLL missing after download."
             exit 1
           }
-          $mb = [math]::Round((Get-Item $dll).Length / 1MB, 1)
-          Write-Host "✓ libgdal-39.dll (${mb} MB)"
+          $mb = [math]::Round($dll.Length / 1MB, 1)
+          Write-Host "✓ $($dll.Name) (${mb} MB)"
           $gdal_abs = (Resolve-Path "gdal-bundle").Path -replace '\\', '/'
           echo "gdal_abs=${gdal_abs}" >> $env:GITHUB_OUTPUT
 
@@ -393,7 +403,30 @@ jobs:
           Write-Host "Built packages:"
           Get-ChildItem dist/ | Select-Object Name, @{N='MB';E={[math]::Round($_.Length/1MB,2)}}
 
-      # ── 9. Upload R binaries as workflow artifact ─────────────────────────
+      # ── 9. Smoke test runtime + Algorithm API in a clean install path ──────
+      - name: Smoke test built binaries
+        shell: Rscript {0}
+        run: |
+          zips <- list.files("dist", pattern = "\\.zip$", full.names = TRUE)
+          if (!length(zips)) {
+            stop("No built .zip files were found for smoke testing.", call. = FALSE)
+          }
+          lib <- file.path(tempdir(), "smoke-lib")
+          dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+          install.packages(zips, repos = NULL, type = "win.binary", lib = lib)
+          old <- .libPaths()
+          on.exit(.libPaths(old), add = TRUE)
+          .libPaths(c(lib, old))
+          {
+            library(gdalraster, character.only = TRUE)
+            ver <- gdalraster::gdal_version()
+            cat("GDAL version:", ver, "\n")
+            algs <- gdalraster::gdal_global_reg_names()
+            cat("Algorithm count:", length(algs), "\n")
+            stopifnot(length(algs) > 0)
+          }
+
+      # ── 10. Upload R binaries as workflow artifact ────────────────────────
       # compression-level: 0 — .zip files do not benefit from re-compression.
       # retention-days: 30   — longer than GDAL bundle; these are the primary
       #                         output and may need re-downloading for testing.
@@ -401,13 +434,13 @@ jobs:
         id: upload-r
         uses: actions/upload-artifact@v5
         with:
-          name:              r-windows-binaries-${{ env.GDAL_VERSION }}
+          name:              r-windows-binaries-${{ needs.build-gdal.outputs.gdal-version }}
           path:              dist/*.zip
           compression-level: 0
           retention-days:    30
           if-no-files-found: error
 
-      # ── 10. Attach R binaries to GitHub Release (tag pushes only) ─────────
+      # ── 11. Attach R binaries to GitHub Release (tag pushes only) ─────────
       - name: Publish R binaries to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
@@ -418,7 +451,7 @@ jobs:
           body: |
             ### R Package (Windows Binary)
 
-            Pre-built against the GDAL ${{ env.GDAL_VERSION }} bundle above.
+            Pre-built against the GDAL ${{ needs.build-gdal.outputs.gdal-version }} bundle above.
             No compilation required on the user side.
 
             ```r

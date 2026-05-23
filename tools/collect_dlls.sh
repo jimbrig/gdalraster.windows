@@ -50,6 +50,21 @@ cp "${INSTALL_DIR}/bin/"*.dll "${BUNDLE_DIR}/bin/" 2>/dev/null || true
 DLL_COUNT=$(ls "${BUNDLE_DIR}/bin/"*.dll 2>/dev/null | wc -l)
 echo "    Primary DLLs copied: ${DLL_COUNT}"
 
+# Copy PROJ data from UCRT64 prefix when not present in install prefix.
+if [[ -d "/ucrt64/share/proj" && ! -d "${BUNDLE_DIR}/share/proj" ]]; then
+    cp -r "/ucrt64/share/proj" "${BUNDLE_DIR}/share/"
+fi
+
+# Explicitly bundle GCC runtime safety-net DLLs.
+for rt in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do
+    src="/ucrt64/bin/${rt}"
+    dest="${BUNDLE_DIR}/bin/${rt}"
+    if [[ -f "${src}" && ! -f "${dest}" ]]; then
+        cp "${src}" "${dest}"
+        echo "    + Bundled runtime: ${rt}"
+    fi
+done
+
 # ── Walk transitive dependencies with ntldd ───────────────────────────────────
 # ntldd -R performs a recursive walk of the dependency tree.
 # We filter for paths under /ucrt64/ — these are MSYS2 UCRT64 packages
@@ -62,7 +77,11 @@ echo "    Primary DLLs copied: ${DLL_COUNT}"
 echo ""
 echo ">>> Walking transitive DLL dependencies (ntldd -R)"
 
-GDAL_DLL="${BUNDLE_DIR}/bin/libgdal-39.dll"
+GDAL_DLL=$(ls "${BUNDLE_DIR}/bin/libgdal-"*.dll 2>/dev/null | head -n 1 || true)
+if [[ -z "${GDAL_DLL}" ]]; then
+    echo "FATAL: No libgdal-*.dll found in ${BUNDLE_DIR}/bin"
+    exit 1
+fi
 
 ntldd -R "${GDAL_DLL}" \
     | grep -i '/ucrt64/' \
