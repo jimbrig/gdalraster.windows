@@ -285,6 +285,7 @@ install_gdalraster <- function(
           repos = NULL,
           type = "source",
           lib = lib,
+          INSTALL_opts = c("--no-test-load"),
           dependencies = isTRUE(upgrade)
         )
       })
