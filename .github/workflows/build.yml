@@ -127,7 +127,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: gdal-bundle
-          key: gdal-bundle-${{ env.GDAL_VERSION }}-${{ runner.os }}-${{ hashFiles('scripts/build_gdal.sh', 'scripts/collect_dlls.sh') }}
+          key: gdal-bundle-${{ env.GDAL_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
 
       # ── 4. Build GDAL from source (skipped on cache hit) ─────────────────
       - name: Build GDAL from source
@@ -138,7 +138,7 @@ jobs:
           GDAL_VER:    ${{ env.GDAL_VERSION }}
           BUNDLE_DIR:  ${{ github.workspace }}/gdal-bundle
           INSTALL_DIR: ${{ github.workspace }}/gdal-install
-        run: bash scripts/build_gdal.sh
+        run: bash tools/build_gdal.sh
 
       # ── 5. Collect DLLs into self-contained bundle (skipped on cache hit) ─
       - name: Collect DLLs and assemble bundle
@@ -147,7 +147,7 @@ jobs:
         env:
           BUNDLE_DIR:  ${{ github.workspace }}/gdal-bundle
           INSTALL_DIR: ${{ github.workspace }}/gdal-install
-        run: bash scripts/collect_dlls.sh
+        run: bash tools/collect_dlls.sh
 
       # ── 6. Save GDAL bundle to cache (only when freshly built) ───────────
       - name: Save GDAL build cache
@@ -155,7 +155,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: gdal-bundle
-          key: gdal-bundle-${{ env.GDAL_VERSION }}-${{ runner.os }}-${{ hashFiles('scripts/build_gdal.sh', 'scripts/collect_dlls.sh') }}
+          key: gdal-bundle-${{ env.GDAL_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
 
       # ── 7. Verify bundle integrity ────────────────────────────────────────
       - name: Verify GDAL bundle
