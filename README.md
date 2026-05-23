@@ -1,20 +1,49 @@
 # gdalraster.windows
 
-[![Build GDAL + gdalraster (Windows)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml)
+[![Build GDAL + verify gdalraster (Windows)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml)
 [![Generate Changelog](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml)
 
 > [!NOTE]
 > Self-contained [GDAL](https://gdal.org/) runtime tooling for Windows.
 
-This project builds and distributes a portable Windows GDAL runtime bundle, with a focus on reliable algorithm support and practical runtime portability.
+This project builds and distributes a portable Windows GDAL runtime bundle, with
+R helpers to install that runtime locally and build `gdalraster` from source
+against it.
 
-## Quick start
+## Installation
+
+```r
+install.packages("pak")
+pak::pak("jimbrig/gdalraster.windows")
+```
+
+## Default workflow (R)
+
+```r
+# 1) install runtime from release asset (or optional local fallback zip)
+gdalraster.windows::install_gdal_runtime(
+  repo = "jimbrig/gdalraster.windows",
+  tag = "gdal-v3.13.0"
+)
+
+# 2) build gdalraster from source against that runtime
+gdalraster.windows::install_gdalraster()
+
+# 3) activate runtime and load gdalraster
+gdalraster.windows::load_gdalraster()
+
+# 4) verify algorithm api availability
+out <- gdalraster.windows::verify_gdalraster_runtime()
+out$algorithm_count
+```
+
+## Quick start (runtime bundle only)
 
 1. Open [Releases](https://github.com/jimbrig/gdalraster.windows/releases).
 2. Download the latest Windows GDAL runtime bundle asset.
 3. Use that bundle in your downstream workflow (R or non-R) where a portable GDAL runtime is needed.
 
-If you are using the companion R helper package, see [dev/docs/04-r-runtime-api.md](dev/docs/04-r-runtime-api.md).
+For package API details, see [dev/docs/04-r-runtime-api.md](dev/docs/04-r-runtime-api.md).
 
 ## Background context
 

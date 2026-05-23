@@ -42,11 +42,15 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
   invisible(path)
 }
 
-#' Install precompiled GDAL runtime from GitHub release
+#' Install precompiled GDAL runtime
 #'
-#' Downloads a release zip asset, extracts it, and installs the GDAL runtime
-#' into `gdal_home`. The asset is expected to contain a GDAL root with
-#' `bin/libgdal-39.dll`.
+#' Installs the GDAL runtime into `gdal_home` from one of:
+#'
+#' - `local_zip` (highest precedence),
+#' - GitHub release asset lookup/download,
+#' - `fallback_zip` when release lookup/download fails.
+#'
+#' The selected zip must contain a GDAL root with `bin/libgdal-*.dll`.
 #'
 #' @param repo GitHub repo slug, e.g. `"jimbrig/gdalraster.windows"`.
 #' @param tag Release tag or `"latest"`.
@@ -161,7 +165,7 @@ install_gdal_runtime <- function(
 #' Prepends runtime paths, sets GDAL/PROJ env vars, and preloads GDAL DLL.
 #'
 #' @param gdal_home GDAL home directory.
-#' @param preload Whether to preload `libgdal-39.dll`.
+#' @param preload Whether to preload `libgdal-*.dll`.
 #' @param quiet Suppress informational CLI output.
 #'
 #' @return Invisibly returns a list with configured paths.
@@ -329,24 +333,25 @@ install_gdalraster <- function(
       withr::with_envvar(env_vars, {
         utils::install.packages(
           pkgs = tarball,
-          repos = NULL,
+          repos = repos,
           type = "source",
           lib = lib,
           INSTALL_opts = c("--no-test-load"),
           dependencies = isTRUE(upgrade)
         )
       })
-    })
-  , error = function(cnd) {
-    cli::cli_abort(
-      c(
-        "Failed to install {.pkg gdalraster} from source.",
-        "x" = "{conditionMessage(cnd)}"
-      ),
-      parent = cnd,
-      call = rlang::caller_env()
-    )
-  })
+    }),
+    error = function(cnd) {
+      cli::cli_abort(
+        c(
+          "Failed to install {.pkg gdalraster} from source.",
+          "x" = "{conditionMessage(cnd)}"
+        ),
+        parent = cnd,
+        call = rlang::caller_env()
+      )
+    }
+  )
 
   if (!dir.exists(file.path(lib, "gdalraster"))) {
     cli::cli_abort(

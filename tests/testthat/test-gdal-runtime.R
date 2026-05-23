@@ -1,3 +1,21 @@
+create_runtime_zip_fixture <- function(path) {
+  root <- withr::local_tempdir()
+  bundle <- file.path(root, "bundle")
+
+  dir.create(file.path(bundle, "bin"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(bundle, "share", "gdal"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(bundle, "share", "proj"), recursive = TRUE, showWarnings = FALSE)
+
+  file.create(file.path(bundle, "bin", "libgdal-39.dll"))
+  file.create(file.path(bundle, "share", "gdal", "gdal_datum.csv"))
+  file.create(file.path(bundle, "share", "proj", "proj.db"))
+
+  old_wd <- setwd(root)
+  withr::defer(setwd(old_wd))
+  utils::zip(zipfile = path, files = "bundle")
+  path
+}
+
 testthat::test_that("dll discovery supports dynamic GDAL soname", {
   bin_dir <- withr::local_tempdir()
   file.create(file.path(bin_dir, "libgdal-39.dll"))
@@ -22,6 +40,57 @@ testthat::test_that("detect_gdal_root finds extracted runtime root", {
   testthat::expect_equal(
     normalizePath(detected, winslash = "/", mustWork = TRUE),
     normalizePath(file.path(root, "gdal-bundle"), winslash = "/", mustWork = TRUE)
+  )
+})
+
+testthat::test_that("install_gdal_runtime installs from local zip", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  zip_path <- withr::local_tempfile(fileext = ".zip")
+  create_runtime_zip_fixture(zip_path)
+
+  gdal_home <- withr::local_tempdir()
+  gdalraster.windows::install_gdal_runtime(
+    gdal_home = gdal_home,
+    overwrite = TRUE,
+    local_zip = zip_path
+  )
+
+  testthat::expect_true(
+    file.exists(file.path(gdal_home, "bin", "libgdal-39.dll"))
+  )
+  testthat::expect_true(
+    dir.exists(file.path(gdal_home, "share", "gdal"))
+  )
+  testthat::expect_true(
+    dir.exists(file.path(gdal_home, "share", "proj"))
+  )
+})
+
+testthat::test_that("install_gdal_runtime uses fallback zip when release lookup fails", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  zip_path <- withr::local_tempfile(fileext = ".zip")
+  create_runtime_zip_fixture(zip_path)
+
+  testthat::local_mocked_bindings(
+    resolve_release_asset = function(...) {
+      cli::cli_abort("forced release lookup failure for test")
+    },
+    .env = asNamespace("gdalraster.windows")
+  )
+
+  gdal_home <- withr::local_tempdir()
+  gdalraster.windows::install_gdal_runtime(
+    repo = "jimbrig/gdalraster.windows",
+    tag = "latest",
+    gdal_home = gdal_home,
+    overwrite = TRUE,
+    fallback_zip = zip_path
+  )
+
+  testthat::expect_true(
+    file.exists(file.path(gdal_home, "bin", "libgdal-39.dll"))
   )
 })
 

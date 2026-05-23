@@ -13,7 +13,7 @@ activate_gdal_runtime(
 \arguments{
 \item{gdal_home}{GDAL home directory.}
 
-\item{preload}{Whether to preload \verb{libgdal-39.dll}.}
+\item{preload}{Whether to preload \verb{libgdal-*.dll}.}
 
 \item{quiet}{Suppress informational CLI output.}
 }

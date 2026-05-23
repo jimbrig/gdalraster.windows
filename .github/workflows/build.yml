@@ -437,7 +437,7 @@ jobs:
           on.exit(.libPaths(old), add = TRUE)
           .libPaths(c(lib, old))
           {
-            library(gdalraster, character.only = TRUE)
+            library("gdalraster", character.only = TRUE)
             ver <- gdalraster::gdal_version()
             cat("GDAL version:", ver, "\n")
             algs <- gdalraster::gdal_global_reg_names()

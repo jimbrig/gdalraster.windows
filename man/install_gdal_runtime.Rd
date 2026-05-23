@@ -2,14 +2,16 @@
 % Please edit documentation in R/gdal_runtime.R
 \name{install_gdal_runtime}
 \alias{install_gdal_runtime}
-\title{Install precompiled GDAL runtime from GitHub release}
+\title{Install precompiled GDAL runtime}
 \usage{
 install_gdal_runtime(
   repo = "jimbrig/gdalraster.windows",
   tag = "latest",
   asset_pattern = "gdal-(bundle|ucrt64)-.*\\\\.zip$",
   gdal_home = default_gdal_home(),
-  overwrite = FALSE
+  overwrite = FALSE,
+  local_zip = NULL,
+  fallback_zip = NULL
 )
 }
 \arguments{
@@ -22,12 +24,24 @@ install_gdal_runtime(
 \item{gdal_home}{Destination GDAL home directory.}
 
 \item{overwrite}{Whether to replace existing \code{gdal_home}.}
+
+\item{local_zip}{Optional local GDAL runtime zip to install directly.}
+
+\item{fallback_zip}{Optional fallback zip path used when release download
+fails. Defaults to package file \code{inst/extdata/gdal-ucrt64-fallback.zip}.}
 }
 \value{
 Invisibly returns installed GDAL home path.
 }
 \description{
-Downloads a release zip asset, extracts it, and installs the GDAL runtime
-into \code{gdal_home}. The asset is expected to contain a GDAL root with
-\verb{bin/libgdal-39.dll}.
+Installs the GDAL runtime into \code{gdal_home} from one of:
+}
+\details{
+\itemize{
+\item \code{local_zip} (highest precedence),
+\item GitHub release asset lookup/download,
+\item \code{fallback_zip} when release lookup/download fails.
+}
+
+The selected zip must contain a GDAL root with \verb{bin/libgdal-*.dll}.
 }
