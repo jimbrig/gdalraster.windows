@@ -53,6 +53,9 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #' @param asset_pattern Regex used to select the release asset.
 #' @param gdal_home Destination GDAL home directory.
 #' @param overwrite Whether to replace existing `gdal_home`.
+#' @param local_zip Optional local GDAL runtime zip to install directly.
+#' @param fallback_zip Optional fallback zip path used when release download
+#'   fails. Defaults to package file `inst/extdata/gdal-ucrt64-fallback.zip`.
 #'
 #' @return Invisibly returns installed GDAL home path.
 #' @export
@@ -61,7 +64,9 @@ install_gdal_runtime <- function(
   tag = "latest",
   asset_pattern = "gdal-(bundle|ucrt64)-.*\\.zip$",
   gdal_home = default_gdal_home(),
-  overwrite = FALSE
+  overwrite = FALSE,
+  local_zip = NULL,
+  fallback_zip = NULL
 ) {
   abort_if_not_windows()
 
@@ -73,24 +78,66 @@ install_gdal_runtime <- function(
     cli::cli_abort("{.arg overwrite} must be TRUE or FALSE.")
   }
 
+  if (is.null(fallback_zip)) {
+    fallback_zip <- packaged_fallback_zip()
+  }
+
+  if (!is.null(local_zip) && (!is.character(local_zip) || length(local_zip) != 1L || !nzchar(local_zip))) {
+    cli::cli_abort("{.arg local_zip} must be NULL or a single non-empty path.")
+  }
+
+  if (!is.null(fallback_zip) && (!is.character(fallback_zip) || length(fallback_zip) != 1L || !nzchar(fallback_zip))) {
+    cli::cli_abort("{.arg fallback_zip} must be NULL or a single non-empty path.")
+  }
+
   gdal_home <- normalizePath(gdal_home, winslash = "/", mustWork = FALSE)
-  asset <- resolve_release_asset(repo = repo, tag = tag, asset_pattern = asset_pattern)
-
-  cli::cli_alert_info(
-    "downloading gdal runtime asset {.val {asset$name}} from {.val {repo}} ({.val {asset$tag}})"
-  )
-
   tmp_zip <- tempfile(pattern = "gdal-runtime-", fileext = ".zip")
   tmp_dir <- tempfile(pattern = "gdal-runtime-extract-")
   dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
 
-  req <- httr2::request(asset$url)
-  req <- httr2::req_user_agent(req, paste0(pkg_name(), "/", pkg_version()))
-  req <- httr2::req_error(req, is_error = function(resp) httr2::resp_status(resp) >= 400L)
-  resp <- httr2::req_perform(req)
-  writeBin(httr2::resp_body_raw(resp), con = tmp_zip)
+  zip_path <- NULL
+  if (!is.null(local_zip)) {
+    local_zip <- normalizePath(local_zip, winslash = "/", mustWork = FALSE)
+    abort_if_missing_file(local_zip, "local_zip", call = rlang::caller_env())
+    cli::cli_alert_info("using local runtime zip {.path {local_zip}}")
+    zip_path <- local_zip
+  } else {
+    zip_path <- rlang::try_fetch(
+      {
+        asset <- resolve_release_asset(repo = repo, tag = tag, asset_pattern = asset_pattern)
+        cli::cli_alert_info(
+          "downloading gdal runtime asset {.val {asset$name}} from {.val {repo}} ({.val {asset$tag}})"
+        )
 
-  utils::unzip(tmp_zip, exdir = tmp_dir)
+        req <- httr2::request(asset$url)
+        req <- httr2::req_user_agent(req, paste0(pkg_name(), "/", pkg_version()))
+        req <- httr2::req_error(req, is_error = function(resp) httr2::resp_status(resp) >= 400L)
+        resp <- httr2::req_perform(req)
+        writeBin(httr2::resp_body_raw(resp), con = tmp_zip)
+        tmp_zip
+      },
+      error = function(cnd) {
+        fallback_exists <- !is.null(fallback_zip) && file.exists(fallback_zip)
+        if (!fallback_exists) {
+          cli::cli_abort(
+            c(
+              "Failed to download GDAL runtime from GitHub release.",
+              "x" = "{conditionMessage(cnd)}"
+            ),
+            parent = cnd,
+            call = rlang::caller_env()
+          )
+        }
+
+        cli::cli_alert_warning(
+          "release download failed; using fallback runtime zip {.path {fallback_zip}}"
+        )
+        normalizePath(fallback_zip, winslash = "/", mustWork = TRUE)
+      }
+    )
+  }
+
+  utils::unzip(zip_path, exdir = tmp_dir)
   gdal_root <- detect_gdal_root(tmp_dir)
 
   if (dir.exists(gdal_home)) {

@@ -25,6 +25,9 @@ Configures runtime home for current session via:
 - downloads matching zip asset
 - extracts and installs runtime tree into `gdal_home`
 - validates expected GDAL DLL presence via install checks
+- supports `local_zip` for direct local install
+- supports `fallback_zip` for offline/recovery installs (default:
+  `inst/extdata/gdal-ucrt64-fallback.zip` when present)
 
 ### `activate_gdal_runtime(gdal_home = default_gdal_home(), preload = TRUE, quiet = FALSE)`
 

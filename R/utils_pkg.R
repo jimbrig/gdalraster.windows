@@ -88,6 +88,16 @@ default_gdalraster_lib <- function() {
   file.path(tools::R_user_dir(pkg_name(), which = "data"), "library")
 }
 
+#' @keywords internal
+#' @noRd
+packaged_fallback_zip <- function() {
+  path <- pkg_sys("extdata", "gdal-ucrt64-fallback.zip")
+  if (!is.character(path) || !nzchar(path)) {
+    return(NULL)
+  }
+  path
+}
+
 # validation ------------------------------------------------------------------------------------------------------
 
 #' @keywords internal
