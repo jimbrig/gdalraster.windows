@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.Rdata
+.DS_Store
+.quarto
+.repomixignore
+*repomix*
+.env
+.Renviron
+inst/doc
+.positai
+.build/
