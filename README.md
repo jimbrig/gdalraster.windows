@@ -16,11 +16,10 @@ Latest GDAL runtime release:
 ## Installation
 
 ```r
-install.packages("pak")
 pak::pak("jimbrig/gdalraster.windows")
 ```
 
-## Default workflow (R)
+## Usage
 
 ```r
 # baseline with default gdalraster on windows can be empty

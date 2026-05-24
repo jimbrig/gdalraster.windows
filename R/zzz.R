@@ -41,6 +41,8 @@ rlang::on_load({
 
 #' @keywords internal
 #' @noRd
+#' @importFrom cli cli_alert_info cli_inform cli_alert_warning cli_alert_info
+#' @importFrom stats setNames
 .onAttach <- function(libname, pkgname) {
   if (!startup_sitrep_enabled()) {
     return(invisible(NULL))
@@ -51,7 +53,7 @@ rlang::on_load({
   if (st$gdalraster_loaded && !st$custom_gdalraster_exists) {
     cli::cli_alert_info(msg[[1]])
     if (length(msg) > 1L) {
-      cli::cli_inform(setNames(as.list(msg[-1]), rep("i", length(msg) - 1L)))
+      cli::cli_inform(stats::setNames(as.list(msg[-1]), rep("i", length(msg) - 1L)))
     }
     cli::cli_alert_warning(
       paste(
@@ -63,7 +65,7 @@ rlang::on_load({
   }
   cli::cli_alert_info(msg[[1]])
   if (length(msg) > 1L) {
-    cli::cli_inform(setNames(as.list(msg[-1]), rep("i", length(msg) - 1L)))
+    cli::cli_inform(stats::setNames(as.list(msg[-1]), rep("i", length(msg) - 1L)))
   }
 }
 
