@@ -1,7 +1,12 @@
 # gdalraster.windows
 
-[![Build GDAL + verify gdalraster (Windows)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml)
-[![Generate Changelog](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml)
+<!-- badges: start -->
+
+[![R CMD CHECK](https://github.com/jimbrig/gdalraster.windows/actions/workflows/check.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/R-CMD-check.yaml)
+[![Build GDAL](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml)
+[![Changelog](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml)
+
+ <!-- badges: end -->
 
 > [!NOTE]
 > Self-contained [GDAL](https://gdal.org/) runtime tooling for Windows.
