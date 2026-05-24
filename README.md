@@ -62,6 +62,28 @@ gdalraster::gdal_global_reg_names()
 gdalraster.windows::add_gdal_rprofile_hook()
 ```
 
+## Testing
+
+Quick test suite:
+
+```r
+testthat::test_dir("tests/testthat")
+```
+
+Run only clean-room isolation checks:
+
+```r
+testthat::test_file("tests/testthat/test-e2e-clean-room.R")
+```
+
+Run full end-to-end clean-room test (downloads runtime, builds `gdalraster`
+from source, verifies `gdal_global_reg_names()` is non-empty):
+
+```powershell
+$env:GDALRASTER_WINDOWS_RUN_E2E="true"
+Rscript -e "testthat::test_file('tests/testthat/test-e2e-clean-room.R')"
+```
+
 For package API details, see [dev/docs/04-r-runtime-api.md](dev/docs/04-r-runtime-api.md).
 
 ## Background context
