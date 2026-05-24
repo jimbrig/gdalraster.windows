@@ -26,8 +26,7 @@ Configures runtime home for current session via:
 - extracts and installs runtime tree into `gdal_home`
 - validates expected GDAL DLL presence via install checks
 - supports `local_zip` for direct local install
-- supports `fallback_zip` for offline/recovery installs (default:
-  `inst/extdata/gdal-ucrt64-fallback.zip` when present)
+- supports `fallback_zip` for offline/recovery installs
 
 ### `activate_gdal_runtime(gdal_home = default_gdal_home(), preload = TRUE, quiet = FALSE)`
 
@@ -61,23 +60,24 @@ Configures runtime home for current session via:
 - writes/updates a managed hook block in `.Rprofile`
 - supports a persistent startup path for DLL preload + custom library precedence
 
-### `verify_gdalraster_runtime(lib.loc = NULL, activate_runtime = TRUE, gdal_home = default_gdal_home())`
+### `verify_gdalraster_runtime(lib.loc = NULL, activate_runtime = TRUE, gdal_home = default_gdal_home(), quiet = FALSE)`
 
 - optionally activates runtime
 - loads `gdalraster`
 - checks `gdal_global_reg_names()` is non-empty
-- returns version and registry details
+- returns `TRUE/FALSE`
+- prints a sitrep via `cli` unless `quiet = TRUE`
 
 ## session behavior
 
-[`R/zzz.R`](../../R/zzz.R) auto-activates runtime at package load when option `gdalraster.windows.auto_activate` is `TRUE` (default).
+[`R/zzz.R`](../../R/zzz.R) auto-bootstraps runtime at package load when option `gdalraster.windows.auto_bootstrap` is `TRUE` (default). Startup sitrep display is controlled by `options(gdalraster.windows.startup.sitrep = TRUE/FALSE)`.
 
 ## minimal user flow
 
 ```r
 gdalraster.windows::install_gdal_runtime()
 gdalraster.windows::install_gdalraster()
-gdalraster.windows::load_gdalraster()
+library(gdalraster.windows)
 gdalraster.windows::verify_gdalraster_runtime()
 ```
 

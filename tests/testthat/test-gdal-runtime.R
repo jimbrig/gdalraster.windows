@@ -129,3 +129,18 @@ testthat::test_that("load_gdalraster fails clearly when isolated lib missing pac
     gdalraster.windows::load_gdalraster(lib = lib, gdal_home = gdal_home, quiet = TRUE)
   })
 })
+
+testthat::test_that("verify_gdalraster_runtime returns FALSE when gdalraster is unavailable", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  testthat::local_mocked_bindings(
+    has_gdalraster_namespace = function() FALSE,
+    .env = asNamespace("gdalraster.windows")
+  )
+
+  ok <- gdalraster.windows::verify_gdalraster_runtime(
+    activate_runtime = FALSE,
+    quiet = TRUE
+  )
+  testthat::expect_false(ok)
+})

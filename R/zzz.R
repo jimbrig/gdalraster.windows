@@ -31,12 +31,9 @@ rlang::on_load({
 .onLoad <- function(libname, pkgname) {
   rlang::run_on_load()
 
-  auto_activate <- getOption("gdalraster.windows.auto_activate", default = TRUE)
-  if (isTRUE(auto_activate)) {
-    activate_fun <- get0("activate_gdal_runtime", mode = "function")
-    if (!is.null(activate_fun)) {
-      try(activate_fun(quiet = TRUE), silent = TRUE)
-    }
+  auto_bootstrap <- getOption("gdalraster.windows.auto_bootstrap", default = TRUE)
+  if (isTRUE(auto_bootstrap)) {
+    try(startup_bootstrap(), silent = TRUE)
   }
 }
 
@@ -45,14 +42,28 @@ rlang::on_load({
 #' @keywords internal
 #' @noRd
 .onAttach <- function(libname, pkgname) {
-  if (isTRUE(getOption("gdalraster.windows.auto_activate", default = TRUE))) {
-    home <- default_gdal_home()
-    if (dir.exists(home)) {
-      packageStartupMessage(
-        "gdal runtime home: ",
-        normalizePath(home, winslash = "/", mustWork = FALSE)
-      )
+  if (!startup_sitrep_enabled()) {
+    return(invisible(NULL))
+  }
+
+  st <- runtime_sitrep()
+  msg <- pkg_startup_msg()
+  if (st$gdalraster_loaded && !st$custom_gdalraster_exists) {
+    cli::cli_alert_info(msg[[1]])
+    if (length(msg) > 1L) {
+      cli::cli_inform(setNames(as.list(msg[-1]), rep("i", length(msg) - 1L)))
     }
+    cli::cli_alert_warning(
+      paste(
+        "gdalraster was already loaded before gdalraster.windows;",
+        "restart session for full bootstrap control."
+      )
+    )
+    return(invisible(NULL))
+  }
+  cli::cli_alert_info(msg[[1]])
+  if (length(msg) > 1L) {
+    cli::cli_inform(setNames(as.list(msg[-1]), rep("i", length(msg) - 1L)))
   }
 }
 

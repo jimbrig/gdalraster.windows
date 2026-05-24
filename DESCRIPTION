@@ -10,7 +10,6 @@ Description: Installs and activates a self-contained GDAL runtime on
 License: MIT + file LICENSE
 Imports:
     cli,
-    gdalraster,
     httr2,
     rlang,
     tools,

@@ -222,14 +222,6 @@ pkg_sys <- function(...) {
 #   pkg_sys("extdata", ...)
 # }
 
-# startup message -------------------------------------------------------------------------------------------------
-
-#' @keywords internal
-#' @noRd
-pkg_startup_msg <- function() {
-  paste0(pkg_name(), " v", pkg_version())
-}
-
 # environment -----------------------------------------------------------------------------------------------------
 
 init_pkg_env <- function() {

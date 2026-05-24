@@ -10,6 +10,9 @@ This project builds and distributes a portable Windows GDAL runtime bundle, with
 R helpers to install that runtime locally and build `gdalraster` from source
 against it.
 
+Latest GDAL runtime release:
+[gdal-v3.13.0](https://github.com/jimbrig/gdalraster.windows/releases/tag/gdal-v3.13.0)
+
 ## Installation
 
 ```r
@@ -35,13 +38,17 @@ gdalraster.windows::install_gdalraster()
 # optional: build to your active library instead
 # gdalraster.windows::install_gdalraster(lib = .libPaths()[1])
 
-# 3) load GDAL DLL first, then load custom gdalraster
-gdalraster.windows::load_gdal_dll()
-gdalraster.windows::load_gdalraster()
+# 3) streamlined bootstrap:
+# library(gdalraster.windows) auto-bootstraps runtime + custom lib path
+library(gdalraster.windows)
 
-# 4) verify algorithm api availability
-out <- gdalraster.windows::verify_gdalraster_runtime()
-out$algorithm_count
+# explicit equivalents (still available):
+# gdalraster.windows::load_gdal_dll()
+# gdalraster.windows::load_gdalraster()
+
+# 4) verify algorithm api availability (returns TRUE/FALSE + sitrep)
+ok <- gdalraster.windows::verify_gdalraster_runtime()
+ok
 
 # direct check
 gdalraster::gdal_global_reg_names()
@@ -55,12 +62,6 @@ gdalraster::gdal_global_reg_names()
 # the custom gdalraster library path at session startup
 gdalraster.windows::add_gdal_rprofile_hook()
 ```
-
-## Quick start (runtime bundle only)
-
-1. Open [Releases](https://github.com/jimbrig/gdalraster.windows/releases).
-2. Download the latest Windows GDAL runtime bundle asset.
-3. Use that bundle in your downstream workflow (R or non-R) where a portable GDAL runtime is needed.
 
 For package API details, see [dev/docs/04-r-runtime-api.md](dev/docs/04-r-runtime-api.md).
 

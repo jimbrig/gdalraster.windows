@@ -35,7 +35,8 @@ jobs:
         shell: Rscript {0}
         run: |
           install.packages("pak", repos = "https://cloud.r-project.org")
-          pak::pak(c("rcmdcheck", "roxygen2", "testthat"), ask = FALSE, upgrade = FALSE)
+          pak::local_install_deps(dependencies = TRUE, ask = FALSE, upgrade = FALSE)
+          pak::pak(c("rcmdcheck", "roxygen2"), ask = FALSE, upgrade = FALSE)
 
       - name: Verify docs are up to date
         shell: Rscript {0}

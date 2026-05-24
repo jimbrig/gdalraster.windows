@@ -411,13 +411,15 @@ load_gdalraster <- function(
 #' @param lib.loc Optional library location used for loading `gdalraster`.
 #' @param activate_runtime Whether to run [activate_gdal_runtime()] first.
 #' @param gdal_home GDAL home used when `activate_runtime = TRUE`.
+#' @param quiet If `TRUE`, suppress sitrep CLI output.
 #'
-#' @return A list with version, algorithm count, and names.
+#' @return `TRUE` when algorithm API is available, otherwise `FALSE`.
 #' @export
 verify_gdalraster_runtime <- function(
   lib.loc = NULL,
   activate_runtime = TRUE,
-  gdal_home = default_gdal_home()
+  gdal_home = default_gdal_home(),
+  quiet = FALSE
 ) {
   abort_if_not_windows()
 
@@ -425,33 +427,56 @@ verify_gdalraster_runtime <- function(
     activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = TRUE)
   }
 
-  if (!requireNamespace("gdalraster", quietly = TRUE)) {
-    cli::cli_abort("Package {.pkg gdalraster} is not installed.")
+  if (!has_gdalraster_namespace()) {
+    if (!isTRUE(quiet)) {
+      cli::cli_alert_warning("{.pkg gdalraster} is not installed.")
+      cli::cli_inform("Run {.fn gdalraster.windows::install_gdalraster} first.")
+    }
+    return(FALSE)
   }
 
-  suppressMessages(base::library("gdalraster", character.only = TRUE, lib.loc = lib.loc))
-  alg_names <- gdalraster::gdal_global_reg_names()
-  version <- gdalraster::gdal_version()[[1]]
-
-  out <- list(
-    gdal_version = version,
-    algorithm_count = length(alg_names),
-    algorithm_names = alg_names
+  ok <- rlang::try_fetch(
+    {
+      suppressMessages(base::library("gdalraster", character.only = TRUE, lib.loc = lib.loc))
+      alg_names <- gdalraster::gdal_global_reg_names()
+      version <- gdalraster::gdal_version()[[1]]
+      list(ok = length(alg_names) > 0L, version = version, count = length(alg_names))
+    },
+    error = function(cnd) {
+      if (!isTRUE(quiet)) {
+        cli::cli_alert_danger("gdalraster verification failed: {conditionMessage(cnd)}")
+      }
+      list(ok = FALSE, version = NA_character_, count = 0L)
+    }
   )
 
-  if (out$algorithm_count < 1L) {
-    cli::cli_abort(
-      c(
-        "gdalraster loaded but algorithm registry is empty.",
-        "i" = "gdal_version: {.val {out$gdal_version}}"
+  if (!isTRUE(quiet)) {
+    if (isTRUE(ok$ok)) {
+      cli::cli_alert_success("gdalraster is ready ({.val {ok$version}})")
+      cli::cli_inform(
+        c(
+          "i" = "algorithm registry entries: {.val {ok$count}}",
+          "i" = "runtime home: {.path {normalizePath(gdal_home, winslash = '/', mustWork = FALSE)}}"
+        )
       )
-    )
+    } else {
+      cli::cli_alert_warning("gdalraster loaded, but algorithm API is not available.")
+      cli::cli_inform(
+        c(
+          "i" = "gdal version: {.val {ok$version}}",
+          "i" = "algorithm registry entries: {.val {ok$count}}"
+        )
+      )
+    }
   }
 
-  cli::cli_alert_success(
-    "gdalraster ready with {.val {out$algorithm_count}} algorithms ({.val {out$gdal_version}})"
-  )
-  invisible(out)
+  isTRUE(ok$ok)
+}
+
+#' @keywords internal
+#' @noRd
+has_gdalraster_namespace <- function() {
+  requireNamespace("gdalraster", quietly = TRUE)
 }
 
 #' @keywords internal

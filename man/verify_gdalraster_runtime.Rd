@@ -7,7 +7,8 @@
 verify_gdalraster_runtime(
   lib.loc = NULL,
   activate_runtime = TRUE,
-  gdal_home = default_gdal_home()
+  gdal_home = default_gdal_home(),
+  quiet = FALSE
 )
 }
 \arguments{
@@ -16,9 +17,11 @@ verify_gdalraster_runtime(
 \item{activate_runtime}{Whether to run \code{\link[=activate_gdal_runtime]{activate_gdal_runtime()}} first.}
 
 \item{gdal_home}{GDAL home used when \code{activate_runtime = TRUE}.}
+
+\item{quiet}{If \code{TRUE}, suppress sitrep CLI output.}
 }
 \value{
-A list with version, algorithm count, and names.
+\code{TRUE} when algorithm API is available, otherwise \code{FALSE}.
 }
 \description{
 Attempts to load \code{gdalraster} and checks the global algorithm registry.
