@@ -12,6 +12,10 @@
 - **changelog:** Run changelog workflow on pushes/PRs and bump actions versions ([bbb711a](https://github.com/jimbrig/gdalraster.windows/commit/bbb711a3900d959019c24319a150471aacdd5157))  - (Jimmy Briggs)
 - Add Windows R CMD CHECK workflow ([44a366c](https://github.com/jimbrig/gdalraster.windows/commit/44a366c281e98ecef759513d481be49d77a8035e))  - (Jimmy Briggs)
 
+## Documentation
+
+- Add in-depth Windows GDAL runtime guides and update package docs ([0fac782](https://github.com/jimbrig/gdalraster.windows/commit/0fac7829cb0e58d53cc0445de057589fc3617064))  - (Jimmy Briggs)
+
 ## Features
 
 - **startup:** Add runtime bootstrap and startup sitrep, streamline verification ([77048b3](https://github.com/jimbrig/gdalraster.windows/commit/77048b34ad9be25ccb2b136aa78299db352b2645))  - (Jimmy Briggs)
