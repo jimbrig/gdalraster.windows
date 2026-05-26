@@ -93,9 +93,118 @@ This repository started from practical Windows failures where
 `gdalraster::gdal_global_reg_names()` could be empty under some toolchain
 states. It now provides a maintained runtime path that is isolated by default.
 
-## Technical background
+## Technical Architecture
 
-Upstream context:
+This section is the technical rationale for the current design.
+
+### 1) Root problem: static registration + MXE/static builds
+
+GDAL's Algorithm API uses static C++ registration. Under some Windows build
+states (notably specific Rtools/MXE combinations), the top-level algorithm
+registry has been observed to load but return no names. In practice this means
+`gdalraster::gdal_global_reg_names()` can return `character(0)` even when GDAL
+is present.
+
+This project solves that by controlling both the GDAL build profile and runtime
+loading path, then rebuilding `gdalraster` against that known runtime.
+
+### 2) Toolchain stack in plain terms
+
+- **MinGW-w64**: GCC-based Windows compiler toolchain for native `.exe`/`.dll`.
+- **MSYS2**: package manager + shell environment used to assemble toolchains and
+  dependencies (`pacman`).
+- **UCRT64**: MSYS2 toolchain target using Microsoft's Universal CRT.
+- **Rtools45**: Windows R package build toolchain, also UCRT-based.
+
+The practical requirement is to keep compile/runtime toolchains compatible
+(MinGW/UCRT alignment) to avoid C/C++ runtime and ABI mismatch problems.
+
+### 3) Static vs dynamic linking in this repository
+
+- Some runtime pieces are linked statically (for portability of GCC runtime bits).
+- GDAL itself is delivered as a shared runtime DLL (`libgdal-*.dll`) with
+  transitive dependencies bundled alongside it.
+
+In other words: this project is not "single-file static GDAL", it is a
+self-contained runtime bundle with controlled dependency closure.
+
+### 4) C++ ABI compatibility (why source rebuild is required)
+
+`gdalraster` binds to GDAL C++ APIs via compiled code. Even when headers match,
+ABI mismatches can break at runtime if binaries are built with incompatible
+compiler/runtime combinations.
+
+That is why this package installs `gdalraster` from source against the bundled
+GDAL headers/import libs rather than assuming an arbitrary prebuilt binary is
+compatible.
+
+### 5) Key CMake/linker flags used and why
+
+Current build uses flags in `tools/build_gdal.sh`, including:
+
+- `-DGDAL_USE_MUPARSER=ON` for muparser-enabled algorithm functionality
+- `-DGDAL_HIDE_INTERNAL_SYMBOLS=ON` to reduce export-surface pressure on Windows
+- `-Wl,--kill-at` for Windows/MinGW export naming behavior
+- `-static-libgcc -static-libstdc++` and static `winpthread` handling to reduce
+  external runtime fragility
+
+These flags are practical stability choices from observed Windows build/runtime
+behavior, not arbitrary tuning.
+
+### 6) Why `collect_dlls.sh` is essential
+
+Building `libgdal-*.dll` is not sufficient by itself. Runtime success depends on
+all non-Windows transitive DLL dependencies being present.
+
+`tools/collect_dlls.sh` performs recursive dependency inspection (`ntldd -R`),
+copies required UCRT64 DLLs into the bundle, and fails when unresolved external
+non-Windows dependencies remain.
+
+### 7) Windows DLL load order and preloading
+
+Compile-time link success does not guarantee runtime load success. Windows still
+needs to resolve `libgdal-*.dll` and its dependency tree in the active process.
+
+`activate_gdal_runtime()` addresses this by:
+
+- prepending bundle `bin/` to `PATH`
+- setting GDAL/PROJ data env vars
+- optionally preloading `libgdal-*.dll` with `dyn.load(..., local = FALSE, now = TRUE)`
+
+This is why explicit runtime activation exists in addition to source builds.
+
+### 8) GDAL/PROJ data directories
+
+GDAL and PROJ require runtime data files (`share/gdal`, `share/proj`).
+Without these, CRS and related functionality can fail even when DLL loading
+succeeds.
+
+`activate_gdal_runtime()` sets:
+
+- `GDAL_DATA`
+- `PROJ_LIB`
+- `PROJ_DATA`
+
+from the installed bundle when available.
+
+### 9) Compile-time paths vs runtime paths
+
+These are separate concerns:
+
+- **Compile-time**: headers/libs via Makevars (`PKG_CPPFLAGS`, `PKG_LIBS`)
+- **Runtime**: DLL resolution via process environment and loader state
+
+This package scopes compile-time settings to install calls (`withr`), then
+manages runtime activation separately for session reliability.
+
+### 10) Optional `.Rprofile` startup hook
+
+For users who want persistence, `add_gdal_rprofile_hook()` writes a managed
+startup block that can load runtime context early in each session.
+
+This is optional by design; default behavior stays non-destructive and local.
+
+## Upstream Context
 
 - [firelab/gdalraster#826](https://github.com/firelab/gdalraster/issues/826)
 - [firelab/gdalraster#858](https://github.com/firelab/gdalraster/issues/858)
@@ -103,12 +212,7 @@ Upstream context:
 - [OSGeo/gdal#13592](https://github.com/OSGeo/gdal/pull/13592)
 - [Rtools45 news](https://cran.r-project.org/bin/windows/Rtools/rtools45/news.html)
 
-Maintainer documentation:
-
-- [`dev/docs/`](dev/docs)
-- [`dev/docs/README.md`](dev/docs/README.md)
-
-Package guide:
+## Package Guide
 
 - [`vignettes/runtime-guide.Rmd`](vignettes/runtime-guide.Rmd)
 
