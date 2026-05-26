@@ -11,9 +11,16 @@
 > [!NOTE]
 > Self-contained [GDAL](https://gdal.org/) runtime tooling for Windows.
 
-This project builds and distributes a portable Windows GDAL runtime bundle, with
-R helpers to install that runtime locally and build `gdalraster` from source
-against it.
+`gdalraster.windows` is an R package with companion CI scripts that build and
+publish a Windows GDAL runtime bundle.
+
+The package helps you:
+
+- install that runtime locally
+- build `gdalraster` from source against it
+- load and verify `gdalraster` in a Windows session
+
+By default, installs are isolated under package-managed user directories.
 
 Latest GDAL runtime release:
 [gdal-v3.13.0](https://github.com/jimbrig/gdalraster.windows/releases/tag/gdal-v3.13.0)
@@ -24,42 +31,55 @@ Latest GDAL runtime release:
 pak::pak("jimbrig/gdalraster.windows")
 ```
 
-## Usage
+## Quick Start
 
 ```r
-# baseline with default gdalraster on windows can be empty
-library(gdalraster)
-gdalraster::gdal_global_reg_names()
-#> character(0)   # typical before custom runtime + rebuild
-
-# 1) download and install the GDAL runtime bundle (defaults to latest release)
+# 1) install runtime bundle (defaults to latest release asset)
 gdalraster.windows::install_gdal_runtime()
 
 # 2) build gdalraster from source against that runtime
-# default installs to an isolated package-managed library path
 gdalraster.windows::install_gdalraster()
 
-# optional: build to your active library instead
-# gdalraster.windows::install_gdalraster(lib = .libPaths()[1])
-
-# 3) streamlined bootstrap:
-# library(gdalraster.windows) auto-bootstraps runtime + custom lib path
+# 3) load and verify
 library(gdalraster.windows)
-
-# explicit equivalents (still available):
-# gdalraster.windows::load_gdal_dll()
-# gdalraster.windows::load_gdalraster()
-
-# 4) verify algorithm api availability (returns TRUE/FALSE + sitrep)
-ok <- gdalraster.windows::verify_gdalraster_runtime()
-ok
-
-# direct check
 gdalraster::gdal_global_reg_names()
-#> [1] "raster info" "raster pipeline" ...
 ```
 
-## Optional startup hook (.Rprofile)
+## Common Flows
+
+If runtime and custom `gdalraster` install are already present:
+
+```r
+library(gdalraster.windows)
+library(gdalraster)
+gdalraster::gdal_global_reg_names()
+```
+
+Explicit load flow is also supported:
+
+```r
+gdalraster.windows::load_gdal_dll()
+gdalraster.windows::load_gdalraster()
+gdalraster::gdal_global_reg_names()
+```
+
+Runtime verification helper:
+
+```r
+gdalraster.windows::verify_gdalraster_runtime()
+```
+
+## What This Repository Contains
+
+- An R helper package (`gdalraster.windows`)
+- A Windows CI build pipeline for GDAL (`.github/workflows/build.yml`)
+- Build and bundle scripts:
+  - `tools/build_gdal.sh`
+  - `tools/collect_dlls.sh`
+
+The package and build scripts are designed to work together.
+
+## Optional startup hook (`.Rprofile`)
 
 ```r
 # writes a managed hook block that loads the GDAL DLL and prepends
@@ -67,45 +87,48 @@ gdalraster::gdal_global_reg_names()
 gdalraster.windows::add_gdal_rprofile_hook()
 ```
 
-## Testing
+## Why This Exists
 
-Quick test suite:
+This repository started from practical Windows failures where
+`gdalraster::gdal_global_reg_names()` could be empty under some toolchain
+states. It now provides a maintained runtime path that is isolated by default.
 
-```r
-testthat::test_dir("tests/testthat")
-```
+## Technical background
 
-Run only clean-room isolation checks:
-
-```r
-testthat::test_file("tests/testthat/test-e2e-clean-room.R")
-```
-
-Run full end-to-end clean-room test (downloads runtime, builds `gdalraster`
-from source, verifies `gdal_global_reg_names()` is non-empty):
-
-```powershell
-$env:GDALRASTER_WINDOWS_RUN_E2E="true"
-Rscript -e "testthat::test_file('tests/testthat/test-e2e-clean-room.R')"
-```
-
-For package API details, see [dev/docs/04-r-runtime-api.md](dev/docs/04-r-runtime-api.md).
-
-## Background context
-
-Key upstream background:
+Upstream context:
 
 - [firelab/gdalraster#826](https://github.com/firelab/gdalraster/issues/826)
 - [firelab/gdalraster#858](https://github.com/firelab/gdalraster/issues/858)
 - [firelab/gdalraster#982](https://github.com/firelab/gdalraster/issues/982)
 - [OSGeo/gdal#13592](https://github.com/OSGeo/gdal/pull/13592)
 - [Rtools45 news](https://cran.r-project.org/bin/windows/Rtools/rtools45/news.html)
-- [mxe/mxe#3277](https://github.com/mxe/mxe/pull/3277)
 
-## Documentation
+Maintainer documentation:
 
-For maintainers and contributors:
+- [`dev/docs/`](dev/docs)
+- [`dev/docs/README.md`](dev/docs/README.md)
 
-- [dev/docs/README.md](dev/docs/README.md)
+Package guide:
 
- 
+- [`vignettes/runtime-guide.Rmd`](vignettes/runtime-guide.Rmd)
+
+## Testing
+
+Run fast tests:
+
+```r
+testthat::test_dir("tests/testthat")
+```
+
+Run clean-room isolation checks:
+
+```r
+testthat::test_file("tests/testthat/test-e2e-clean-room.R")
+```
+
+Run full end-to-end clean-room flow (opt-in):
+
+```powershell
+$env:GDALRASTER_WINDOWS_RUN_E2E="true"
+Rscript -e "testthat::test_file('tests/testthat/test-e2e-clean-room.R')"
+```

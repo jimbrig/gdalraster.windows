@@ -2,13 +2,24 @@
 
 Curated maintainer documentation for `gdalraster.windows`.
 
-Use this as the canonical technical documentation for build, release, runtime helper API, and troubleshooting.
+Use this folder for technical notes that support long-term maintenance.
 
-## document index
+## Recommended reading order
 
-- [`01-overview.md`](01-overview.md): mission, architecture boundaries, and upstream status snapshot
-- [`03-ci-and-release.md`](03-ci-and-release.md): GitHub Actions workflow, release artifacts, and drift checks
-- [`04-r-runtime-api.md`](04-r-runtime-api.md): exported R API and minimal usage flow
-- [`05-troubleshooting.md`](05-troubleshooting.md): operational triage for compile/install/runtime failures
-- [`06-r-api-contract-draft.md`](06-r-api-contract-draft.md): proposed R API signatures, defaults, workflow contracts, and trade-offs pending approval
-- [`07-yesterday-working-state-evidence.md`](07-yesterday-working-state-evidence.md): evidence-only reconstruction of the known-good local Windows setup
+1. [`01-overview.md`](01-overview.md)
+2. [`06-toolchain-and-abi.md`](06-toolchain-and-abi.md)
+3. [`02-runtime-model.md`](02-runtime-model.md)
+4. [`03-ci-and-release.md`](03-ci-and-release.md)
+5. [`04-r-runtime-api.md`](04-r-runtime-api.md)
+6. [`05-troubleshooting.md`](05-troubleshooting.md)
+
+## Scope of these docs
+
+- Keep notes implementation-anchored and general.
+- Prefer references to code and upstream sources over narrative speculation.
+- Avoid session-specific conclusions in core maintainer docs.
+
+## Archive material
+
+Historical reconstruction notes are retained for reference and debugging context,
+but they are not normative project guidance.

@@ -1,6 +1,11 @@
 # ci and release
 
-This document describes the current pipeline shape. The GDAL build/bundle stage is primary; the R packaging stage is a secondary companion stage and may change as distribution strategy evolves.
+This document describes the current pipeline shape. The GDAL build/bundle stage
+is primary; `gdalraster` source-build verification is a secondary companion
+stage.
+
+For flag-level build rationale and ABI/toolchain notes, see
+[`06-toolchain-and-abi.md`](06-toolchain-and-abi.md).
 
 ## workflow entrypoint
 
@@ -23,21 +28,19 @@ Triggers:
 - uploads intermediate artifact for downstream job
 - on tag builds, publishes runtime bundle zip to GitHub release
 
-### job 2: `build-r-package`
+### job 2: `verify-gdalraster-build`
 
 - installs R and Rtools45
 - downloads runtime bundle artifact from job 1
-- writes `Makevars.win` to point package compilation at bundled GDAL headers/libs
-- builds `gdalraster` binary and wrapper package binary
+- writes `Makevars.win` to point source compilation at bundled GDAL headers/libs
+- builds `gdalraster` Windows binary from source
 - runs smoke test for GDAL load and algorithm registry presence
-- uploads package zips
-- on tag builds, publishes package zips to GitHub release
+- uploads verification artifact
 
 ## release artifacts to expect
 
 - runtime bundle zip (GDAL files and DLL dependencies)
-- `gdalraster` Windows binary built against that runtime
-- `gdalraster.windows` Windows binary
+- workflow artifact containing `gdalraster` Windows binary built against that runtime
 
 ## local rehearsal tools
 
@@ -47,7 +50,7 @@ Triggers:
 ## common CI maintenance tasks
 
 - when build scripts change, confirm cache key includes those script paths
-- when GDAL soname changes, update checks that reference `libgdal-39.dll`
+- avoid hardcoded soname references; use `libgdal-*.dll` discovery
 - keep release asset names and README install examples in sync
 
 ## upstream-sensitive checks
@@ -58,6 +61,9 @@ Triggers:
 
 ## known drift risks
 
-- release copy may reference historical package naming (`gdal.win`) instead of `gdalraster.windows`
-- package architecture text may imply `inst/gdal` bundling while current code expects install-and-activate model
-- CI success can mask runtime startup issues if tests do not reproduce end-user PATH/data-var conditions
+- docs implying package-binary publication from this workflow (current workflow
+  publishes runtime bundle release asset, not `gdalraster.windows` release binary)
+- package architecture text implying `inst/gdal` vendoring while current code
+  expects install-and-activate model
+- CI success masking runtime startup issues if tests do not reproduce end-user
+  PATH/data-var conditions

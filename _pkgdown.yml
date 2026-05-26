@@ -1,0 +1,26 @@
+template:
+  bootstrap: 5
+
+reference:
+  - title: Runtime Setup
+    contents:
+      - gdal_home
+      - configure_gdal_home
+      - install_gdal_runtime
+      - activate_gdal_runtime
+      - load_gdal_dll
+  - title: gdalraster Integration
+    contents:
+      - install_gdalraster
+      - load_gdalraster
+      - verify_gdalraster_runtime
+  - title: Startup Hooks
+    contents:
+      - gdal_rprofile_snippet
+      - add_gdal_rprofile_hook
+
+articles:
+  - title: Guides
+    navbar: Guides
+    contents:
+      - runtime-guide

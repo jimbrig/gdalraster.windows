@@ -1,6 +1,9 @@
 # r runtime api
 
-This is the companion helper layer, not the primary deliverable. Keep this doc minimal and update it as the helper surface evolves.
+This document summarizes the exported R API in `gdalraster.windows`.
+
+For implementation details, refer to `R/gdal_runtime.R`, `R/startup_status.R`,
+and `R/startup_hook.R`.
 
 ## exported functions
 
@@ -42,7 +45,8 @@ Configures runtime home for current session via:
 ### `install_gdalraster(gdal_home, lib, source_tarball = NULL, repo = "firelab/gdalraster", ref = "HEAD", ...)`
 
 - installs `gdalraster` from source on the local machine
-- uses `withr::with_makevars()` + `withr::with_envvar()` so compile/link settings are scoped to the install call
+- uses `withr::with_makevars()` + `withr::with_envvar()` so compile/link
+  settings are scoped to the install call
 - defaults to an isolated library path under this package's user data directory
 
 ### `load_gdalraster(lib = default_gdalraster_lib(), gdal_home = default_gdal_home(), quiet = FALSE)`
@@ -70,7 +74,13 @@ Configures runtime home for current session via:
 
 ## session behavior
 
-[`R/zzz.R`](../../R/zzz.R) auto-bootstraps runtime at package load when option `gdalraster.windows.auto_bootstrap` is `TRUE` (default). Startup sitrep display is controlled by `options(gdalraster.windows.startup.sitrep = TRUE/FALSE)`.
+- `R/zzz.R` auto-bootstraps runtime at package load when option
+  `gdalraster.windows.auto_bootstrap` is `TRUE` (default).
+- startup sitrep display is controlled by
+  `options(gdalraster.windows.startup.sitrep = TRUE/FALSE)`.
+- auto-loading `gdalraster` itself is controlled by
+  `options(gdalraster.windows.auto_load_gdalraster = TRUE/FALSE)` and defaults
+  to `FALSE`.
 
 ## minimal user flow
 

@@ -1,4 +1,9 @@
-# 07 - yesterday working state (evidence only)
+# 07 - archived local working-state evidence
+
+> [!IMPORTANT]
+> This is an archive note tied to one local machine context.
+> It is useful for historical debugging, but it is not normative project
+> guidance.
 
 This document reconstructs the known-good Windows state from concrete evidence only.
 

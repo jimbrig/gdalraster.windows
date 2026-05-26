@@ -4,13 +4,21 @@
 
 1. verify active runtime root:
    - `gdalraster.windows::gdal_home()`
-   - check `<gdal_home>/bin/libgdal-39.dll` exists
+   - check `<gdal_home>/bin/libgdal-*.dll` exists
 2. activate runtime:
    - `gdalraster.windows::activate_gdal_runtime()`
 3. verify behavior:
    - `gdalraster.windows::verify_gdalraster_runtime()`
 4. if still failing, audit bundle:
    - [`tools/audit_gdal_bundle.ps1`](../../tools/audit_gdal_bundle.ps1)
+
+Quick checks in R:
+
+```r
+gdalraster.windows::gdal_home()
+gdalraster.windows::activate_gdal_runtime()
+gdalraster.windows::verify_gdalraster_runtime()
+```
 
 ## symptom matrix
 
@@ -38,6 +46,12 @@ First actions:
 - run bundle audit and inspect unresolved entries
 - test with explicit PATH injection in `Rscript` to isolate profile effects
 
+Example:
+
+```powershell
+Rscript -e "gdalraster.windows::activate_gdal_runtime(); library(gdalraster); print(length(gdalraster::gdal_global_reg_names()))"
+```
+
 ### install/test-load fails but manual session works
 
 Most likely:
@@ -63,6 +77,6 @@ First actions:
 
 ## maintenance checks after GDAL upgrade
 
-- update soname references (`libgdal-39.dll`) in `R/` and scripts
+- avoid fixed soname assumptions; use `libgdal-*.dll` discovery
 - ensure CI verification and docs use same naming assumptions
 - re-run runtime verification from a fresh Windows session
