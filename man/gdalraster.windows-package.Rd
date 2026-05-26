@@ -8,6 +8,14 @@
 \description{
 Installs and activates a self-contained GDAL runtime on Windows and provides helpers to install gdalraster from source against that GDAL instead of the default Rtools GDAL.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/jimbrig/gdalraster.windows}
+  \item Report bugs at \url{https://github.com/jimbrig/gdalraster.windows/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Jimmy Briggs \email{jimmy.briggs@jimbrig.com} (\href{https://orcid.org/0000-0002-7489-8787}{ORCID})
 
