@@ -14,6 +14,7 @@
 
 ## Documentation
 
+- Rewrite README with comprehensive Windows GDAL runtime guide ([e9de2e9](https://github.com/jimbrig/gdalraster.windows/commit/e9de2e99ebea68cb6861042b9aaaf6e55cef3a26))  - (Jimmy Briggs)
 - Add in-depth Windows GDAL runtime guides and update package docs ([0fac782](https://github.com/jimbrig/gdalraster.windows/commit/0fac7829cb0e58d53cc0445de057589fc3617064))  - (Jimmy Briggs)
 
 ## Features
