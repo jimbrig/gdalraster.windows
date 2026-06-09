@@ -64,8 +64,8 @@ Most likely:
 First actions:
 
 - check `dir.exists(file.path(gdalraster.windows::gdal_home(), "python", "osgeo_utils"))`;
-  if missing, reinstall: `install_gdal_runtime(overwrite = TRUE)`
-- run `activate_gdal_runtime()` and confirm
+  if missing, reinstall: `gdalraster.windows::install_gdal_runtime(overwrite = TRUE)`
+- run `gdalraster.windows::activate_gdal_runtime()` and confirm
   `Sys.getenv("PYTHONPATH")` contains `<gdal_home>/python`
 - confirm a `python.exe` is discoverable on `PATH` (GDAL needs one to embed an
   interpreter; the GDAL debug stream shows which python/libpython it loads)

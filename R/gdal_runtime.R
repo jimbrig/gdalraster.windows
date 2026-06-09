@@ -63,10 +63,9 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #' )
 #' ```
 #'
-#' Note the packaged `fallback_zip` default
-#' (`inst/extdata/gdal-ucrt64-fallback.zip`) is not shipped with the package
-#' (a full runtime bundle is too large to vendor); the fallback path only
-#' applies when you provide a `fallback_zip` yourself.
+#' Note that no fallback zip is shipped with the package (a full runtime
+#' bundle is too large to vendor), so the fallback path only applies when you
+#' provide a `fallback_zip` yourself.
 #'
 #' @param repo GitHub repo slug, e.g. `"jimbrig/gdalraster.windows"`.
 #' @param tag Release tag or `"latest"`.
@@ -75,7 +74,9 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #' @param overwrite Whether to replace existing `gdal_home`.
 #' @param local_zip Optional local GDAL runtime zip to install directly.
 #' @param fallback_zip Optional fallback zip path used when release download
-#'   fails. Defaults to package file `inst/extdata/gdal-ucrt64-fallback.zip`.
+#'   fails. When `NULL` (default), a vendored zip at
+#'   `inst/extdata/gdal-ucrt64-fallback.zip` is used if present; none ships
+#'   with the package, so by default no fallback is attempted.
 #'
 #' @return Invisibly returns installed GDAL home path.
 #' @export

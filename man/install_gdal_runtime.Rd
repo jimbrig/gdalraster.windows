@@ -28,7 +28,9 @@ install_gdal_runtime(
 \item{local_zip}{Optional local GDAL runtime zip to install directly.}
 
 \item{fallback_zip}{Optional fallback zip path used when release download
-fails. Defaults to package file \code{inst/extdata/gdal-ucrt64-fallback.zip}.}
+fails. When \code{NULL} (default), a vendored zip at
+\code{inst/extdata/gdal-ucrt64-fallback.zip} is used if present; none ships
+with the package, so by default no fallback is attempted.}
 }
 \value{
 Invisibly returns installed GDAL home path.
@@ -56,9 +58,8 @@ to the target machine, and install directly:
 )
 }\if{html}{\out{</div>}}
 
-Note the packaged \code{fallback_zip} default
-(\code{inst/extdata/gdal-ucrt64-fallback.zip}) is not shipped with the package
-(a full runtime bundle is too large to vendor); the fallback path only
-applies when you provide a \code{fallback_zip} yourself.
+Note that no fallback zip is shipped with the package (a full runtime
+bundle is too large to vendor), so the fallback path only applies when you
+provide a \code{fallback_zip} yourself.
 }
 
