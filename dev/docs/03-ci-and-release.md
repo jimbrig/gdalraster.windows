@@ -22,11 +22,16 @@ Triggers:
 
 - configures MSYS2 `UCRT64`
 - restores/saves GDAL build cache keyed to version and script hash
-- runs [`tools/build_gdal.sh`](../../tools/build_gdal.sh)
-- runs [`tools/collect_dlls.sh`](../../tools/collect_dlls.sh)
+- runs [`tools/build_gdal.sh`](../../tools/build_gdal.sh) (also stages
+  pure-python `osgeo_utils` from the GDAL source tree into the install prefix)
+- runs [`tools/collect_dlls.sh`](../../tools/collect_dlls.sh) (carries
+  `python/` into the bundle alongside `bin`, `include`, `lib`, `share`)
 - verifies runtime bundle integrity
 - uploads intermediate artifact for downstream job
 - on tag builds, publishes runtime bundle zip to GitHub release
+
+note: release publication happens inside job 1, so a job 2 failure can leave a
+published release asset alongside a red workflow run.
 
 ### job 2: `verify-gdalraster-build`
 
@@ -35,6 +40,8 @@ Triggers:
 - writes `Makevars.win` to point source compilation at bundled GDAL headers/libs
 - builds `gdalraster` Windows binary from source
 - runs smoke test for GDAL load and algorithm registry presence
+- runs embedded-python smoke test: creates a GeoPackage, sets `PYTHONPATH` to
+  the bundle `python/` dir, runs `driver gpkg validate`, asserts success
 - uploads verification artifact
 
 ## release artifacts to expect
@@ -44,8 +51,10 @@ Triggers:
 
 ## local rehearsal tools
 
-- [`tools/audit_gdal_bundle.ps1`](../../tools/audit_gdal_bundle.ps1): inspect and repair local bundle dependency state
-- outputs `.audit` reports under selected bundle path
+- `ntldd -R <gdal_home>/bin/libgdal-*.dll` (from an MSYS2/Rtools shell):
+  inspect the transitive DLL dependency tree of a local bundle
+- a dedicated bundle audit script (`tools/audit_gdal_bundle.ps1`) is planned
+  but not yet present in the repository
 
 ## common CI maintenance tasks
 

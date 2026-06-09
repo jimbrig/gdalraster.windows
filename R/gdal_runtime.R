@@ -52,6 +52,21 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #'
 #' The selected zip must contain a GDAL root with `bin/libgdal-*.dll`.
 #'
+#' @section Offline / air-gapped installation:
+#' On machines without network access, download the release asset manually
+#' from <https://github.com/jimbrig/gdalraster.windows/releases>, transfer it
+#' to the target machine, and install directly:
+#'
+#' ```r
+#' gdalraster.windows::install_gdal_runtime(
+#'   local_zip = "C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"
+#' )
+#' ```
+#'
+#' Note that no fallback zip is shipped with the package (a full runtime
+#' bundle is too large to vendor), so the fallback path only applies when you
+#' provide a `fallback_zip` yourself.
+#'
 #' @param repo GitHub repo slug, e.g. `"jimbrig/gdalraster.windows"`.
 #' @param tag Release tag or `"latest"`.
 #' @param asset_pattern Regex used to select the release asset.
@@ -59,7 +74,9 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #' @param overwrite Whether to replace existing `gdal_home`.
 #' @param local_zip Optional local GDAL runtime zip to install directly.
 #' @param fallback_zip Optional fallback zip path used when release download
-#'   fails. Defaults to package file `inst/extdata/gdal-ucrt64-fallback.zip`.
+#'   fails. When `NULL` (default), a vendored zip at
+#'   `inst/extdata/gdal-ucrt64-fallback.zip` is used if present; none ships
+#'   with the package, so by default no fallback is attempted.
 #'
 #' @return Invisibly returns installed GDAL home path.
 #' @export
