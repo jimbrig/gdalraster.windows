@@ -40,6 +40,27 @@ library(gdalraster.windows)
 gdalraster::gdal_global_reg_names()
 ```
 
+## Offline / Air-Gapped Installation
+
+[`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
+downloads the runtime bundle from GitHub Releases by default. On
+machines without network access (or to pin an exact asset), pass a local
+zip directly:
+
+``` r
+
+# 1) download the release asset on a connected machine:
+#    https://github.com/jimbrig/gdalraster.windows/releases
+# 2) transfer to the target machine
+# 3) install from the local zip
+gdalraster.windows::install_gdal_runtime(
+  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"
+)
+```
+
+A `fallback_zip` argument is also supported: when a release download
+fails and a fallback zip exists, it is installed instead.
+
 ## Common Flows
 
 If runtime and custom `gdalraster` install are already present:
@@ -177,6 +198,7 @@ addresses this by:
 
 - prepending bundle `bin/` to `PATH`
 - setting GDAL/PROJ data env vars
+- prepending bundle `python/` to `PYTHONPATH` (see section 9)
 - optionally preloading `libgdal-*.dll` with
   `dyn.load(..., local = FALSE, now = TRUE)`
 
@@ -198,7 +220,43 @@ sets:
 
 from the installed bundle when available.
 
-### 9) Compile-time paths vs runtime paths
+### 9) Embedded Python utilities (`osgeo_utils`)
+
+Some GDAL CLI algorithms are implemented in Python rather than C++. For
+example, `gdal driver gpkg validate` is a thin C++ entry point in
+`libgdal` that embeds a CPython interpreter at runtime: GDAL locates a
+`python.exe` on `PATH`, dynamically loads the matching `libpython` DLL,
+calls `Py_Initialize()`, and imports
+`osgeo_utils.samples.validate_gpkg`.
+
+`osgeo_utils` is the pure-Python package shipped by GDAL’s `gdal-utils`
+distribution (`swig/python/gdal-utils/` in the GDAL source tree).
+Because it contains no compiled extension modules, it has no CPython ABI
+coupling — any embedded interpreter version can import it.
+
+The runtime bundle ships this package under `python/osgeo_utils`,
+version-locked to the built GDAL tag.
+[`activate_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.md)
+prepends `<gdal_home>/python` to `PYTHONPATH` (session-scoped; never
+persisted to user or machine environment) so the embedded interpreter
+can resolve it. `PYTHONPATH` is read at `Py_Initialize()`, which
+`libgdal` triggers lazily on first use of an embedded-python algorithm,
+so activation-time configuration is early enough.
+
+Without this, such algorithms fail with:
+
+``` text
+GDAL FAILURE 1: ... ModuleNotFoundError: No module named 'osgeo_utils'
+```
+
+Note: the compiled `osgeo` SWIG bindings (`from osgeo import gdal`) are
+intentionally **not** built or bundled (`BUILD_PYTHON_BINDINGS` stays
+off — no Python/SWIG in the build environment). They would pin the
+bundle to a single CPython version/ABI. The Python-implemented
+validators degrade gracefully without them (e.g. `validate_gpkg` skips
+only tiled gridded coverage checks).
+
+### 10) Compile-time paths vs runtime paths
 
 These are separate concerns:
 
@@ -209,7 +267,7 @@ These are separate concerns:
 This package scopes compile-time settings to install calls (`withr`),
 then manages runtime activation separately for session reliability.
 
-### 10) Optional `.Rprofile` startup hook
+### 11) Optional `.Rprofile` startup hook
 
 For users who want persistence,
 [`add_gdal_rprofile_hook()`](https://docs.jimbrig.com/gdalraster.windows/reference/add_gdal_rprofile_hook.md)

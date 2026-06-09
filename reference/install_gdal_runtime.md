@@ -44,8 +44,10 @@ install_gdal_runtime(
 
 - fallback_zip:
 
-  Optional fallback zip path used when release download fails. Defaults
-  to package file `inst/extdata/gdal-ucrt64-fallback.zip`.
+  Optional fallback zip path used when release download fails. When
+  `NULL` (default), a vendored zip at
+  `inst/extdata/gdal-ucrt64-fallback.zip` is used if present; none ships
+  with the package, so by default no fallback is attempted.
 
 ## Value
 
@@ -60,3 +62,17 @@ Invisibly returns installed GDAL home path.
 - `fallback_zip` when release lookup/download fails.
 
 The selected zip must contain a GDAL root with `bin/libgdal-*.dll`.
+
+## Offline / air-gapped installation
+
+On machines without network access, download the release asset manually
+from <https://github.com/jimbrig/gdalraster.windows/releases>, transfer
+it to the target machine, and install directly:
+
+    gdalraster.windows::install_gdal_runtime(
+      local_zip = "C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"
+    )
+
+Note that no fallback zip is shipped with the package (a full runtime
+bundle is too large to vendor), so the fallback path only applies when
+you provide a `fallback_zip` yourself.

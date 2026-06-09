@@ -25,6 +25,9 @@
 
 ## Documentation
 
+- **readme:** Fix R CMD CHECK badge link and add pkgdown badge
+  ([10fee19](https://github.com/jimbrig/gdalraster.windows/commit/10fee19e7de30ca80c177be3235c31fbc2183075)) -
+  (Jimmy Briggs)
 - Rewrite README with comprehensive Windows GDAL runtime guide
   ([e9de2e9](https://github.com/jimbrig/gdalraster.windows/commit/e9de2e99ebea68cb6861042b9aaaf6e55cef3a26)) -
   (Jimmy Briggs)

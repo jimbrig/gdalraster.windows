@@ -102,6 +102,44 @@ installed:</p>
 <span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="offline-air-gapped-install">Offline / air-gapped install<a class="anchor" aria-label="anchor" href="#offline-air-gapped-install"></a>
+</h2>
+<p>Download the release asset from <a href="https://github.com/jimbrig/gdalraster.windows/releases" class="external-link uri">https://github.com/jimbrig/gdalraster.windows/releases</a>
+on a connected machine, transfer it, then:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdal_runtime.html">install_gdal_runtime</a></span><span class="op">(</span></span>
+<span>  local_zip <span class="op">=</span> <span class="st">"C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="embedded-python-algorithms">Embedded-python algorithms<a class="anchor" aria-label="anchor" href="#embedded-python-algorithms"></a>
+</h2>
+<p>Some GDAL algorithms (e.g. <code>gdal driver gpkg validate</code>)
+are implemented in Python: <code>libgdal</code> embeds a CPython
+interpreter at runtime and imports the pure-python
+<code>osgeo_utils</code> package. The runtime bundle ships that package
+under <code>&lt;gdal_home&gt;/python</code>, and
+<code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> exposes it to the embedded
+interpreter by prepending it to <code>PYTHONPATH</code>
+(session-scoped).</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jimbrig/gdalraster.windows" class="external-link">gdalraster.windows</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">alg</span> <span class="op">&lt;-</span> <span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_alg</a></span><span class="op">(</span>cmd <span class="op">=</span> <span class="st">"driver gpkg validate"</span><span class="op">)</span></span>
+<span><span class="va">alg</span><span class="op">$</span><span class="fu">setArg</span><span class="op">(</span><span class="st">"dataset"</span>, <span class="st">"path/to/file.gpkg"</span><span class="op">)</span></span>
+<span><span class="va">alg</span><span class="op">$</span><span class="fu">setArg</span><span class="op">(</span><span class="st">"full-check"</span>, <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">alg</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">alg</span><span class="op">$</span><span class="fu">output</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Checking gpkg_spatial_ref_sys\n...\nValidation succeeded"</span></span></code></pre></div>
+<p>A <code>python.exe</code> must be discoverable on <code>PATH</code>
+for GDAL to embed an interpreter (Rtools’ UCRT64 python works, as does
+any system python). If such an algorithm fails with
+<code>ModuleNotFoundError: No module named 'osgeo_utils'</code>, the
+runtime bundle predates python support — reinstall with
+<code>install_gdal_runtime(overwrite = TRUE)</code> and re-activate.</p>
+</div>
+<div class="section level2">
 <h2 id="default-install-behavior">Default install behavior<a class="anchor" aria-label="anchor" href="#default-install-behavior"></a>
 </h2>
 <p>By default:</p>
@@ -111,7 +149,7 @@ installed:</p>
 path</li>
 </ul>
 <p>Persistent startup behavior is optional:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/add_gdal_rprofile_hook.html">add_gdal_rprofile_hook</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">

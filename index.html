@@ -92,20 +92,34 @@
 <span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="offline--air-gapped-installation">Offline / Air-Gapped Installation<a class="anchor" aria-label="anchor" href="#offline--air-gapped-installation"></a>
+</h2>
+<p><code><a href="reference/install_gdal_runtime.html">install_gdal_runtime()</a></code> downloads the runtime bundle from GitHub Releases by default. On machines without network access (or to pin an exact asset), pass a local zip directly:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># 1) download the release asset on a connected machine:</span></span>
+<span><span class="co">#    https://github.com/jimbrig/gdalraster.windows/releases</span></span>
+<span><span class="co"># 2) transfer to the target machine</span></span>
+<span><span class="co"># 3) install from the local zip</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/install_gdal_runtime.html">install_gdal_runtime</a></span><span class="op">(</span></span>
+<span>  local_zip <span class="op">=</span> <span class="st">"C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>A <code>fallback_zip</code> argument is also supported: when a release download fails and a fallback zip exists, it is installed instead.</p>
+</div>
+<div class="section level2">
 <h2 id="common-flows">Common Flows<a class="anchor" aria-label="anchor" href="#common-flows"></a>
 </h2>
 <p>If runtime and custom <code>gdalraster</code> install are already present:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jimbrig/gdalraster.windows" class="external-link">gdalraster.windows</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span>
 <span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Explicit load flow is also supported:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/load_gdal_dll.html">load_gdal_dll</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/load_gdalraster.html">load_gdalraster</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Runtime verification helper:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/verify_gdalraster_runtime.html">verify_gdalraster_runtime</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -126,7 +140,7 @@
 <div class="section level2">
 <h2 id="optional-startup-hook-rprofile">Optional startup hook (<code>.Rprofile</code>)<a class="anchor" aria-label="anchor" href="#optional-startup-hook-rprofile"></a>
 </h2>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># writes a managed hook block that loads the GDAL DLL and prepends</span></span>
 <span><span class="co"># the custom gdalraster library path at session startup</span></span>
 <span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/add_gdal_rprofile_hook.html">add_gdal_rprofile_hook</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
@@ -207,6 +221,7 @@
 <li>prepending bundle <code>bin/</code> to <code>PATH</code>
 </li>
 <li>setting GDAL/PROJ data env vars</li>
+<li>prepending bundle <code>python/</code> to <code>PYTHONPATH</code> (see section 9)</li>
 <li>optionally preloading <code>libgdal-*.dll</code> with <code>dyn.load(..., local = FALSE, now = TRUE)</code>
 </li>
 </ul>
@@ -225,7 +240,17 @@
 <p>from the installed bundle when available.</p>
 </div>
 <div class="section level3">
-<h3 id="id_9-compile-time-paths-vs-runtime-paths">9) Compile-time paths vs runtime paths<a class="anchor" aria-label="anchor" href="#id_9-compile-time-paths-vs-runtime-paths"></a>
+<h3 id="id_9-embedded-python-utilities-osgeo_utils">9) Embedded Python utilities (<code>osgeo_utils</code>)<a class="anchor" aria-label="anchor" href="#id_9-embedded-python-utilities-osgeo_utils"></a>
+</h3>
+<p>Some GDAL CLI algorithms are implemented in Python rather than C++. For example, <code>gdal driver gpkg validate</code> is a thin C++ entry point in <code>libgdal</code> that embeds a CPython interpreter at runtime: GDAL locates a <code>python.exe</code> on <code>PATH</code>, dynamically loads the matching <code>libpython</code> DLL, calls <code>Py_Initialize()</code>, and imports <code>osgeo_utils.samples.validate_gpkg</code>.</p>
+<p><code>osgeo_utils</code> is the pure-Python package shipped by GDAL’s <code>gdal-utils</code> distribution (<code>swig/python/gdal-utils/</code> in the GDAL source tree). Because it contains no compiled extension modules, it has no CPython ABI coupling — any embedded interpreter version can import it.</p>
+<p>The runtime bundle ships this package under <code>python/osgeo_utils</code>, version-locked to the built GDAL tag. <code><a href="reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> prepends <code>&lt;gdal_home&gt;/python</code> to <code>PYTHONPATH</code> (session-scoped; never persisted to user or machine environment) so the embedded interpreter can resolve it. <code>PYTHONPATH</code> is read at <code>Py_Initialize()</code>, which <code>libgdal</code> triggers lazily on first use of an embedded-python algorithm, so activation-time configuration is early enough.</p>
+<p>Without this, such algorithms fail with:</p>
+<pre class="text"><code>GDAL FAILURE 1: ... ModuleNotFoundError: No module named 'osgeo_utils'</code></pre>
+<p>Note: the compiled <code>osgeo</code> SWIG bindings (<code>from osgeo import gdal</code>) are intentionally <strong>not</strong> built or bundled (<code>BUILD_PYTHON_BINDINGS</code> stays off — no Python/SWIG in the build environment). They would pin the bundle to a single CPython version/ABI. The Python-implemented validators degrade gracefully without them (e.g. <code>validate_gpkg</code> skips only tiled gridded coverage checks).</p>
+</div>
+<div class="section level3">
+<h3 id="id_10-compile-time-paths-vs-runtime-paths">10) Compile-time paths vs runtime paths<a class="anchor" aria-label="anchor" href="#id_10-compile-time-paths-vs-runtime-paths"></a>
 </h3>
 <p>These are separate concerns:</p>
 <ul>
@@ -237,7 +262,7 @@
 <p>This package scopes compile-time settings to install calls (<code>withr</code>), then manages runtime activation separately for session reliability.</p>
 </div>
 <div class="section level3">
-<h3 id="id_10-optional-rprofile-startup-hook">10) Optional <code>.Rprofile</code> startup hook<a class="anchor" aria-label="anchor" href="#id_10-optional-rprofile-startup-hook"></a>
+<h3 id="id_11-optional-rprofile-startup-hook">11) Optional <code>.Rprofile</code> startup hook<a class="anchor" aria-label="anchor" href="#id_11-optional-rprofile-startup-hook"></a>
 </h3>
 <p>For users who want persistence, <code><a href="reference/add_gdal_rprofile_hook.html">add_gdal_rprofile_hook()</a></code> writes a managed startup block that can load runtime context early in each session.</p>
 <p>This is optional by design; default behavior stays non-destructive and local.</p>
@@ -265,14 +290,14 @@
 <h2 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a>
 </h2>
 <p>Run fast tests:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_dir.html" class="external-link">test_dir</a></span><span class="op">(</span><span class="st">"tests/testthat"</span><span class="op">)</span></span></code></pre></div>
 <p>Run clean-room isolation checks:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_file.html" class="external-link">test_file</a></span><span class="op">(</span><span class="st">"tests/testthat/test-e2e-clean-room.R"</span><span class="op">)</span></span></code></pre></div>
 <p>Run full end-to-end clean-room flow (opt-in):</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="va">$env</span><span class="op">:</span><span class="va">GDALRASTER_WINDOWS_RUN_E2E</span><span class="op">=</span><span class="st">"true"</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>Rscript <span class="op">-</span>e <span class="st">"testthat::test_file('tests/testthat/test-e2e-clean-room.R')"</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="va">$env</span><span class="op">:</span><span class="va">GDALRASTER_WINDOWS_RUN_E2E</span><span class="op">=</span><span class="st">"true"</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>Rscript <span class="op">-</span>e <span class="st">"testthat::test_file('tests/testthat/test-e2e-clean-room.R')"</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

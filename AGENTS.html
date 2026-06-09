@@ -68,10 +68,11 @@
 <ul><li>a top-level GDAL runtime DLL (<code>libgdal-*.dll</code>)</li>
 <li>all required non-Windows dependent DLLs</li>
 <li>required runtime data directories (<code>share/gdal</code>, <code>share/proj</code>)</li>
+<li>pure-python GDAL utilities (<code>python/osgeo_utils</code>) for embedded-python algorithms (e.g. <code>gdal driver gpkg validate</code>)</li>
 </ul></li>
 <li>Build <code>gdalraster</code> from source against that bundled GDAL runtime.</li>
-<li>Ensure runtime loading is configured so <code>gdalraster</code> resolves bundled DLL dependencies at runtime (without relying on a matching user-installed Rtools environment).</li>
-<li>Verify success with <code><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdalraster::gdal_global_reg_names()</a></code> returning non-empty output.</li>
+<li>Ensure runtime loading is configured so <code>gdalraster</code> resolves bundled DLL dependencies at runtime (without relying on a matching user-installed Rtools environment), and so GDAL’s embedded python can import bundled <code>osgeo_utils</code> (session-scoped <code>PYTHONPATH</code>).</li>
+<li>Verify success with <code><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdalraster::gdal_global_reg_names()</a></code> returning non-empty output and the <code>driver gpkg validate</code> algorithm running end-to-end.</li>
 <li>Keep installs non-destructive by default:
 <ul><li>runtime installs under package-managed user data paths</li>
 <li>source builds target an isolated library path unless explicitly overridden</li>
