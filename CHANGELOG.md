@@ -19,6 +19,7 @@
 
 ## Features
 
+- Bundle pure-python osgeo_utils and expose via PYTHONPATH at runtime activation ([3cba16f](https://github.com/jimbrig/gdalraster.windows/commit/3cba16f5b22b0e881ff11479dfed2582d2cb84e1))  - (Jimmy Briggs)
 - **startup:** Add runtime bootstrap and startup sitrep, streamline verification ([77048b3](https://github.com/jimbrig/gdalraster.windows/commit/77048b34ad9be25ccb2b136aa78299db352b2645))  - (Jimmy Briggs)
   - **BREAKING CHANGE:** option and API changes:
 - Option renamed: gdalraster.windows.auto_activate → gdalraster.windows.auto_bootstrap
