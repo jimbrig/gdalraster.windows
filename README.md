@@ -24,7 +24,7 @@ The package helps you:
 By default, installs are isolated under package-managed user directories.
 
 Latest GDAL runtime release:
-[gdal-v3.13.0](https://github.com/jimbrig/gdalraster.windows/releases/tag/gdal-v3.13.0)
+[gdal-v3.13.1](https://github.com/jimbrig/gdalraster.windows/releases/tag/gdal-v3.13.1)
 
 ## Installation
 
@@ -58,7 +58,7 @@ local zip directly:
 # 2) transfer to the target machine
 # 3) install from the local zip
 gdalraster.windows::install_gdal_runtime(
-  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"
+  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"
 )
 ```
 

@@ -9,7 +9,7 @@
 #
 # Triggers:
 #   - workflow_dispatch  : manually, with configurable GDAL version + force flag
-#   - push to tag        : gdal-v* (e.g. git tag gdal-v3.13.0)
+#   - push to tag        : gdal-v* (e.g. git tag gdal-v3.13.1)
 #
 # Artefact strategy (every run produces durable output):
 #   Workflow artifact : upload-artifact@v5  retention=30d  no compression
@@ -30,9 +30,9 @@ on:
   workflow_dispatch:
     inputs:
       gdal_version:
-        description: 'GDAL git tag to build (e.g. v3.13.0)'
+        description: 'GDAL git tag to build (e.g. v3.13.1)'
         required: true
-        default: 'v3.13.0'
+        default: 'v3.13.1'
       force_rebuild_gdal:
         description: 'Force full GDAL rebuild, ignoring cache'
         required: false
@@ -48,7 +48,7 @@ on:
 
   push:
     tags:
-      - 'gdal-v*'   # e.g. gdal-v3.13.0
+      - 'gdal-v*'   # e.g. gdal-v3.13.1
 
 # Required by softprops/action-gh-release to create releases and upload assets.
 # Using minimum required scope — contents:write only.
@@ -57,7 +57,7 @@ permissions:
 
 # Centralise defaults for manual runs.
 env:
-  GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.0' }}
+  GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.1' }}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # JOB 1 — Build GDAL from source

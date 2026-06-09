@@ -1,3 +1,26 @@
+# gdalraster.windows 0.2.0
+
+## Documentation
+
+- Technical documentation promoted to published vignettes:
+  `vignette("architecture")` (toolchain, ABI, DLL loading, embedded python,
+  bundle reproduction) and `vignette("troubleshooting")` (triage flow and
+  symptom matrix). These are now the canonical docs; `dev/docs/` is
+  explicitly non-normative maintainer notes.
+
+## Fixes
+
+- `tools/build_gdal.sh` discovers the produced `libgdal-*.dll` by glob in its
+  final verification instead of hardcoding the SONAME, and fails loudly when
+  no DLL is produced (#2).
+- `install_gdal_runtime()` now emits actionable guidance on download failure:
+  the releases URL and the `local_zip` offline install path (#5).
+
+## Build
+
+- GDAL runtime baseline bumped to 3.13.1 (upstream release 2026-06-05);
+  default `gdal_version` in the build workflow updated accordingly.
+
 # gdalraster.windows 0.1.0
 
 ## New features
