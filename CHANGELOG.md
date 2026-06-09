@@ -8,6 +8,10 @@
 
 ## DevOps
 
+- **pkgdown:** Add GitHub Actions workflow to build and deploy pkgdown
+  site
+  ([3922d9e](https://github.com/jimbrig/gdalraster.windows/commit/3922d9e1f796f71572b08883130037f7192caa11)) -
+  (Jimmy Briggs)
 - **workflows:** Add R CMD CHECK workflow and update README badges
   ([b023b98](https://github.com/jimbrig/gdalraster.windows/commit/b023b98955c14f52f4cf618821e2eb5386134f28)) -
   (Jimmy Briggs)
