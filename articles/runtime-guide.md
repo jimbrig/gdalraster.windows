@@ -1,0 +1,75 @@
+# Using gdalraster.windows on Windows
+
+## What this package does
+
+`gdalraster.windows` helps you use `gdalraster` with a bundled GDAL
+runtime on Windows.
+
+Typical flow:
+
+1.  install runtime bundle
+2.  build `gdalraster` from source against that runtime
+3.  load and verify in your R session
+
+## Quick start
+
+``` r
+
+pak::pak("jimbrig/gdalraster.windows")
+
+gdalraster.windows::install_gdal_runtime()
+gdalraster.windows::install_gdalraster()
+
+library(gdalraster.windows)
+gdalraster::gdal_global_reg_names()
+```
+
+If runtime and custom `gdalraster` are already installed:
+
+``` r
+
+library(gdalraster.windows)
+library(gdalraster)
+gdalraster::gdal_global_reg_names()
+```
+
+Explicit load flow:
+
+``` r
+
+gdalraster.windows::load_gdal_dll()
+gdalraster.windows::load_gdalraster()
+gdalraster::gdal_global_reg_names()
+```
+
+## Default install behavior
+
+By default:
+
+- runtime installs under package-managed user directories
+- source-built `gdalraster` installs to an isolated library path
+
+Persistent startup behavior is optional:
+
+``` r
+
+gdalraster.windows::add_gdal_rprofile_hook()
+```
+
+## Troubleshooting basics
+
+In a fresh session:
+
+1.  [`gdalraster.windows::activate_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.md)
+2.  [`library(gdalraster)`](https://firelab.github.io/gdalraster/)
+3.  `length(gdalraster::gdal_global_reg_names()) > 0`
+
+If this fails, see `dev/docs/05-troubleshooting.md`.
+
+## Background reading
+
+- `dev/docs/06-toolchain-and-abi.md`
+- <https://github.com/firelab/gdalraster/issues/826>
+- <https://github.com/firelab/gdalraster/issues/858>
+- <https://github.com/firelab/gdalraster/issues/982>
+- <https://github.com/OSGeo/gdal/pull/13592>
