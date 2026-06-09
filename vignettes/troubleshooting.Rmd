@@ -1,0 +1,117 @@
+---
+title: "Troubleshooting"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Troubleshooting}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Baseline triage
+
+Run these in order; most problems surface at one of these steps.
+
+```{r eval = FALSE}
+# 1) where is the active runtime, and is the DLL there?
+gdalraster.windows::gdal_home()
+list.files(file.path(gdalraster.windows::gdal_home(), "bin"), pattern = "^libgdal-.*\\.dll$")
+
+# 2) activate runtime (PATH, data vars, PYTHONPATH, DLL preload)
+gdalraster.windows::activate_gdal_runtime()
+
+# 3) end-to-end verification
+gdalraster.windows::verify_gdalraster_runtime()
+```
+
+If those pass, the runtime contract is intact and the problem is elsewhere.
+
+## `gdal_global_reg_names()` returns `character(0)`
+
+Most likely the wrong GDAL DLL was resolved first, or activation never ran in
+this session.
+
+- Run `gdalraster.windows::activate_gdal_runtime()` in a **fresh** R session,
+  then load `gdalraster`.
+- Inspect `Sys.getenv("PATH")` for competing GDAL installations (Rtools,
+  conda/pixi, OSGeo4W) appearing before the bundle's `bin/`.
+- Confirm `gdalraster` was built by `install_gdalraster()` against the
+  bundle, not installed as the CRAN binary (which statically links Rtools'
+  GDAL).
+
+## `LoadLibrary failure` when loading gdalraster
+
+The Windows loader could not resolve `libgdal-*.dll` or one of its
+transitive dependencies.
+
+- Activate the runtime before `library(gdalraster)` — or use
+  `gdalraster.windows::load_gdalraster()`, which does both.
+- Isolate profile effects with a clean subprocess:
+
+```powershell
+Rscript -e "gdalraster.windows::activate_gdal_runtime(); library(gdalraster); print(length(gdalraster::gdal_global_reg_names()))"
+```
+
+- Inspect the dependency tree from an MSYS2/Rtools shell:
+  `ntldd -R <gdal_home>/bin/libgdal-*.dll` — any entry that resolves outside
+  the bundle and outside Windows system paths indicates a missing bundled DLL.
+
+## `ModuleNotFoundError: No module named 'osgeo_utils'`
+
+Raised by embedded-python algorithms such as `gdal driver gpkg validate`.
+
+- Check the bundle has the python layer:
+
+```{r eval = FALSE}
+dir.exists(file.path(gdalraster.windows::gdal_home(), "python", "osgeo_utils"))
+```
+
+- If missing, the installed runtime predates python support — reinstall:
+
+```{r eval = FALSE}
+gdalraster.windows::install_gdal_runtime(overwrite = TRUE)
+```
+
+- Re-activate and confirm `Sys.getenv("PYTHONPATH")` contains
+  `<gdal_home>/python`.
+- A `python.exe` must be discoverable on `PATH` for GDAL to embed an
+  interpreter at all (the GDAL debug stream shows which python/libpython it
+  loads).
+
+Note: `validate_gpkg` treats the compiled `osgeo` bindings as optional; the
+bundle intentionally omits them, which skips only tiled gridded coverage
+content checks.
+
+## CRS / projection errors despite GDAL loading
+
+`GDAL_DATA` / `PROJ_DATA` are not pointing at the bundle's `share/` tree.
+`activate_gdal_runtime()` sets all three (`GDAL_DATA`, `PROJ_LIB`,
+`PROJ_DATA`); check whether something later in your startup overwrites them.
+
+## Download failures during `install_gdal_runtime()`
+
+On machines without network access (or behind strict proxies), install from
+a manually transferred release asset:
+
+```{r eval = FALSE}
+gdalraster.windows::install_gdal_runtime(
+  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"
+)
+```
+
+Assets are published at
+<https://github.com/jimbrig/gdalraster.windows/releases>.
+
+## After a GDAL version upgrade
+
+- Reinstall the runtime (`install_gdal_runtime(overwrite = TRUE)`), then
+  rebuild `gdalraster` against it (`install_gdalraster()`) — the previous
+  `gdalraster.dll` is bound to the previous GDAL's ABI/import names.
+- Never assume the GDAL SONAME is stable across versions; everything in this
+  package discovers `libgdal-*.dll` by glob, and your own scripts should too.

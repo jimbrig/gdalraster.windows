@@ -1,10 +1,21 @@
 # dev docs
 
-Curated maintainer documentation for `gdalraster.windows`.
+> [!IMPORTANT]
+> These are non-normative maintainer/agent working notes. The canonical,
+> published documentation lives in [`vignettes/`](../../vignettes) (rendered
+> on the pkgdown site) and in the roxygen help pages. When these notes and
+> the vignettes disagree, the vignettes and code win. Agents should update
+> vignettes/roxygen for any user-facing behavior change; updating these notes
+> is optional.
 
-Use this folder for technical notes that support long-term maintenance.
+Canonical published docs:
 
-## Recommended reading order
+- `vignettes/runtime-guide.Rmd` — install/activate/load user guide
+- `vignettes/architecture.Rmd` — toolchain, ABI, DLL loading, embedded
+  python, bundle reproduction
+- `vignettes/troubleshooting.Rmd` — triage flow and symptom matrix
+
+## Recommended reading order (these notes)
 
 1. [`01-overview.md`](01-overview.md)
 2. [`06-toolchain-and-abi.md`](06-toolchain-and-abi.md)
@@ -21,5 +32,5 @@ Use this folder for technical notes that support long-term maintenance.
 
 ## Archive material
 
-Historical reconstruction notes are retained for reference and debugging context,
-but they are not normative project guidance.
+Historical reconstruction notes (e.g. `07-*`) are retained for reference and
+debugging context, but they are not normative project guidance.

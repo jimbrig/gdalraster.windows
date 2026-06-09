@@ -142,8 +142,10 @@ install_gdal_runtime <- function(
         if (!fallback_exists) {
           cli::cli_abort(
             c(
-              "Failed to download GDAL runtime from GitHub release.",
-              "x" = "{conditionMessage(cnd)}"
+              "Failed to download GDAL runtime from GitHub release and no local fallback is available.",
+              "x" = "{conditionMessage(cnd)}",
+              "i" = "To install offline, download the release asset from {.url https://github.com/{repo}/releases}",
+              "i" = "then install it directly: {.code install_gdal_runtime(local_zip = \"path/to/asset.zip\")}"
             ),
             parent = cnd,
             call = rlang::caller_env()

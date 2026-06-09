@@ -1,0 +1,192 @@
+---
+title: "GDAL Runtime Architecture on Windows"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{GDAL Runtime Architecture on Windows}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This article explains the systems-level design behind `gdalraster.windows`:
+why the package exists, how the GDAL runtime bundle is built, and why runtime
+activation works the way it does.
+
+## The root problem
+
+GDAL's Algorithm API registers algorithms through static C++ constructors —
+file-scope objects whose constructors insert entries into a global registry
+when `libgdal` is loaded. Under some Windows toolchain states (notably
+Rtools/MXE builds where dependencies are static archives), the linker's
+dead-code elimination discarded those self-registration translation units,
+leaving the registry empty. The visible symptom:
+
+```{r eval = FALSE}
+gdalraster::gdal_global_reg_names()
+#> character(0)
+```
+
+The upstream fix landed in GDAL 3.12.2
+([OSGeo/gdal#13592](https://github.com/OSGeo/gdal/pull/13592)); muparser
+(required by parts of the Algorithm API) was added to the Rtools GDAL build
+in release 6768. Until a fixed GDAL ships in the default toolchain — and for
+anyone needing a pinned, feature-rich GDAL — this package provides a known
+good runtime: a custom GDAL build plus the activation logic to load it
+reliably.
+
+## Toolchain stack
+
+| Term | What it is |
+|------|------------|
+| MinGW-w64 | GCC-based toolchain producing native Win32 `.exe`/`.dll` (no POSIX emulation layer) |
+| MSYS2 | Distribution + `pacman` package manager shipping several MinGW-w64 toolchain variants; the *build environment*, not the runtime target |
+| UCRT | Microsoft's Universal C Runtime (default since VS2015); mixing binaries linked against different C runtimes is unsafe (incompatible heap allocators, `FILE*`, etc.) |
+| UCRT64 | The MSYS2 environment targeting UCRT — the variant compatible with Rtools |
+| Rtools45 | CRAN's Windows toolchain for R 4.5/4.6; UCRT64/MinGW-based, so C++ ABI-compatible with MSYS2 UCRT64 builds of the same GCC line |
+
+The invariant this package maintains: GDAL and `gdalraster` are both compiled
+with compatible MinGW/UCRT toolchains.
+
+## Why `gdalraster` must be rebuilt from source
+
+C++ has no standardized ABI across compilers. Name mangling, vtable layout,
+exception unwinding, and object layout all differ between MSVC and MinGW/GCC,
+and can drift between incompatible GCC configurations. `gdalraster` binds to
+GDAL's C++ API through Rcpp (not a C `extern "C"` shim), so `gdalraster.dll`
+and `libgdal-*.dll` must come from the same ABI world.
+
+That is why `install_gdalraster()` builds from source against the bundle's
+headers and import library rather than reusing the CRAN binary (which is
+linked — statically — against Rtools' own GDAL):
+
+```{r eval = FALSE}
+gdalraster.windows::install_gdalraster()
+```
+
+Internally this uses `withr::with_makevars()`, which writes a scoped Makevars
+file and points the `R_MAKEVARS_USER` environment variable at it for the
+duration of the install — compile/link flags never leak into your persistent
+configuration.
+
+## Key build flags
+
+From `tools/build_gdal.sh`:
+
+| Flag | Purpose |
+|------|---------|
+| `-DGDAL_USE_MUPARSER=ON` | Algorithm API support (expression evaluation) |
+| `-DGDAL_USE_ARROW/PARQUET/HDF5/NETCDF/GEOS/SPATIALITE=ON` | Extended driver profile beyond the lean Rtools build |
+| `-DGDAL_HIDE_INTERNAL_SYMBOLS=ON` | Restricts the export table to the public API (PE/COFF DLLs cap named exports at 65,535; GDAL's full symbol set exceeds it) |
+| `-Wl,--kill-at` | Strips `@N` stdcall decoration from exports so symbol names match what loaders expect |
+| `-static-libgcc -static-libstdc++` + whole-archive `winpthread` | Embeds the GCC runtime into the DLLs — end users need neither Rtools nor MSYS2 at runtime |
+
+## Dependency closure: `collect_dlls.sh`
+
+Producing `libgdal-*.dll` is half the job; it imports dozens of transitive
+DLLs (GEOS, PROJ, Arrow's deep tree, HDF5, ...). `tools/collect_dlls.sh`
+walks the full PE import tree with `ntldd -R`, copies every dependency that
+resolves to the UCRT64 prefix into the bundle's `bin/`, and **fails** if any
+non-Windows-system dependency remains unresolved. The bundle is therefore a
+verified-closed set: the only external imports are Windows system DLLs.
+
+Final bundle layout:
+
+```text
+<gdal_home>/
+├── bin/        libgdal-*.dll + closed transitive DLL set + GDAL executables
+├── include/    headers (compile-time, for install_gdalraster())
+├── lib/        libgdal.dll.a import library (compile-time)
+├── share/      gdal/ + proj/ runtime data
+└── python/     osgeo_utils (pure-python, for embedded-python algorithms)
+```
+
+## Runtime activation: why loading needs help
+
+Windows resolves a DLL's import table at load time using a fixed search
+order (executable directory, System32, then `PATH`). When
+`library(gdalraster)` loads `gdalraster.dll`, Windows immediately needs
+`libgdal-*.dll` — if the bundle's `bin/` is not discoverable at that exact
+moment, loading fails with `LoadLibrary failure`.
+
+`activate_gdal_runtime()` handles this, session-scoped:
+
+- prepends `<gdal_home>/bin` to `PATH`
+- sets `GDAL_DATA`, `PROJ_LIB`, `PROJ_DATA` (GDAL and PROJ require their
+  runtime data trees for CRS operations)
+- prepends `<gdal_home>/python` to `PYTHONPATH` (next section)
+- preloads the GDAL DLL via `dyn.load(..., local = FALSE, now = TRUE)` —
+  mapping it into the process's loaded-module list *before* `gdalraster.dll`
+  asks for it; `local = FALSE` loads into the global symbol namespace so
+  subsequent DLLs resolve against it
+
+## The embedded Python layer
+
+Some GDAL algorithms (e.g. `gdal driver gpkg validate`) are thin C++ entry
+points around Python implementations. At first use, `libgdal` locates a
+`python.exe` on `PATH`, dynamically loads the matching `libpython` DLL (no
+static CPython link), calls `Py_Initialize()`, and imports
+`osgeo_utils.samples.validate_gpkg`.
+
+`osgeo_utils` is pure Python — no compiled extension modules, hence no
+CPython version/ABI coupling. The bundle ships it under
+`<gdal_home>/python`, version-locked to the built GDAL tag, and activation
+exposes it via `PYTHONPATH`. The compiled `osgeo` SWIG bindings are
+deliberately **not** bundled: they would pin the bundle to a single CPython
+ABI, and the Python-implemented validators degrade gracefully without them.
+
+```{r eval = FALSE}
+alg <- gdalraster::gdal_alg(cmd = "driver gpkg validate")
+alg$setArg("dataset", "file.gpkg")
+alg$setArg("full-check", TRUE)
+alg$run()
+alg$output()
+```
+
+## Compile-time vs runtime paths
+
+These are independent concerns, and conflating them is the most common source
+of confusion:
+
+- **Compile-time** (during `install_gdalraster()`): `PKG_CPPFLAGS` points at
+  `<gdal_home>/include`, `PKG_LIBS` at `<gdal_home>/lib` — scoped via `withr`.
+- **Runtime** (every session): the Windows loader resolves DLLs through
+  `PATH`/preload state — handled by `activate_gdal_runtime()`.
+
+A successful link does not imply a loadable session, and vice versa.
+
+## Reproducing the bundle
+
+The bundle is built entirely from the repository — no local machine state.
+For a new GDAL release:
+
+```bash
+git tag gdal-v3.14.0 && git push origin gdal-v3.14.0
+```
+
+or dispatch the build workflow with `gdal_version=v3.14.0`. The version
+string drives the GDAL source checkout, cache key, asset name
+(`gdal-ucrt64-v3.14.0-windows-x64.zip`), and release tag. CI cache keys hash
+the build scripts, so any build-logic change forces a fresh compile.
+
+Local (non-CI) reproduction from an MSYS2 UCRT64 shell:
+
+```bash
+export GDAL_VER=v3.14.0
+export INSTALL_DIR=/c/gdal-install
+export BUNDLE_DIR=/c/gdal-bundle
+bash tools/build_gdal.sh
+bash tools/collect_dlls.sh
+```
+
+## Upstream references
+
+- [firelab/gdalraster#826](https://github.com/firelab/gdalraster/issues/826) — algorithm-registry failure mode
+- [firelab/gdalraster#982](https://github.com/firelab/gdalraster/issues/982) — working Windows workflow this package productized
+- [OSGeo/gdal#13592](https://github.com/OSGeo/gdal/pull/13592) — upstream registration fix (GDAL 3.12.2)
+- [Rtools45 news](https://cran.r-project.org/bin/windows/Rtools/rtools45/news.html)

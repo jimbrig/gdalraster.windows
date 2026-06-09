@@ -23,3 +23,8 @@ articles:
     navbar: Guides
     contents:
       - runtime-guide
+      - troubleshooting
+  - title: Internals
+    navbar: Internals
+    contents:
+      - architecture

@@ -111,7 +111,15 @@ if [[ ! -f "${INSTALL_DIR}/python/osgeo_utils/samples/validate_gpkg.py" ]]; then
     exit 1
 fi
 
+# discover the produced soname instead of hardcoding it; gdal bumps the
+# soname each minor release (3.13 -> libgdal-39.dll, 3.14 -> libgdal-40.dll)
+GDAL_DLL=$(ls "${INSTALL_DIR}/bin/libgdal-"*.dll 2>/dev/null | head -n1)
+if [[ -z "${GDAL_DLL}" ]]; then
+    echo "FATAL: no libgdal-*.dll found in ${INSTALL_DIR}/bin after build"
+    exit 1
+fi
+
 echo ""
 echo ">>> Build complete."
-echo "    DLL: ${INSTALL_DIR}/bin/libgdal-39.dll"
-ls -lh "${INSTALL_DIR}/bin/libgdal-39.dll"
+echo "    DLL: ${GDAL_DLL}"
+ls -lh "${GDAL_DLL}"
