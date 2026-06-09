@@ -423,6 +423,11 @@ jobs:
           Get-ChildItem dist/ | Select-Object Name, @{N='MB';E={[math]::Round($_.Length/1MB,2)}}
 
       # ── 8. Smoke test runtime + Algorithm API in a clean install path ──────
+      # Also exercises the embedded-python path: the bundle's python/ dir
+      # (pure-python osgeo_utils) is exposed via PYTHONPATH, and the
+      # `driver gpkg validate` algorithm is run end-to-end against a freshly
+      # created GeoPackage. This requires a python.exe on PATH (provided by
+      # the windows-latest runner image).
       - name: Smoke test built binaries
         shell: Rscript {0}
         run: |
@@ -443,6 +448,22 @@ jobs:
             algs <- gdalraster::gdal_global_reg_names()
             cat("Algorithm count:", length(algs), "\n")
             stopifnot(length(algs) > 0)
+
+            # embedded-python algorithm smoke test (gpkg validate)
+            gdal_abs <- normalizePath("gdal-bundle", winslash = "/")
+            python_dir <- file.path(gdal_abs, "python")
+            stopifnot(dir.exists(python_dir))
+            stopifnot(file.exists(file.path(python_dir, "osgeo_utils", "samples", "validate_gpkg.py")))
+            Sys.setenv(PYTHONPATH = python_dir)
+            gpkg <- file.path(tempdir(), "smoke.gpkg")
+            gdalraster::ogr_ds_create("GPKG", gpkg, layer = "smoke", geom_type = "POINT", srs = "EPSG:4326")
+            alg <- gdalraster::gdal_alg(cmd = "driver gpkg validate")
+            alg$setArg("dataset", gpkg)
+            alg$setArg("full-check", TRUE)
+            ok <- alg$run()
+            cat("gpkg validate run:", ok, "\n")
+            cat("gpkg validate output:", alg$output(), "\n")
+            stopifnot(isTRUE(ok))
           }
 
       # ── 9. Upload gdalraster binary as workflow artifact ───────────────────

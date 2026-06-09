@@ -8,6 +8,7 @@
 #   include/  — public headers (for compiling against the bundle)
 #   lib/      — import libraries (.dll.a) (for linking against the bundle)
 #   share/    — gdal/proj runtime data files
+#   python/   — pure-python osgeo_utils package for embedded-python algorithms
 #
 # The goal is that BUNDLE_DIR/bin/*.dll should load with zero external deps
 # beyond standard Windows system DLLs (kernel32, msvcrt, ucrtbase, etc.)
@@ -41,6 +42,16 @@ find "${INSTALL_DIR}/lib" \( -name "*.dll.a" -o -name "*.la" \) \
 # Runtime data required for GDAL/PROJ behavior
 if [[ -d "${INSTALL_DIR}/share" ]]; then
     cp -r "${INSTALL_DIR}/share/." "${BUNDLE_DIR}/share/"
+fi
+
+# Pure-python GDAL utilities staged by build_gdal.sh. Required by GDAL
+# algorithms that embed Python at runtime (e.g. `gdal driver gpkg validate`).
+if [[ -d "${INSTALL_DIR}/python" ]]; then
+    echo ""
+    echo ">>> Copying python utilities (osgeo_utils)"
+    mkdir -p "${BUNDLE_DIR}/python"
+    cp -r "${INSTALL_DIR}/python/." "${BUNDLE_DIR}/python/"
+    echo "    python files: $(find "${BUNDLE_DIR}/python" -name '*.py' | wc -l)"
 fi
 
 # ── Copy primary DLLs from install prefix ────────────────────────────────────
@@ -209,6 +220,7 @@ ls -lh "${BUNDLE_DIR}/bin/"*.dll | awk '{printf "  %-50s %s\n", $NF, $5}'
 echo ""
 echo "Headers (count): $(find "${BUNDLE_DIR}/include" -name '*.h' | wc -l)"
 echo "Import libs:     $(ls "${BUNDLE_DIR}/lib/"*.dll.a 2>/dev/null | wc -l)"
+echo "Python utils:    $(find "${BUNDLE_DIR}/python" -name '*.py' 2>/dev/null | wc -l) files"
 echo ""
 TOTAL=$(du -sh "${BUNDLE_DIR}" | cut -f1)
 echo "Total bundle size: ${TOTAL}"

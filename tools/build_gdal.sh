@@ -94,6 +94,23 @@ echo ""
 echo ">>> cmake install → ${INSTALL_DIR}"
 cmake --install build
 
+# ── Stage pure-python GDAL utilities (osgeo_utils) ────────────────────────────
+# GDAL algorithms that embed Python at runtime (e.g. `gdal driver gpkg
+# validate`) import the osgeo_utils package. It is pure python (no compiled
+# extensions), lives in the GDAL source tree, and is version-locked to the
+# tag we just built. Staging it under <prefix>/python lets the R runtime
+# expose it to the embedded interpreter via PYTHONPATH.
+echo ""
+echo ">>> Staging osgeo_utils (gdal-utils) → ${INSTALL_DIR}/python"
+mkdir -p "${INSTALL_DIR}/python"
+cp -r "${SRC_DIR}/swig/python/gdal-utils/osgeo_utils" "${INSTALL_DIR}/python/"
+PY_COUNT=$(find "${INSTALL_DIR}/python/osgeo_utils" -name '*.py' | wc -l)
+echo "    osgeo_utils python files staged: ${PY_COUNT}"
+if [[ ! -f "${INSTALL_DIR}/python/osgeo_utils/samples/validate_gpkg.py" ]]; then
+    echo "FATAL: osgeo_utils/samples/validate_gpkg.py missing after staging"
+    exit 1
+fi
+
 echo ""
 echo ">>> Build complete."
 echo "    DLL: ${INSTALL_DIR}/bin/libgdal-39.dll"

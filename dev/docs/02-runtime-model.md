@@ -29,6 +29,9 @@ GDAL.
 
 - prepends `<gdal_home>/bin` to `PATH`
 - sets `GDAL_DATA`, `PROJ_LIB`, and `PROJ_DATA` when available
+- prepends `<gdal_home>/python` to `PYTHONPATH` when available (exposes the
+  bundled pure-python `osgeo_utils` package to GDAL's embedded python, used
+  by algorithms like `gdal driver gpkg validate`)
 - optionally preloads `libgdal-*.dll` with `dyn.load()`
 
 This is the mechanism used today to make runtime loading reliable in typical
@@ -42,6 +45,8 @@ Expected runtime bundle structure:
 - bundled non-Windows transitive dependency DLLs
 - `share/gdal`
 - `share/proj`
+- `python/osgeo_utils` (pure-python `gdal-utils` package, version-locked to
+  the built GDAL tag; no compiled extensions, so no python ABI coupling)
 
 `tools/collect_dlls.sh` performs dependency collection and closure checks in CI.
 
