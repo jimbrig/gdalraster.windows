@@ -2,8 +2,9 @@
 
 <!-- badges: start -->
 
-[![R CMD CHECK](https://github.com/jimbrig/gdalraster.windows/actions/workflows/check.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/R-CMD-check.yaml)
+[![R CMD CHECK](https://github.com/jimbrig/gdalraster.windows/actions/workflows/check.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/check.yml)
 [![Build GDAL](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml)
+[![pkgdown](https://github.com/jimbrig/gdalraster.windows/actions/workflows/pkgdown.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/pkgdown.yml)
 [![Changelog](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml)
 
  <!-- badges: end -->
