@@ -79,6 +79,11 @@
 </ul></li>
 </ol></div>
 <div class="section level2">
+<h2 id="responsibility-split">responsibility split<a class="anchor" aria-label="anchor" href="#responsibility-split"></a></h2>
+<ul><li>CI’s only responsibility is the GDAL runtime bundle: build, verify the bundle contract, and publish durable artifacts (workflow artifact + release asset).</li>
+<li>Building <code>gdalraster</code> against the bundle is package functionality (<code><a href="reference/install_gdalraster.html">install_gdalraster()</a></code> with scoped Makevars via <code>withr</code>), exercised on user machines and by package tests — never reimplemented inside CI.</li>
+</ul></div>
+<div class="section level2">
 <h2 id="source-of-truth">source of truth<a class="anchor" aria-label="anchor" href="#source-of-truth"></a></h2>
 <ul><li>CI workflow and scripts are authoritative for build/release behavior:
 <ul><li><a href=".github/workflows/build.yml"><code>.github/workflows/build.yml</code></a></li>

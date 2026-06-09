@@ -25,6 +25,13 @@
 
 ## Documentation
 
+- Address review feedback - clarify fallback_zip default,
+  namespace-qualify troubleshooting calls
+  ([a69ed0f](https://github.com/jimbrig/gdalraster.windows/commit/a69ed0f08be46b9b737375459c1865ed8b0c179e)) -
+  (Jimmy Briggs)
+- Refresh all docs for embedded-python runtime layer and offline install
+  ([c54717e](https://github.com/jimbrig/gdalraster.windows/commit/c54717e917c3ace01228ba1409cfa6823c465405)) -
+  (Jimmy Briggs)
 - **readme:** Fix R CMD CHECK badge link and add pkgdown badge
   ([10fee19](https://github.com/jimbrig/gdalraster.windows/commit/10fee19e7de30ca80c177be3235c31fbc2183075)) -
   (Jimmy Briggs)

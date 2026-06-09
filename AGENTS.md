@@ -61,6 +61,16 @@ gdalraster::gdal_global_reg_names()
     - source builds target an isolated library path unless explicitly
       overridden
 
+## responsibility split
+
+- CI’s only responsibility is the GDAL runtime bundle: build, verify the
+  bundle contract, and publish durable artifacts (workflow artifact +
+  release asset).
+- Building `gdalraster` against the bundle is package functionality
+  ([`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
+  with scoped Makevars via `withr`), exercised on user machines and by
+  package tests — never reimplemented inside CI.
+
 ## source of truth
 
 - CI workflow and scripts are authoritative for build/release behavior:
