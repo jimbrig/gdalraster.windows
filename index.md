@@ -98,6 +98,21 @@ gdalraster.windows::verify_gdalraster_runtime()
 
 The package and build scripts are designed to work together.
 
+### Building a new GDAL version
+
+The runtime bundle is reproducible entirely from this repository. To
+build and publish a new GDAL release, push a tag (or dispatch the
+workflow with a `gdal_version` input):
+
+``` bash
+git tag gdal-v3.14.0 && git push origin gdal-v3.14.0
+```
+
+The tag drives the GDAL source checkout, cache key, asset name, and
+release tag. See
+[`dev/docs/03-ci-and-release.md`](https://docs.jimbrig.com/gdalraster.windows/dev/docs/03-ci-and-release.md)
+for the full procedure, including local (non-CI) reproduction.
+
 ## Optional startup hook (`.Rprofile`)
 
 ``` r

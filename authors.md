@@ -11,13 +11,13 @@ Source:
 [`DESCRIPTION`](https://github.com/jimbrig/gdalraster.windows/blob/main/DESCRIPTION)
 
 Briggs J (2026). *gdalraster.windows: Windows GDAL Runtime and
-gdalraster Bootstrap Tools*. R package version 0.0.1,
+gdalraster Bootstrap Tools*. R package version 0.1.0,
 <https://github.com/jimbrig/gdalraster.windows>.
 
     @Manual{,
       title = {gdalraster.windows: Windows GDAL Runtime and gdalraster Bootstrap Tools},
       author = {Jimmy Briggs},
       year = {2026},
-      note = {R package version 0.0.1},
+      note = {R package version 0.1.0},
       url = {https://github.com/jimbrig/gdalraster.windows},
     }

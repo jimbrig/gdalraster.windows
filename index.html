@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="articles/runtime-guide.html">Using gdalraster.windows on Windows</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -136,11 +137,18 @@
 </li>
 </ul>
 <p>The package and build scripts are designed to work together.</p>
+<div class="section level3">
+<h3 id="building-a-new-gdal-version">Building a new GDAL version<a class="anchor" aria-label="anchor" href="#building-a-new-gdal-version"></a>
+</h3>
+<p>The runtime bundle is reproducible entirely from this repository. To build and publish a new GDAL release, push a tag (or dispatch the workflow with a <code>gdal_version</code> input):</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">git</span> tag gdal-v3.14.0 <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push origin gdal-v3.14.0</span></code></pre></div>
+<p>The tag drives the GDAL source checkout, cache key, asset name, and release tag. See <a href="dev/docs/03-ci-and-release.html"><code>dev/docs/03-ci-and-release.md</code></a> for the full procedure, including local (non-CI) reproduction.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="optional-startup-hook-rprofile">Optional startup hook (<code>.Rprofile</code>)<a class="anchor" aria-label="anchor" href="#optional-startup-hook-rprofile"></a>
 </h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># writes a managed hook block that loads the GDAL DLL and prepends</span></span>
 <span><span class="co"># the custom gdalraster library path at session startup</span></span>
 <span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/add_gdal_rprofile_hook.html">add_gdal_rprofile_hook</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
@@ -290,14 +298,14 @@
 <h2 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a>
 </h2>
 <p>Run fast tests:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_dir.html" class="external-link">test_dir</a></span><span class="op">(</span><span class="st">"tests/testthat"</span><span class="op">)</span></span></code></pre></div>
 <p>Run clean-room isolation checks:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_file.html" class="external-link">test_file</a></span><span class="op">(</span><span class="st">"tests/testthat/test-e2e-clean-room.R"</span><span class="op">)</span></span></code></pre></div>
 <p>Run full end-to-end clean-room flow (opt-in):</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="va">$env</span><span class="op">:</span><span class="va">GDALRASTER_WINDOWS_RUN_E2E</span><span class="op">=</span><span class="st">"true"</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>Rscript <span class="op">-</span>e <span class="st">"testthat::test_file('tests/testthat/test-e2e-clean-room.R')"</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="va">$env</span><span class="op">:</span><span class="va">GDALRASTER_WINDOWS_RUN_E2E</span><span class="op">=</span><span class="st">"true"</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>Rscript <span class="op">-</span>e <span class="st">"testthat::test_file('tests/testthat/test-e2e-clean-room.R')"</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

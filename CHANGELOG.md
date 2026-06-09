@@ -8,6 +8,10 @@
 
 ## DevOps
 
+- **build:** Scope CI to GDAL bundle only; always produce durable
+  artifacts
+  ([c64aaae](https://github.com/jimbrig/gdalraster.windows/commit/c64aaae77d7f2cffc9800533b0b61e84cefe4722)) -
+  (Jimmy Briggs)
 - **pkgdown:** Add GitHub Actions workflow to build and deploy pkgdown
   site
   ([3922d9e](https://github.com/jimbrig/gdalraster.windows/commit/3922d9e1f796f71572b08883130037f7192caa11)) -
