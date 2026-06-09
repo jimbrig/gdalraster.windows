@@ -21,6 +21,10 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
     <li><a class="dropdown-item" href="articles/runtime-guide.html">Using gdalraster.windows on Windows</a></li>
+    <li><a class="dropdown-item" href="articles/troubleshooting.html">Troubleshooting</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Internals</h6></li>
+    <li><a class="dropdown-item" href="articles/architecture.html">GDAL Runtime Architecture on Windows</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -100,6 +104,12 @@
 <li>use <code>withr</code> for scoped state (<code>with_makevars</code>, env vars, lib paths); avoid leaking persistent session/user config.</li>
 <li>default source-install target for <code>gdalraster</code> must be non-destructive (isolated library path), not overwrite existing user/global installs unless explicitly requested.</li>
 <li>keep docs implementation-anchored and general; avoid session-specific claims.</li>
+</ul></div>
+<div class="section level2">
+<h2 id="documentation-hierarchy">documentation hierarchy<a class="anchor" aria-label="anchor" href="#documentation-hierarchy"></a></h2>
+<ul><li>canonical user-facing docs: <code>vignettes/</code> (published via pkgdown) and roxygen help pages. Any user-facing behavior change MUST update these.</li>
+<li>
+<code>dev/docs/</code> is non-normative maintainer/agent scratch context; it may lag the implementation and must never be treated as a source of truth over vignettes, roxygen, or code.</li>
 </ul></div>
 </div>
 

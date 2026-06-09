@@ -96,3 +96,11 @@ gdalraster::gdal_global_reg_names()
   unless explicitly requested.
 - keep docs implementation-anchored and general; avoid session-specific
   claims.
+
+## documentation hierarchy
+
+- canonical user-facing docs: `vignettes/` (published via pkgdown) and
+  roxygen help pages. Any user-facing behavior change MUST update these.
+- `dev/docs/` is non-normative maintainer/agent scratch context; it may
+  lag the implementation and must never be treated as a source of truth
+  over vignettes, roxygen, or code.
