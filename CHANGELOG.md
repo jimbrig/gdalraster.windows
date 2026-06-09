@@ -29,6 +29,10 @@
 
 ## Documentation
 
+- Promote technical docs to published vignettes; fix \#2 and \#5 code
+  paths
+  ([07b27f5](https://github.com/jimbrig/gdalraster.windows/commit/07b27f597f015da9d25c3aa4feada50490450fe7)) -
+  (Jimmy Briggs)
 - Address review feedback - clarify fallback_zip default,
   namespace-qualify troubleshooting calls
   ([a69ed0f](https://github.com/jimbrig/gdalraster.windows/commit/a69ed0f08be46b9b737375459c1865ed8b0c179e)) -

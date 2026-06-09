@@ -1,5 +1,33 @@
 # Changelog
 
+## gdalraster.windows 0.2.0
+
+### Documentation
+
+- Technical documentation promoted to published vignettes:
+  [`vignette("architecture")`](https://docs.jimbrig.com/gdalraster.windows/articles/architecture.md)
+  (toolchain, ABI, DLL loading, embedded python, bundle reproduction)
+  and
+  [`vignette("troubleshooting")`](https://docs.jimbrig.com/gdalraster.windows/articles/troubleshooting.md)
+  (triage flow and symptom matrix). These are now the canonical docs;
+  `dev/docs/` is explicitly non-normative maintainer notes.
+
+### Fixes
+
+- `tools/build_gdal.sh` discovers the produced `libgdal-*.dll` by glob
+  in its final verification instead of hardcoding the SONAME, and fails
+  loudly when no DLL is produced
+  ([\#2](https://github.com/jimbrig/gdalraster.windows/issues/2)).
+- [`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
+  now emits actionable guidance on download failure: the releases URL
+  and the `local_zip` offline install path
+  ([\#5](https://github.com/jimbrig/gdalraster.windows/issues/5)).
+
+### Build
+
+- GDAL runtime baseline bumped to 3.13.1 (upstream release 2026-06-05);
+  default `gdal_version` in the build workflow updated accordingly.
+
 ## gdalraster.windows 0.1.0
 
 ### New features

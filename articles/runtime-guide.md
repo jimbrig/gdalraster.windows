@@ -51,7 +51,7 @@ machine, transfer it, then:
 ``` r
 
 gdalraster.windows::install_gdal_runtime(
-  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"
+  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"
 )
 ```
 

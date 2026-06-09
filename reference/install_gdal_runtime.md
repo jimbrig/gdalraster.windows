@@ -70,7 +70,7 @@ from <https://github.com/jimbrig/gdalraster.windows/releases>, transfer
 it to the target machine, and install directly:
 
     gdalraster.windows::install_gdal_runtime(
-      local_zip = "C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"
+      local_zip = "C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"
     )
 
 Note that no fallback zip is shipped with the package (a full runtime

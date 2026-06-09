@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,6 +42,24 @@
       <small>Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="gdalrasterwindows-020">gdalraster.windows 0.2.0<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-020"></a></h2>
+<div class="section level3">
+<h3 id="documentation-0-2-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-2-0"></a></h3>
+<ul><li>Technical documentation promoted to published vignettes: <code><a href="../articles/architecture.html">vignette("architecture")</a></code> (toolchain, ABI, DLL loading, embedded python, bundle reproduction) and <code><a href="../articles/troubleshooting.html">vignette("troubleshooting")</a></code> (triage flow and symptom matrix). These are now the canonical docs; <code>dev/docs/</code> is explicitly non-normative maintainer notes.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="fixes-0-2-0">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-2-0"></a></h3>
+<ul><li>
+<code>tools/build_gdal.sh</code> discovers the produced <code>libgdal-*.dll</code> by glob in its final verification instead of hardcoding the SONAME, and fails loudly when no DLL is produced (<a href="https://github.com/jimbrig/gdalraster.windows/issues/2" class="external-link">#2</a>).</li>
+<li>
+<code><a href="../reference/install_gdal_runtime.html">install_gdal_runtime()</a></code> now emits actionable guidance on download failure: the releases URL and the <code>local_zip</code> offline install path (<a href="https://github.com/jimbrig/gdalraster.windows/issues/5" class="external-link">#5</a>).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="build-0-2-0">Build<a class="anchor" aria-label="anchor" href="#build-0-2-0"></a></h3>
+<ul><li>GDAL runtime baseline bumped to 3.13.1 (upstream release 2026-06-05); default <code>gdal_version</code> in the build workflow updated accordingly.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="gdalrasterwindows-010">gdalraster.windows 0.1.0<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-010"></a></h2>
 <div class="section level3">
