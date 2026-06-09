@@ -45,3 +45,20 @@ Installs the GDAL runtime into \code{gdal_home} from one of:
 
 The selected zip must contain a GDAL root with \verb{bin/libgdal-*.dll}.
 }
+\section{Offline / air-gapped installation}{
+
+On machines without network access, download the release asset manually
+from \url{https://github.com/jimbrig/gdalraster.windows/releases}, transfer it
+to the target machine, and install directly:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{gdalraster.windows::install_gdal_runtime(
+  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"
+)
+}\if{html}{\out{</div>}}
+
+Note the packaged \code{fallback_zip} default
+(\code{inst/extdata/gdal-ucrt64-fallback.zip}) is not shipped with the package
+(a full runtime bundle is too large to vendor); the fallback path only
+applies when you provide a \code{fallback_zip} yourself.
+}
+

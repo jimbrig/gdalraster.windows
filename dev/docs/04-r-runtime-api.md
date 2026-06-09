@@ -36,7 +36,11 @@ Configures runtime home for current session via:
 - ensures runtime paths/files exist
 - prepends runtime `bin` directory to `PATH`
 - sets `GDAL_DATA`, `PROJ_LIB`, and `PROJ_DATA` when available
+- prepends runtime `python` directory to `PYTHONPATH` when available
+  (exposes bundled pure-python `osgeo_utils` to GDAL's embedded python)
 - optionally preloads `libgdal-*.dll` discovered in runtime `bin/`
+- invisibly returns a list of configured paths
+  (`gdal_home`, `gdal_bin`, `gdal_dll`, `gdal_data`, `proj_data`, `gdal_python`)
 
 ### `load_gdal_dll(gdal_home = default_gdal_home(), quiet = FALSE)`
 

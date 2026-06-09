@@ -99,12 +99,41 @@ transitive non-Windows dependencies are available.
 
 `tools/collect_dlls.sh` does this by:
 
-1. collecting primary GDAL install outputs (`bin`, `include`, `lib`, `share`)
+1. collecting primary GDAL install outputs (`bin`, `include`, `lib`, `share`, `python`)
 2. recursively inspecting dependencies with `ntldd -R`
 3. copying required `/ucrt64` DLLs into bundle `bin/`
 4. failing if unresolved non-Windows dependencies remain
 
 This closure check is one of the main safety guarantees in this repository.
+
+## embedded python layer (osgeo_utils)
+
+Some GDAL CLI algorithms (e.g. `gdal driver gpkg validate`) are thin C++
+entry points around Python implementations. The mechanism in `libgdal`:
+
+1. locate a `python.exe` on `PATH` and the corresponding `libpython` DLL
+2. load it dynamically (`LoadLibrary`, not an import-table dependency —
+   `libgdal` has no static link against CPython)
+3. call `Py_Initialize()` lazily on first use
+4. import the needed module, e.g. `osgeo_utils.samples.validate_gpkg`
+
+Implications for this repository:
+
+- `osgeo_utils` (GDAL's `gdal-utils` distribution, pure python) must be on the
+  embedded interpreter's `sys.path`. `build_gdal.sh` stages it from the GDAL
+  source checkout (version-locked) into `<prefix>/python`, and
+  `activate_gdal_runtime()` prepends `<gdal_home>/python` to `PYTHONPATH`.
+- because the package is pure python (no `.pyd` extension modules), it has no
+  CPython version/ABI coupling — any embedded interpreter can import it.
+- the compiled SWIG bindings (`osgeo` with `_gdal.pyd` etc.) are deliberately
+  not built (`BUILD_PYTHON_BINDINGS` is effectively off: no python/swig in the
+  CI build environment). Shipping them would pin the bundle to one CPython
+  ABI and require the bundled `osgeo` to resolve this repo's `libgdal-*.dll`
+  at import time. Python-implemented validators degrade gracefully without
+  them (`has_gdal = False` path in `validate_gpkg`).
+- `PYTHONPATH` handling stays session-scoped: it leaks into no other python
+  environments (pixi/conda/system), and within an R session it only adds a
+  directory containing `osgeo_utils`.
 
 ## compile-time vs runtime paths
 
@@ -122,6 +151,7 @@ dependencies. `activate_gdal_runtime()` handles this by:
 
 - prepending `<gdal_home>/bin` to `PATH`
 - setting `GDAL_DATA`, `PROJ_LIB`, `PROJ_DATA`
+- prepending `<gdal_home>/python` to `PYTHONPATH` (embedded-python algorithms)
 - optionally preloading the GDAL DLL via `dyn.load()`
 
 Compile-time success does not guarantee runtime success without this step.

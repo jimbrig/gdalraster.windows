@@ -40,11 +40,14 @@ gdalraster::gdal_global_reg_names()
    - a top-level GDAL runtime DLL (`libgdal-*.dll`)
    - all required non-Windows dependent DLLs
    - required runtime data directories (`share/gdal`, `share/proj`)
+   - pure-python GDAL utilities (`python/osgeo_utils`) for embedded-python
+     algorithms (e.g. `gdal driver gpkg validate`)
 4. Build `gdalraster` from source against that bundled GDAL runtime.
 5. Ensure runtime loading is configured so `gdalraster` resolves bundled DLL
    dependencies at runtime (without relying on a matching user-installed
-   Rtools environment).
-6. Verify success with `gdalraster::gdal_global_reg_names()` returning non-empty output.
+   Rtools environment), and so GDAL's embedded python can import bundled
+   `osgeo_utils` (session-scoped `PYTHONPATH`).
+6. Verify success with `gdalraster::gdal_global_reg_names()` returning non-empty output and the `driver gpkg validate` algorithm running end-to-end.
 7. Keep installs non-destructive by default:
    - runtime installs under package-managed user data paths
    - source builds target an isolated library path unless explicitly overridden

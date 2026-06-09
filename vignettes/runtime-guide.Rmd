@@ -53,6 +53,44 @@ gdalraster.windows::load_gdalraster()
 gdalraster::gdal_global_reg_names()
 ```
 
+## Offline / air-gapped install
+
+Download the release asset from
+<https://github.com/jimbrig/gdalraster.windows/releases> on a connected
+machine, transfer it, then:
+
+```{r eval = FALSE}
+gdalraster.windows::install_gdal_runtime(
+  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.0-windows-x64.zip"
+)
+```
+
+## Embedded-python algorithms
+
+Some GDAL algorithms (e.g. `gdal driver gpkg validate`) are implemented in
+Python: `libgdal` embeds a CPython interpreter at runtime and imports the
+pure-python `osgeo_utils` package. The runtime bundle ships that package under
+`<gdal_home>/python`, and `activate_gdal_runtime()` exposes it to the embedded
+interpreter by prepending it to `PYTHONPATH` (session-scoped).
+
+```{r eval = FALSE}
+library(gdalraster.windows)
+library(gdalraster)
+
+alg <- gdalraster::gdal_alg(cmd = "driver gpkg validate")
+alg$setArg("dataset", "path/to/file.gpkg")
+alg$setArg("full-check", TRUE)
+alg$run()
+alg$output()
+#> [1] "Checking gpkg_spatial_ref_sys\n...\nValidation succeeded"
+```
+
+A `python.exe` must be discoverable on `PATH` for GDAL to embed an
+interpreter (Rtools' UCRT64 python works, as does any system python).
+If such an algorithm fails with `ModuleNotFoundError: No module named
+'osgeo_utils'`, the runtime bundle predates python support — reinstall with
+`install_gdal_runtime(overwrite = TRUE)` and re-activate.
+
 ## Default install behavior
 
 By default:

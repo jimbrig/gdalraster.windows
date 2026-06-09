@@ -9,8 +9,8 @@
    - `gdalraster.windows::activate_gdal_runtime()`
 3. verify behavior:
    - `gdalraster.windows::verify_gdalraster_runtime()`
-4. if still failing, audit bundle:
-   - [`tools/audit_gdal_bundle.ps1`](../../tools/audit_gdal_bundle.ps1)
+4. if still failing, audit the bundle dependency tree:
+   - `ntldd -R <gdal_home>/bin/libgdal-*.dll` from an MSYS2/Rtools shell
 
 Quick checks in R:
 
@@ -51,6 +51,27 @@ Example:
 ```powershell
 Rscript -e "gdalraster.windows::activate_gdal_runtime(); library(gdalraster); print(length(gdalraster::gdal_global_reg_names()))"
 ```
+
+### embedded-python algorithm fails with `ModuleNotFoundError: No module named 'osgeo_utils'`
+
+Applies to GDAL algorithms implemented in Python, e.g. `driver gpkg validate`.
+
+Most likely:
+
+- runtime bundle predates `python/osgeo_utils` support
+- `PYTHONPATH` was not set in this session (activation did not run)
+
+First actions:
+
+- check `dir.exists(file.path(gdalraster.windows::gdal_home(), "python", "osgeo_utils"))`;
+  if missing, reinstall: `install_gdal_runtime(overwrite = TRUE)`
+- run `activate_gdal_runtime()` and confirm
+  `Sys.getenv("PYTHONPATH")` contains `<gdal_home>/python`
+- confirm a `python.exe` is discoverable on `PATH` (GDAL needs one to embed an
+  interpreter; the GDAL debug stream shows which python/libpython it loads)
+
+Note: `validate_gpkg` treats the compiled `osgeo` bindings as optional; without
+them it still runs all checks except tiled gridded coverage content checks.
 
 ### install/test-load fails but manual session works
 
