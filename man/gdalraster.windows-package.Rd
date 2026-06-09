@@ -12,6 +12,7 @@ Installs and activates a self-contained GDAL runtime on Windows and provides hel
 Useful links:
 \itemize{
   \item \url{https://github.com/jimbrig/gdalraster.windows}
+  \item \url{https://docs.jimbrig.com/gdalraster.windows/}
   \item Report bugs at \url{https://github.com/jimbrig/gdalraster.windows/issues}
 }
 

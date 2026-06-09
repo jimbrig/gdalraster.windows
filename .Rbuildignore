@@ -20,3 +20,6 @@
 ^\.build$
 ^gdalraster\.windows\.code-workspace$
 ^\.github$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
