@@ -5,15 +5,29 @@ create_runtime_zip_fixture <- function(path) {
   dir.create(file.path(bundle, "bin"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(bundle, "share", "gdal"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(bundle, "share", "proj"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(bundle, "python", "osgeo_utils", "samples"), recursive = TRUE, showWarnings = FALSE)
 
   file.create(file.path(bundle, "bin", "libgdal-39.dll"))
   file.create(file.path(bundle, "share", "gdal", "gdal_datum.csv"))
   file.create(file.path(bundle, "share", "proj", "proj.db"))
+  file.create(file.path(bundle, "python", "osgeo_utils", "__init__.py"))
+  file.create(file.path(bundle, "python", "osgeo_utils", "samples", "validate_gpkg.py"))
 
   old_wd <- setwd(root)
   withr::defer(setwd(old_wd))
   utils::zip(zipfile = path, files = "bundle")
   path
+}
+
+create_gdal_home_fixture <- function(python = TRUE) {
+  gdal_home <- withr::local_tempdir(.local_envir = parent.frame())
+  dir.create(file.path(gdal_home, "bin"), recursive = TRUE, showWarnings = FALSE)
+  file.create(file.path(gdal_home, "bin", "libgdal-39.dll"))
+  if (isTRUE(python)) {
+    dir.create(file.path(gdal_home, "python", "osgeo_utils"), recursive = TRUE, showWarnings = FALSE)
+    file.create(file.path(gdal_home, "python", "osgeo_utils", "__init__.py"))
+  }
+  gdal_home
 }
 
 testthat::test_that("dll discovery supports dynamic GDAL soname", {
@@ -65,6 +79,74 @@ testthat::test_that("install_gdal_runtime installs from local zip", {
   testthat::expect_true(
     dir.exists(file.path(gdal_home, "share", "proj"))
   )
+  testthat::expect_true(
+    file.exists(file.path(gdal_home, "python", "osgeo_utils", "__init__.py"))
+  )
+})
+
+testthat::test_that("activate_gdal_runtime prepends bundled python dir to PYTHONPATH", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  gdal_home <- create_gdal_home_fixture(python = TRUE)
+  withr::local_envvar(PYTHONPATH = NA)
+
+  res <- gdalraster.windows::activate_gdal_runtime(
+    gdal_home = gdal_home,
+    preload = FALSE,
+    quiet = TRUE
+  )
+
+  python_dir <- file.path(normalizePath(gdal_home, winslash = "/"), "python")
+  testthat::expect_equal(res$gdal_python, python_dir)
+  testthat::expect_equal(Sys.getenv("PYTHONPATH"), python_dir)
+})
+
+testthat::test_that("activate_gdal_runtime preserves existing PYTHONPATH entries", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  gdal_home <- create_gdal_home_fixture(python = TRUE)
+  existing <- "C:/some/other/site-packages"
+  withr::local_envvar(PYTHONPATH = existing)
+
+  gdalraster.windows::activate_gdal_runtime(
+    gdal_home = gdal_home,
+    preload = FALSE,
+    quiet = TRUE
+  )
+
+  python_dir <- file.path(normalizePath(gdal_home, winslash = "/"), "python")
+  parts <- strsplit(Sys.getenv("PYTHONPATH"), .Platform$path.sep, fixed = TRUE)[[1]]
+  testthat::expect_equal(parts, c(python_dir, existing))
+})
+
+testthat::test_that("activate_gdal_runtime does not duplicate python dir on repeat activation", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  gdal_home <- create_gdal_home_fixture(python = TRUE)
+  withr::local_envvar(PYTHONPATH = NA)
+
+  gdalraster.windows::activate_gdal_runtime(gdal_home = gdal_home, preload = FALSE, quiet = TRUE)
+  gdalraster.windows::activate_gdal_runtime(gdal_home = gdal_home, preload = FALSE, quiet = TRUE)
+
+  python_dir <- file.path(normalizePath(gdal_home, winslash = "/"), "python")
+  parts <- strsplit(Sys.getenv("PYTHONPATH"), .Platform$path.sep, fixed = TRUE)[[1]]
+  testthat::expect_equal(sum(parts == python_dir), 1L)
+})
+
+testthat::test_that("activate_gdal_runtime leaves PYTHONPATH untouched without bundled python dir", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  gdal_home <- create_gdal_home_fixture(python = FALSE)
+  withr::local_envvar(PYTHONPATH = NA)
+
+  res <- gdalraster.windows::activate_gdal_runtime(
+    gdal_home = gdal_home,
+    preload = FALSE,
+    quiet = TRUE
+  )
+
+  testthat::expect_true(is.na(res$gdal_python))
+  testthat::expect_equal(Sys.getenv("PYTHONPATH"), "")
 })
 
 testthat::test_that("install_gdal_runtime uses fallback zip when release lookup fails", {

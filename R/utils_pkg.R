@@ -59,6 +59,12 @@ gdal_share_proj_dir <- function(gdal_home = default_gdal_home()) {
 
 #' @keywords internal
 #' @noRd
+gdal_python_dir <- function(gdal_home = default_gdal_home()) {
+  file.path(gdal_home, "python")
+}
+
+#' @keywords internal
+#' @noRd
 gdal_dll_candidates <- function(gdal_home = default_gdal_home()) {
   bin_dir <- gdal_bin_dir(gdal_home)
   if (!dir.exists(bin_dir)) {
