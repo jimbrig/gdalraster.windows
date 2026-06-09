@@ -1,8 +1,11 @@
 # ci and release
 
-This document describes the current pipeline shape. The GDAL build/bundle stage
-is primary; `gdalraster` source-build verification is a secondary companion
-stage.
+This document describes the current pipeline shape. CI has exactly one
+responsibility: build, verify, and publish the GDAL runtime bundle.
+
+Building `gdalraster` against the bundle is package functionality
+(`install_gdalraster()` with `withr::with_makevars()` scoping) exercised on
+user machines and by package tests — it is intentionally not a CI stage.
 
 For flag-level build rationale and ABI/toolchain notes, see
 [`06-toolchain-and-abi.md`](06-toolchain-and-abi.md).
@@ -13,41 +16,34 @@ Primary pipeline: [`.github/workflows/build.yml`](../../.github/workflows/build.
 
 Triggers:
 
-- `workflow_dispatch` with configurable GDAL and R versions
+- `workflow_dispatch` with configurable GDAL version, force-rebuild flag, and
+  `publish_release` toggle (defaults to `true`)
 - tag push matching `gdal-v*` for release publication
 
 ## job structure
 
-### job 1: `build-gdal`
+Single job: `build-gdal`
 
 - configures MSYS2 `UCRT64`
-- restores/saves GDAL build cache keyed to version and script hash
+- restores/saves GDAL build cache keyed to version and script hash; a cache
+  hit skips the compile entirely (re-dispatch republishes in minutes)
 - runs [`tools/build_gdal.sh`](../../tools/build_gdal.sh) (also stages
   pure-python `osgeo_utils` from the GDAL source tree into the install prefix)
 - runs [`tools/collect_dlls.sh`](../../tools/collect_dlls.sh) (carries
   `python/` into the bundle alongside `bin`, `include`, `lib`, `share`)
-- verifies runtime bundle integrity
-- uploads intermediate artifact for downstream job
-- on tag builds, publishes runtime bundle zip to GitHub release
-
-note: release publication happens inside job 1, so a job 2 failure can leave a
-published release asset alongside a red workflow run.
-
-### job 2: `verify-gdalraster-build`
-
-- installs R and Rtools45
-- downloads runtime bundle artifact from job 1
-- writes `Makevars.win` to point source compilation at bundled GDAL headers/libs
-- builds `gdalraster` Windows binary from source
-- runs smoke test for GDAL load and algorithm registry presence
-- runs embedded-python smoke test: creates a GeoPackage, sets `PYTHONPATH` to
-  the bundle `python/` dir, runs `driver gpkg validate`, asserts success
-- uploads verification artifact
+- verifies bundle contract: `bin/libgdal-*.dll`, `share/gdal`, `share/proj`,
+  `python/osgeo_utils/samples/validate_gpkg.py`
+- always uploads the bundle as a 30-day workflow artifact and creates the
+  distributable zip, so no build is wasted when publication is skipped
+- publishes the zip to the GitHub release on tag pushes or when
+  `publish_release=true`
+- writes a build summary (cache vs fresh build, bundle composition, artifact
+  and release destinations) to the run summary page
 
 ## release artifacts to expect
 
-- runtime bundle zip (GDAL files and DLL dependencies)
-- workflow artifact containing `gdalraster` Windows binary built against that runtime
+- runtime bundle zip (GDAL files, DLL dependencies, data dirs, python utils)
+- 30-day workflow artifact with identical bundle contents on every run
 
 ## local rehearsal tools
 

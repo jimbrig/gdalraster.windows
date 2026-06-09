@@ -34,9 +34,8 @@ This project closes that gap with a custom GDAL build and distribution pipeline,
 
 ## high-level flow
 
-1. CI compiles GDAL and assembles `gdal-bundle/` (`bin`, `include`, `lib`, `share`, `python`).
-2. CI verifies `gdalraster` source builds against that bundle, validates Algorithm API availability, and runs the embedded-python `driver gpkg validate` algorithm end-to-end.
-3. End users install runtime locally, source-build `gdalraster`, then activate/load through helper APIs.
+1. CI compiles GDAL, assembles `gdal-bundle/` (`bin`, `include`, `lib`, `share`, `python`), verifies the bundle contract, and publishes durable artifacts.
+2. End users install the runtime locally, source-build `gdalraster` against it via `install_gdalraster()` (package functionality, not CI), then activate/load through helper APIs.
 
 ## upstream status snapshot
 

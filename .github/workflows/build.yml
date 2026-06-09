@@ -1,27 +1,30 @@
 # ============================================================================
-# build.yml — Build self-contained GDAL Windows binaries, publish a durable
-#             GDAL release asset, then verify gdalraster builds against it.
+# build.yml — Build self-contained GDAL Windows binaries and publish a
+#             durable GDAL runtime bundle.
+#
+# Scope: this workflow's only responsibility is producing the GDAL runtime
+# bundle. Building gdalraster against it is package functionality
+# (gdalraster.windows::install_gdalraster() with scoped Makevars via withr)
+# and is exercised by the package's own tests, not by CI here.
 #
 # Triggers:
 #   - workflow_dispatch  : manually, with configurable GDAL version + force flag
 #   - push to tag        : gdal-v* (e.g. git tag gdal-v3.13.0)
 #
-# Jobs:
-#   build-gdal         → compiles GDAL from source in UCRT64 MSYS2
-#   verify-gdalraster  → builds gdalraster binary against that GDAL
-#
-# Artefact strategy:
-#   Intermediate (job-to-job): upload-artifact@v5  retention=3d  no compression
-#   Permanent (user-facing):   softprops/action-gh-release@v2  on tag pushes
+# Artefact strategy (every run produces durable output):
+#   Workflow artifact : upload-artifact@v5  retention=30d  no compression
+#   Release asset     : softprops/action-gh-release@v2 on tag pushes or
+#                       publish_release=true (the dispatch default)
 #
 # Cache strategy:
 #   MSYS2 packages : handled automatically by msys2/setup-msys2@v2 (cache: true)
 #   GDAL build     : actions/cache@v4 keyed on GDAL version + runner OS +
-#                    build-script hash. Skip the 40-min cmake build on re-runs
-#                    that only change the R package side.
+#                    build-script hash. A re-dispatch with an unchanged version
+#                    and scripts restores the bundle and republishes in minutes
+#                    instead of rebuilding for ~25-40 min.
 # ============================================================================
 
-name: Build GDAL + verify gdalraster (Windows)
+name: Build GDAL (Windows)
 
 on:
   workflow_dispatch:
@@ -36,10 +39,6 @@ on:
         default: 'false'
         type: choice
         options: ['false', 'true']
-      r_version:
-        description: 'R version to build against'
-        required: false
-        default: 'release'
       publish_release:
         description: 'Publish/update durable GitHub release asset'
         required: false
@@ -59,7 +58,6 @@ permissions:
 # Centralise defaults for manual runs.
 env:
   GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.0' }}
-  R_VERSION:    ${{ github.event.inputs.r_version    || 'release' }}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # JOB 1 — Build GDAL from source
@@ -216,7 +214,11 @@ jobs:
           key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-${{ runner.os }}-${{ hashFiles('tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
 
       # ── 7. Verify bundle integrity ────────────────────────────────────────
+      # Asserts all bundle contract pieces consumed by gdalraster.windows:
+      # the GDAL runtime DLL, GDAL/PROJ data directories, and the pure-python
+      # osgeo_utils package required by embedded-python algorithms.
       - name: Verify GDAL bundle
+        id: verify-bundle
         shell: pwsh
         run: |
           $dll = Get-ChildItem "gdal-bundle\bin\libgdal-*.dll" | Select-Object -First 1
@@ -224,19 +226,37 @@ jobs:
             Write-Error "FATAL: No libgdal-*.dll found. Bundle assembly failed."
             exit 1
           }
+          foreach ($req in @(
+            "gdal-bundle\share\gdal",
+            "gdal-bundle\share\proj",
+            "gdal-bundle\python\osgeo_utils\samples\validate_gpkg.py"
+          )) {
+            if (-not (Test-Path $req)) {
+              Write-Error "FATAL: required bundle path missing: $req"
+              exit 1
+            }
+          }
           $mb = [math]::Round($dll.Length / 1MB, 1)
+          $dll_count = (Get-ChildItem "gdal-bundle\bin\*.dll").Count
+          $py_count  = (Get-ChildItem "gdal-bundle\python" -Recurse -Filter *.py).Count
           Write-Host "✓ $($dll.Name) found (${mb} MB)"
+          Write-Host "✓ share/gdal, share/proj present"
+          Write-Host "✓ python/osgeo_utils present (${py_count} .py files)"
+          echo "gdal_dll=$($dll.Name)"   >> $env:GITHUB_OUTPUT
+          echo "gdal_dll_mb=${mb}"       >> $env:GITHUB_OUTPUT
+          echo "dll_count=${dll_count}"  >> $env:GITHUB_OUTPUT
+          echo "py_count=${py_count}"    >> $env:GITHUB_OUTPUT
           Write-Host "`nBundle DLL inventory:"
           Get-ChildItem "gdal-bundle\bin\*.dll" |
             Select-Object Name, @{N='MB';E={[math]::Round($_.Length/1MB,2)}} |
             Sort-Object Name | Format-Table -AutoSize
 
-      # ── 8. Upload bundle as workflow artifact (job-to-job handoff) ────────
+      # ── 8. Upload bundle as workflow artifact (always) ────────────────────
       # compression-level: 0 — DLLs are already-compressed PE binaries.
       #                        Re-compressing wastes 30-60s and gains <5%.
-      # retention-days: 3   — Short: this is an intermediate artefact.
-      #                        The permanent copy goes to the GitHub Release.
-      #                        3 days allows re-running the R build job manually.
+      # retention-days: 30  — Every build's output stays retrievable even when
+      #                        release publication is skipped; no build minute
+      #                        is ever wasted for lack of a published artifact.
       - name: Upload GDAL bundle artifact
         id: upload-gdal
         uses: actions/upload-artifact@v5
@@ -244,20 +264,23 @@ jobs:
           name:              ${{ steps.names.outputs.artifact }}
           path:              gdal-bundle/
           compression-level: 0
-          retention-days:    3
+          retention-days:    30
           if-no-files-found: error
 
-      # ── 9. Attach GDAL bundle zip to GitHub Release (tag pushes only) ────
+      # ── 9. Create distributable zip (always) and publish on request ──────
       # Zipped separately here so it has a clean name and isn't double-zipped
-      # by upload-artifact's own wrapping.
+      # by upload-artifact's own wrapping. Created unconditionally so the
+      # exact release file is inspectable from any run.
       - name: Create distributable GDAL bundle zip
-        if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.publish_release == 'true'
+        id: make-zip
         shell: pwsh
         run: |
           $zip = "gdal-ucrt64-${{ steps.names.outputs.gdal_ver }}-windows-x64.zip"
           Compress-Archive -Path "gdal-bundle\*" -DestinationPath $zip -CompressionLevel Optimal
           $mb = [math]::Round((Get-Item $zip).Length / 1MB, 1)
           Write-Host "Release asset: ${zip} (${mb} MB)"
+          echo "zip_name=${zip}" >> $env:GITHUB_OUTPUT
+          echo "zip_mb=${mb}"    >> $env:GITHUB_OUTPUT
 
       - name: Publish GDAL bundle to GitHub Release
         if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.publish_release == 'true'
@@ -299,183 +322,27 @@ jobs:
             )
             ```
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# JOB 2 — Verify gdalraster builds against GDAL bundle
-# ─────────────────────────────────────────────────────────────────────────────
-  verify-gdalraster-build:
-    name: "Verify gdalraster build against GDAL bundle"
-    runs-on: windows-latest
-    needs: build-gdal
-
-    steps:
-      # ── 0. Checkout ──────────────────────────────────────────────────────
-      - name: Configure git line endings
-        run: git config --global core.autocrlf input
-
-      - uses: actions/checkout@v4
-
-      # ── 1. R + Rtools45 ──────────────────────────────────────────────────
-      # r-lib/actions@v2 v11.3+ properly installs Rtools45 and sets PATH.
-      # use-public-rspm: true  — faster binary installs from Posit Public Package Manager.
-      # We need Rtools45 for its UCRT64 compiler; the GDAL *runtime* DLLs
-      # come from our bundle, not from Rtools.
-      - name: Setup R and Rtools45
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version:       ${{ env.R_VERSION }}
-          rtools-version:  '45'
-          use-public-rspm: true
-
-      # ── 2. Download GDAL bundle from job 1 ───────────────────────────────
-      - name: Download GDAL bundle artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.build-gdal.outputs.artifact-name }}
-          path: gdal-bundle
-
-      # ── 3. Verify GDAL bundle arrived intact ─────────────────────────────
-      - name: Verify GDAL bundle
-        id: verify-gdal
+      # ── 10. Build transparency summary ────────────────────────────────────
+      # Rendered on the run's summary page so the outcome (cache vs fresh
+      # build, bundle composition, where the output landed) is visible at a
+      # glance without digging through step logs.
+      - name: Write build summary
+        if: always()
         shell: pwsh
         run: |
-          $dll = Get-ChildItem "gdal-bundle\bin\libgdal-*.dll" | Select-Object -First 1
-          if (-not $dll) {
-            Write-Error "FATAL: GDAL bundle DLL missing after download."
-            exit 1
-          }
-          $mb = [math]::Round($dll.Length / 1MB, 1)
-          Write-Host "✓ $($dll.Name) (${mb} MB)"
-          $gdal_abs = (Resolve-Path "gdal-bundle").Path -replace '\\', '/'
-          echo "gdal_abs=${gdal_abs}" >> $env:GITHUB_OUTPUT
-
-      # ── 4. Write Makevars.win pointing at the bundled GDAL ───────────────
-      # Forward slashes only — MinGW make cannot handle backslashes in paths.
-      # Written to USERPROFILE so it applies to all R CMD INSTALL calls in
-      # this job without needing per-call env var juggling.
-      - name: Write Makevars.win
-        shell: pwsh
-        run: |
-          $gdal = "${{ steps.verify-gdal.outputs.gdal_abs }}"
-          $mk   = "$env:USERPROFILE\.R\Makevars.win"
-          New-Item -ItemType Directory -Force -Path (Split-Path $mk) | Out-Null
+          $published = ("${{ startsWith(github.ref, 'refs/tags/') }}" -eq "true") -or ("${{ github.event.inputs.publish_release }}" -eq "true")
+          $source = if ("${{ steps.gdal-cache-restore.outputs.cache-hit }}" -eq "true" -and "${{ github.event.inputs.force_rebuild_gdal }}" -ne "true") { "cache (no rebuild)" } else { "fresh source build" }
           @"
-          # Auto-generated by CI — points at bundled GDAL, not Rtools GDAL
-          GDAL_HOME = $gdal
-          PKG_CPPFLAGS = -I`$(GDAL_HOME)/include
-          PKG_LIBS     = -L`$(GDAL_HOME)/lib -lgdal
-          "@ | Set-Content $mk -Encoding UTF8
-          Write-Host "Makevars.win written:"
-          Get-Content $mk
+          ## GDAL bundle build
 
-      # ── 5. Install gdalraster dependencies only ───────────────────────────
-      # pak::pak() with dependencies=TRUE and no_deps for the package itself
-      # so we get all Imports/Suggests installed as binaries but don't waste
-      # time building gdalraster from source here (we do that in step 6).
-      - name: Install R package dependencies
-        shell: Rscript {0}
-        run: |
-          install.packages("pak", repos = "https://cloud.r-project.org")
-          pak::pak("firelab/gdalraster", dependencies = TRUE, upgrade = FALSE, ask = FALSE)
-          # Remove gdalraster itself — step 6 rebuilds it from source against our GDAL.
-          # Deps installed above are already binaries and won't be touched.
-          remove.packages("gdalraster")
-
-      # ── 6. Build gdalraster from source against bundled GDAL ─────────────
-      # Downloads the gdalraster source tarball from CRAN, then builds it
-      # using R CMD INSTALL --build which produces a Windows binary .zip.
-      # The Makevars.win written above redirects compile/link to our GDAL.
-      - name: Download gdalraster source
-        shell: Rscript {0}
-        run: |
-          download.packages(
-            "gdalraster",
-            destdir = ".",
-            type    = "source",
-            repos   = "https://cloud.r-project.org"
-          )
-
-      - name: Build gdalraster binary against bundled GDAL
-        shell: Rscript {0}
-        run: |
-          src <- Sys.glob("gdalraster_*.tar.gz")
-          if (!length(src)) {
-            stop("FATAL: gdalraster source tarball not found.", call. = FALSE)
-          }
-          src <- src[[1]]
-          cat("Building:", src, "\n")
-          r_exe <- file.path(R.home("bin"), "R")
-          status <- system2(
-            command = r_exe,
-            args = c("CMD", "INSTALL", "--build", "--preclean", "--no-test-load", src)
-          )
-          if (!identical(status, 0L)) {
-            stop("FATAL: R CMD INSTALL failed for gdalraster source build.", call. = FALSE)
-          }
-
-      # ── 7. Collect built gdalraster binary ────────────────────────────────
-      - name: Collect built binaries
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Get-ChildItem "gdalraster_*.zip" | Move-Item -Destination dist/
-          Write-Host "Built packages:"
-          Get-ChildItem dist/ | Select-Object Name, @{N='MB';E={[math]::Round($_.Length/1MB,2)}}
-
-      # ── 8. Smoke test runtime + Algorithm API in a clean install path ──────
-      # Also exercises the embedded-python path: the bundle's python/ dir
-      # (pure-python osgeo_utils) is exposed via PYTHONPATH, and the
-      # `driver gpkg validate` algorithm is run end-to-end against a freshly
-      # created GeoPackage. This requires a python.exe on PATH (provided by
-      # the windows-latest runner image).
-      - name: Smoke test built binaries
-        shell: Rscript {0}
-        run: |
-          zips <- list.files("dist", pattern = "\\.zip$", full.names = TRUE)
-          if (!length(zips)) {
-            stop("No built .zip files were found for smoke testing.", call. = FALSE)
-          }
-          lib <- file.path(tempdir(), "smoke-lib")
-          dir.create(lib, recursive = TRUE, showWarnings = FALSE)
-          install.packages(zips, repos = NULL, type = "win.binary", lib = lib)
-          old <- .libPaths()
-          on.exit(.libPaths(old), add = TRUE)
-          .libPaths(c(lib, old))
-          {
-            library("gdalraster", character.only = TRUE)
-            ver <- gdalraster::gdal_version()
-            cat("GDAL version:", ver, "\n")
-            algs <- gdalraster::gdal_global_reg_names()
-            cat("Algorithm count:", length(algs), "\n")
-            stopifnot(length(algs) > 0)
-
-            # embedded-python algorithm smoke test (gpkg validate)
-            gdal_abs <- normalizePath("gdal-bundle", winslash = "/")
-            python_dir <- file.path(gdal_abs, "python")
-            stopifnot(dir.exists(python_dir))
-            stopifnot(file.exists(file.path(python_dir, "osgeo_utils", "samples", "validate_gpkg.py")))
-            Sys.setenv(PYTHONPATH = python_dir)
-            gpkg <- file.path(tempdir(), "smoke.gpkg")
-            gdalraster::ogr_ds_create("GPKG", gpkg, layer = "smoke", geom_type = "POINT", srs = "EPSG:4326")
-            alg <- gdalraster::gdal_alg(cmd = "driver gpkg validate")
-            alg$setArg("dataset", gpkg)
-            alg$setArg("full-check", TRUE)
-            ok <- alg$run()
-            cat("gpkg validate run:", ok, "\n")
-            cat("gpkg validate output:", alg$output(), "\n")
-            stopifnot(isTRUE(ok))
-          }
-
-      # ── 9. Upload gdalraster binary as workflow artifact ───────────────────
-      # compression-level: 0 — .zip files do not benefit from re-compression.
-      # retention-days: 14   — verification output, not primary distribution.
-      - name: Upload gdalraster verification artifact
-        id: upload-r
-        uses: actions/upload-artifact@v5
-        with:
-          name:              gdalraster-build-verify-${{ needs.build-gdal.outputs.gdal-version }}
-          path:              dist/*.zip
-          compression-level: 0
-          retention-days:    14
-          if-no-files-found: error
-
+          | Item | Value |
+          |------|-------|
+          | GDAL version | ``${{ steps.names.outputs.gdal_ver }}`` |
+          | Bundle source | $source |
+          | Runtime DLL | ``${{ steps.verify-bundle.outputs.gdal_dll }}`` (${{ steps.verify-bundle.outputs.gdal_dll_mb }} MB) |
+          | Bundled DLLs | ${{ steps.verify-bundle.outputs.dll_count }} |
+          | Python files (osgeo_utils) | ${{ steps.verify-bundle.outputs.py_count }} |
+          | Workflow artifact | ``${{ steps.names.outputs.artifact }}`` (30-day retention) |
+          | Distributable zip | ``${{ steps.make-zip.outputs.zip_name }}`` (${{ steps.make-zip.outputs.zip_mb }} MB) |
+          | Published to release | $published (tag ``${{ steps.names.outputs.release_tag }}``) |
+          "@ | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
