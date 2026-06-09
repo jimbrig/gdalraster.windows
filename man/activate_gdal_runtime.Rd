@@ -23,3 +23,10 @@ Invisibly returns a list with configured paths.
 \description{
 Prepends runtime paths, sets GDAL/PROJ env vars, and preloads GDAL DLL.
 }
+\details{
+When the runtime bundle contains a \verb{python/} directory (pure-python
+\code{osgeo_utils} package from GDAL's \code{gdal-utils} distribution), it is
+prepended to \code{PYTHONPATH} so GDAL algorithms that embed Python at runtime
+(e.g. \verb{gdal driver gpkg validate}) can import it. This is session-scoped
+and does not modify machine or user environment variables.
+}

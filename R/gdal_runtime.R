@@ -164,6 +164,12 @@ install_gdal_runtime <- function(
 #'
 #' Prepends runtime paths, sets GDAL/PROJ env vars, and preloads GDAL DLL.
 #'
+#' When the runtime bundle contains a `python/` directory (pure-python
+#' `osgeo_utils` package from GDAL's `gdal-utils` distribution), it is
+#' prepended to `PYTHONPATH` so GDAL algorithms that embed Python at runtime
+#' (e.g. `gdal driver gpkg validate`) can import it. This is session-scoped
+#' and does not modify machine or user environment variables.
+#'
 #' @param gdal_home GDAL home directory.
 #' @param preload Whether to preload `libgdal-*.dll`.
 #' @param quiet Suppress informational CLI output.
@@ -197,6 +203,7 @@ activate_gdal_runtime <- function(
 
   gdal_data <- gdal_share_gdal_dir(gdal_home)
   proj_data <- gdal_share_proj_dir(gdal_home)
+  python_dir <- gdal_python_dir(gdal_home)
 
   if (dir.exists(gdal_data)) {
     Sys.setenv(GDAL_DATA = gdal_data)
@@ -204,6 +211,18 @@ activate_gdal_runtime <- function(
   if (dir.exists(proj_data)) {
     Sys.setenv(PROJ_LIB = proj_data)
     Sys.setenv(PROJ_DATA = proj_data)
+  }
+
+  # expose bundled pure-python osgeo_utils to GDAL's embedded python.
+  # PYTHONPATH is read at Py_Initialize(), which libgdal triggers lazily on
+  # first use of an embedded-python algorithm, so setting it here is early
+  # enough. session-scoped only; never persisted to user/machine env.
+  if (dir.exists(python_dir)) {
+    py_parts <- strsplit(Sys.getenv("PYTHONPATH", unset = ""), path_sep, fixed = TRUE)[[1]]
+    py_parts <- py_parts[nzchar(py_parts)]
+    if (!python_dir %in% py_parts) {
+      Sys.setenv(PYTHONPATH = paste(c(python_dir, py_parts), collapse = path_sep))
+    }
   }
 
   if (isTRUE(preload)) {
@@ -220,7 +239,8 @@ activate_gdal_runtime <- function(
       gdal_bin = bin_dir,
       gdal_dll = dll_path,
       gdal_data = if (dir.exists(gdal_data)) gdal_data else NA_character_,
-      proj_data = if (dir.exists(proj_data)) proj_data else NA_character_
+      proj_data = if (dir.exists(proj_data)) proj_data else NA_character_,
+      gdal_python = if (dir.exists(python_dir)) python_dir else NA_character_
     )
   )
 }
