@@ -8,6 +8,7 @@
 
 ## DevOps
 
+- **build:** Scope CI to GDAL bundle only; always produce durable artifacts ([c64aaae](https://github.com/jimbrig/gdalraster.windows/commit/c64aaae77d7f2cffc9800533b0b61e84cefe4722))  - (Jimmy Briggs)
 - **pkgdown:** Add GitHub Actions workflow to build and deploy pkgdown site ([3922d9e](https://github.com/jimbrig/gdalraster.windows/commit/3922d9e1f796f71572b08883130037f7192caa11))  - (Jimmy Briggs)
 - **workflows:** Add R CMD CHECK workflow and update README badges ([b023b98](https://github.com/jimbrig/gdalraster.windows/commit/b023b98955c14f52f4cf618821e2eb5386134f28))  - (Jimmy Briggs)
 - **changelog:** Run changelog workflow on pushes/PRs and bump actions versions ([bbb711a](https://github.com/jimbrig/gdalraster.windows/commit/bbb711a3900d959019c24319a150471aacdd5157))  - (Jimmy Briggs)
