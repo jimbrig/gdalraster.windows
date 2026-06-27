@@ -1,4 +1,4 @@
-# gdalraster.windows (development version)
+# gdalraster.windows 0.2.1
 
 ## Fixes
 
