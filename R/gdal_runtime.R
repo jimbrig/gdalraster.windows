@@ -290,8 +290,11 @@ load_gdal_dll <- function(gdal_home = default_gdal_home(), quiet = FALSE) {
 #' @param source_tarball Optional local path to `gdalraster_*.tar.gz`.
 #' @param repo Source GitHub repo slug for gdalraster.
 #' @param ref Git ref (branch, tag, commit) used when downloading from GitHub.
-#' @param upgrade Whether to allow dependency upgrades during install.
-#' @param repos CRAN-like repositories passed to [utils::install.packages()].
+#' @param upgrade When `TRUE`, missing R package dependencies of gdalraster are
+#'   installed from `repos` before the source build. Has no effect on the
+#'   compile/link flags used to build gdalraster itself.
+#' @param repos CRAN-like repositories used to satisfy R package dependencies
+#'   when `upgrade = TRUE`. Ignored when `upgrade = FALSE`.
 #'
 #' @return Invisibly returns installed library path.
 #' @export
@@ -367,16 +370,43 @@ install_gdalraster <- function(
   )
 
   cli::cli_alert_info("installing {.pkg gdalraster} from source into {.path {lib}}")
+
+  # When upgrade = TRUE, install gdalraster's R package dependencies from CRAN
+  # first so they are available for the source build.  This must be a separate
+  # step because install.packages() must be called with repos = NULL below
+  # (required for local-file installation; with repos != NULL R treats the
+  # tarball path as a package name to look up and never installs from the file).
+  if (isTRUE(upgrade)) {
+    rlang::try_fetch(
+      utils::install.packages(
+        pkgs = "gdalraster",
+        repos = repos,
+        type = "source",
+        lib = lib,
+        dependencies = TRUE,
+        INSTALL_opts = c("--no-test-load")
+      ),
+      error = function(cnd) {
+        cli::cli_alert_warning(
+          "Could not pre-install {.pkg gdalraster} dependencies: {conditionMessage(cnd)}"
+        )
+      }
+    )
+  }
+
   rlang::try_fetch(
     withr::with_makevars(new = makevars, assignment = "=", {
       withr::with_envvar(env_vars, {
+        # repos = NULL is required here: when repos is non-NULL, install.packages()
+        # treats the tarball path as a package name to look up in the repository
+        # rather than as a local file, producing a "not available for this version
+        # of R" warning and silently skipping the install.
         utils::install.packages(
           pkgs = tarball,
-          repos = repos,
+          repos = NULL,
           type = "source",
           lib = lib,
-          INSTALL_opts = c("--no-test-load"),
-          dependencies = isTRUE(upgrade)
+          INSTALL_opts = c("--no-test-load")
         )
       })
     }),
