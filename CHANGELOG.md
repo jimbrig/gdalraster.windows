@@ -4,6 +4,12 @@
 [Keep a Changelog](http://keepachangelog.com/) and this project adheres to
 [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+## Bug Fixes
+
+- Install_gdalraster uses repos=NULL for local tarball install ([#11](https://github.com/jimbrig/gdalraster.windows/issues/11)) ([bddba7a](https://github.com/jimbrig/gdalraster.windows/commit/bddba7ae6c1b113413f910ebb1c05eb6ea382b07))  - (copilot-swe-agent[bot])
+
 ## [gdal-v3.13.1](https://github.com/jimbrig/gdalraster.windows/compare/gdal-v3.13.0...gdal-v3.13.1)- (2026-06-09)
 
 ## DevOps
