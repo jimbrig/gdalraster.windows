@@ -108,6 +108,29 @@ gdalraster.windows::install_gdal_runtime(
 Assets are published at
 <https://github.com/jimbrig/gdalraster.windows/releases>.
 
+## `install_gdalraster()` reports “source install did not produce an installed package”
+
+If
+[`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
+fails with this error and R also printed a warning like
+`package '…tar.gz' is not available for this version of R`, the
+underlying cause was that
+[`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+received `repos` set to a CRAN mirror together with a local file path.
+In that combination R looks the path up as a *package name* in the
+repository rather than installing from the file, so the install silently
+does nothing.
+
+This was fixed in `gdalraster.windows` ≥ 0.2.1 by always calling
+[`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+with `repos = NULL` for local-file installation. If you encounter this
+with an older version, upgrade the package:
+
+``` r
+
+pak::pak("jimbrig/gdalraster.windows")
+```
+
 ## After a GDAL version upgrade
 
 - Reinstall the runtime (`install_gdal_runtime(overwrite = TRUE)`), then

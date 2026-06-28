@@ -1,5 +1,25 @@
 # Changelog
 
+## gdalraster.windows 0.2.1
+
+### Fixes
+
+- [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
+  now passes `repos = NULL` to
+  [`utils::install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+  when installing from a local source tarball. Previously, `repos` was
+  set to the active CRAN mirror, which caused R to treat the tarball
+  path as a package name to look up remotely rather than a local file to
+  install. The symptom was a silent no-op accompanied by the warning
+  “package ‘…tar.gz’ is not available for this version of R”, followed
+  by the error “gdalraster source install did not produce an installed
+  package”
+  ([\#11](https://github.com/jimbrig/gdalraster.windows/issues/11)).
+- When `upgrade = TRUE`, R package dependencies are now installed via a
+  separate `install.packages("gdalraster", repos = repos)` call before
+  the source build, so CRAN-resolution still works for the upgrade case
+  while the tarball install itself always uses `repos = NULL`.
+
 ## gdalraster.windows 0.2.0
 
 ### Documentation

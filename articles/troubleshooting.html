@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -174,6 +174,26 @@ install from a manually transferred release asset:</p>
 <span>  local_zip <span class="op">=</span> <span class="st">"C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Assets are published at <a href="https://github.com/jimbrig/gdalraster.windows/releases" class="external-link uri">https://github.com/jimbrig/gdalraster.windows/releases</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="install_gdalraster-reports-source-install-did-not-produce-an-installed-package">
+<code>install_gdalraster()</code> reports “source install did not
+produce an installed package”<a class="anchor" aria-label="anchor" href="#install_gdalraster-reports-source-install-did-not-produce-an-installed-package"></a>
+</h2>
+<p>If <code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> fails with this error and R also
+printed a warning like
+<code>package '…tar.gz' is not available for this version of R</code>,
+the underlying cause was that <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> received
+<code>repos</code> set to a CRAN mirror together with a local file path.
+In that combination R looks the path up as a <em>package name</em> in
+the repository rather than installing from the file, so the install
+silently does nothing.</p>
+<p>This was fixed in <code>gdalraster.windows</code> ≥ 0.2.1 by always
+calling <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> with <code>repos = NULL</code>
+for local-file installation. If you encounter this with an older
+version, upgrade the package:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jimbrig/gdalraster.windows"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="after-a-gdal-version-upgrade">After a GDAL version upgrade<a class="anchor" aria-label="anchor" href="#after-a-gdal-version-upgrade"></a>
