@@ -226,3 +226,46 @@ testthat::test_that("verify_gdalraster_runtime returns FALSE when gdalraster is 
   )
   testthat::expect_false(ok)
 })
+
+testthat::test_that("install_gdalraster calls install.packages with repos = NULL", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  # Intercept install.packages() and capture the repos argument so we can
+  # assert it is NULL (required for local-file installation; when repos is
+  # non-NULL R looks up the tarball path as a package name and never installs
+  # from the file, producing the "not available for this version of R" warning).
+  captured_repos <- list()
+
+  gdal_home <- create_gdal_home_fixture()
+  lib <- withr::local_tempdir()
+  tarball <- withr::local_tempfile(fileext = ".tar.gz")
+  file.create(tarball)
+
+  testthat::local_mocked_bindings(
+    activate_gdal_runtime = function(...) invisible(list()),
+    .env = asNamespace("gdalraster.windows")
+  )
+
+  testthat::local_mocked_bindings(
+    install.packages = function(pkgs, repos, ...) {
+      captured_repos[[length(captured_repos) + 1L]] <<- repos
+      # Simulate a successful install by creating the package directory.
+      dir.create(file.path(list(...)$lib, "gdalraster"), recursive = TRUE, showWarnings = FALSE)
+      invisible(NULL)
+    },
+    .env = asNamespace("utils")
+  )
+
+  gdalraster.windows::install_gdalraster(
+    gdal_home = gdal_home,
+    lib = lib,
+    source_tarball = tarball,
+    upgrade = FALSE
+  )
+
+  # The local-tarball install.packages() call must use repos = NULL.
+  testthat::expect_true(
+    any(vapply(captured_repos, is.null, logical(1L))),
+    info = "install.packages() must be called with repos = NULL for local tarball installation"
+  )
+})
