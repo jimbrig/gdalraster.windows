@@ -8,7 +8,12 @@
 
 ## Bug Fixes
 
+- Prevent msodbcsql17 linkage in bundle; harden runtime activation and overwrite installs ([f20ebb2](https://github.com/jimbrig/gdalraster.windows/commit/f20ebb253f0067338f195b909f2c5df903220bc9))  - (Jimmy Briggs)
 - Install_gdalraster uses repos=NULL for local tarball install ([#11](https://github.com/jimbrig/gdalraster.windows/issues/11)) ([bddba7a](https://github.com/jimbrig/gdalraster.windows/commit/bddba7ae6c1b113413f910ebb1c05eb6ea382b07))  - (copilot-swe-agent[bot])
+
+## Testing
+
+- Fix repos-capture test from #12 (mock utils via .package; preserve NULL in capture list) ([7e64a1a](https://github.com/jimbrig/gdalraster.windows/commit/7e64a1ab009e9ef1a41e991dd7c943cee7bc8196))  - (Jimmy Briggs)
 
 ## [gdal-v3.13.1](https://github.com/jimbrig/gdalraster.windows/compare/gdal-v3.13.0...gdal-v3.13.1)- (2026-06-09)
 
