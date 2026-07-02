@@ -2,6 +2,11 @@ testthat::test_that("pkg_startup_msg shows setup-needed guidance", {
   testthat::skip_if_not(.Platform$OS.type == "windows")
 
   withr::local_options(gdalraster.windows.gdal_home = withr::local_tempdir())
+  empty_lib <- withr::local_tempdir()
+  testthat::local_mocked_bindings(
+    default_gdalraster_lib = function() empty_lib,
+    .env = asNamespace("gdalraster.windows")
+  )
   txt <- paste(gdalraster.windows:::pkg_startup_msg(), collapse = "\n")
 
   testthat::expect_match(txt, "setup needed", fixed = TRUE)

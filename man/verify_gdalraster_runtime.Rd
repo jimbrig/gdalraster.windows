@@ -21,7 +21,8 @@ verify_gdalraster_runtime(
 \item{quiet}{If \code{TRUE}, suppress sitrep CLI output.}
 }
 \value{
-\code{TRUE} when algorithm API is available, otherwise \code{FALSE}.
+\code{TRUE} when algorithm API is available, otherwise \code{FALSE}
+(including when runtime activation itself fails).
 }
 \description{
 Attempts to load \code{gdalraster} and checks the global algorithm registry.

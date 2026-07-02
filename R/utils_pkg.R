@@ -90,6 +90,21 @@ gdal_dll_path <- function(gdal_home = default_gdal_home()) {
 
 #' @keywords internal
 #' @noRd
+loaded_runtime_dlls <- function(gdal_home = default_gdal_home()) {
+  prefix <- paste0(
+    tolower(normalizePath(gdal_home, winslash = "/", mustWork = FALSE)),
+    "/"
+  )
+  paths <- vapply(
+    getLoadedDLLs(),
+    function(dll) normalizePath(dll[["path"]], winslash = "/", mustWork = FALSE),
+    character(1)
+  )
+  unname(paths[startsWith(tolower(paths), prefix)])
+}
+
+#' @keywords internal
+#' @noRd
 default_gdalraster_lib <- function() {
   file.path(tools::R_user_dir(pkg_name(), which = "data"), "library")
 }

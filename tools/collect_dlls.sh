@@ -144,6 +144,12 @@ echo "============================================"
 
 bundle_bin_norm="$(echo "${BUNDLE_DIR}/bin" | tr '\\' '/' | tr '[:upper:]' '[:lower:]')"
 allowed_not_found_regex='^(api-ms-.*|ext-ms-.*|ms-win-.*|pdmutilities\.dll|hvsifiletrust\.dll|wpaxholder\.dll|azureattestmanager\.dll|azureattestnormal\.dll|wtdccm\.dll|wtdsensor\.dll)$'
+# DLLs that resolve under C:/Windows on GitHub runner images but are NOT
+# OS-provided: they belong to separately-installed products (e.g. the
+# proprietary "Microsoft ODBC Driver for SQL Server" installs
+# msodbcsql*.dll into System32). Linking against these silently passes the
+# System32 allowance below yet breaks LoadLibrary on end-user machines.
+denied_system_regex='^(msodbcsql[0-9]*\.dll|sqlncli[0-9]*\.dll)$'
 remaining_lines=()
 
 while IFS='|' read -r entry_type dll_name dep_path; do
@@ -161,6 +167,12 @@ while IFS='|' read -r entry_type dll_name dep_path; do
 
     dep_norm="$(echo "${dep_path}" | tr '\\' '/' | tr '[:upper:]' '[:lower:]')"
     dep_base="$(basename "${dep_path}")"
+    dep_base_lower="$(echo "${dep_base}" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ "${dep_base_lower}" =~ ${denied_system_regex} ]]; then
+        remaining_lines+=("${dll_name} => ${dep_path} (non-OS driver DLL; must not be linked)")
+        continue
+    fi
 
     if [[ "${dep_norm}" == *"/windows/"* ]]; then
         continue

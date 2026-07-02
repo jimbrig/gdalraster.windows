@@ -67,6 +67,17 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #' bundle is too large to vendor), so the fallback path only applies when you
 #' provide a `fallback_zip` yourself.
 #'
+#' @section Overwriting an installed runtime:
+#' With `overwrite = TRUE`, the existing `gdal_home` is deleted before the new
+#' runtime is copied in. Runtime DLLs that were preloaded into the current
+#' session (the package auto-bootstrap does this at load time when a runtime
+#' is present) are unloaded first so the process does not block its own
+#' reinstall. This is not possible when `gdalraster` is loaded — its DLL pins
+#' the GDAL runtime in the process — so reinstalling then requires a fresh R
+#' session. Deletion is verified before copying: if another process holds
+#' locks on the runtime (another R session, a File Explorer preview pane), the
+#' install aborts cleanly instead of leaving a partially-replaced runtime.
+#'
 #' @param repo GitHub repo slug, e.g. `"jimbrig/gdalraster.windows"`.
 #' @param tag Release tag or `"latest"`.
 #' @param asset_pattern Regex used to select the release asset.
@@ -112,6 +123,28 @@ install_gdal_runtime <- function(
   }
 
   gdal_home <- normalizePath(gdal_home, winslash = "/", mustWork = FALSE)
+
+  # fail fast on the destination before any download work
+  if (dir.exists(gdal_home)) {
+    if (!isTRUE(overwrite)) {
+      cli::cli_abort(
+        c(
+          "{.arg gdal_home} already exists and {.arg overwrite} is FALSE: {.path {gdal_home}}",
+          "i" = "Rerun with {.code overwrite = TRUE} to replace the installed runtime."
+        )
+      )
+    }
+    if ("gdalraster" %in% loadedNamespaces()) {
+      cli::cli_abort(
+        c(
+          "Cannot overwrite {.arg gdal_home} while {.pkg gdalraster} is loaded.",
+          "x" = "{.pkg gdalraster} pins the runtime DLLs in this R process, so they cannot be deleted.",
+          "i" = "Restart R and run {.fn gdalraster.windows::install_gdal_runtime} before loading {.pkg gdalraster}."
+        )
+      )
+    }
+  }
+
   tmp_zip <- tempfile(pattern = "gdal-runtime-", fileext = ".zip")
   tmp_dir <- tempfile(pattern = "gdal-runtime-extract-")
   dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
@@ -164,12 +197,7 @@ install_gdal_runtime <- function(
   gdal_root <- detect_gdal_root(tmp_dir)
 
   if (dir.exists(gdal_home)) {
-    if (!isTRUE(overwrite)) {
-      cli::cli_abort(
-        "{.arg gdal_home} already exists and {.arg overwrite} is FALSE: {.path {gdal_home}}"
-      )
-    }
-    unlink(gdal_home, recursive = TRUE, force = TRUE)
+    remove_gdal_home(gdal_home)
   }
 
   dir.create(gdal_home, recursive = TRUE, showWarnings = FALSE)
@@ -188,6 +216,11 @@ install_gdal_runtime <- function(
 #' prepended to `PYTHONPATH` so GDAL algorithms that embed Python at runtime
 #' (e.g. `gdal driver gpkg validate`) can import it. This is session-scoped
 #' and does not modify machine or user environment variables.
+#'
+#' When `preload = TRUE` and the GDAL DLL cannot be loaded (most commonly
+#' because a dependency DLL is missing), activation fails with an error
+#' rather than deferring the failure to `library(gdalraster)`, where the
+#' Windows loader reports only a generic "module could not be found".
 #'
 #' @param gdal_home GDAL home directory.
 #' @param preload Whether to preload `libgdal-*.dll`.
@@ -244,8 +277,28 @@ activate_gdal_runtime <- function(
     }
   }
 
+  # preload failures must be loud: a swallowed failure here surfaces later as
+  # an uninformative LoadLibrary error when gdalraster.dll is loaded, hiding
+  # the actual cause (typically a missing dependency DLL of libgdal).
   if (isTRUE(preload)) {
-    try(dyn.load(dll_path, local = FALSE, now = TRUE), silent = TRUE)
+    rlang::try_fetch(
+      dyn.load(dll_path, local = FALSE, now = TRUE),
+      error = function(cnd) {
+        cli::cli_abort(
+          c(
+            "Failed to preload the GDAL runtime DLL.",
+            "x" = "{conditionMessage(cnd)}",
+            "i" = "DLL: {.path {dll_path}}",
+            "i" = paste(
+              "On Windows this usually means a dependency DLL of",
+              "{.file {basename(dll_path)}} could not be found."
+            ),
+            "i" = "See {.code vignette(\"troubleshooting\", package = \"gdalraster.windows\")}."
+          ),
+          parent = cnd
+        )
+      }
+    )
   }
 
   if (!isTRUE(quiet)) {
@@ -283,10 +336,15 @@ load_gdal_dll <- function(gdal_home = default_gdal_home(), quiet = FALSE) {
 #'
 #' Downloads or uses a local gdalraster source tarball and installs it from
 #' source into a dedicated library path (default) so existing user libraries
-#' are not overwritten.
+#' are not overwritten. To install into your regular user library instead
+#' (so plain `library(gdalraster)` resolves the source build without this
+#' package's load helpers), pass it explicitly, e.g.
+#' `install_gdalraster(lib = .libPaths()[1])`.
 #'
 #' @param gdal_home GDAL home directory used for compile/link flags.
-#' @param lib Destination library path for installing gdalraster.
+#' @param lib Destination library path for installing gdalraster. Defaults to
+#'   an isolated package-managed library; pass `.libPaths()[1]` to install
+#'   into your default user library.
 #' @param source_tarball Optional local path to `gdalraster_*.tar.gz`.
 #' @param repo Source GitHub repo slug for gdalraster.
 #' @param ref Git ref (branch, tag, commit) used when downloading from GitHub.
@@ -453,7 +511,6 @@ load_gdalraster <- function(
   quiet = FALSE
 ) {
   abort_if_not_windows()
-  activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = quiet)
 
   lib <- normalizePath(lib, winslash = "/", mustWork = FALSE)
   abort_if_missing_dir(lib, "lib", call = rlang::caller_env())
@@ -467,6 +524,8 @@ load_gdalraster <- function(
       call = rlang::caller_env()
     )
   }
+
+  activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = quiet)
 
   .libPaths(c(lib, .libPaths()))
   base::library("gdalraster", character.only = TRUE, lib.loc = lib)
@@ -482,7 +541,8 @@ load_gdalraster <- function(
 #' @param gdal_home GDAL home used when `activate_runtime = TRUE`.
 #' @param quiet If `TRUE`, suppress sitrep CLI output.
 #'
-#' @return `TRUE` when algorithm API is available, otherwise `FALSE`.
+#' @return `TRUE` when algorithm API is available, otherwise `FALSE`
+#'   (including when runtime activation itself fails).
 #' @export
 verify_gdalraster_runtime <- function(
   lib.loc = NULL,
@@ -493,7 +553,23 @@ verify_gdalraster_runtime <- function(
   abort_if_not_windows()
 
   if (isTRUE(activate_runtime)) {
-    activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = TRUE)
+    activated <- rlang::try_fetch(
+      {
+        activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = TRUE)
+        TRUE
+      },
+      error = function(cnd) {
+        if (!isTRUE(quiet)) {
+          cli::cli_alert_danger(
+            "gdal runtime activation failed: {conditionMessage(cnd)}"
+          )
+        }
+        FALSE
+      }
+    )
+    if (!activated) {
+      return(FALSE)
+    }
   }
 
   if (!has_gdalraster_namespace()) {
@@ -566,6 +642,43 @@ detect_gdal_root <- function(extract_dir) {
   }
 
   normalizePath(dirname(dirname(dll_candidates[[1]])), winslash = "/", mustWork = TRUE)
+}
+
+#' Remove an existing GDAL home directory, releasing this session's own locks
+#'
+#' The `.onLoad` auto-bootstrap preloads `libgdal-*.dll` from `gdal_home`, so
+#' the current R process itself typically holds the file locks that would make
+#' deletion fail. DLLs this session loaded from under `gdal_home` are unloaded
+#' first (safe while `gdalraster` is not loaded, which is validated before the
+#' download). Deletion is then verified: Windows silently skips locked files
+#' during recursive unlink, which would otherwise leave a corrupt half-deleted
+#' runtime behind.
+#'
+#' @keywords internal
+#' @noRd
+remove_gdal_home <- function(gdal_home, call = rlang::caller_env()) {
+  for (dll in loaded_runtime_dlls(gdal_home)) {
+    try(dyn.unload(dll), silent = TRUE)
+  }
+
+  unlink(gdal_home, recursive = TRUE, force = TRUE)
+
+  if (dir.exists(gdal_home)) {
+    cli::cli_abort(
+      c(
+        "Could not fully delete the existing runtime at {.path {gdal_home}}.",
+        "x" = "One or more files are locked by another process.",
+        "i" = paste(
+          "Common culprits: other R sessions using the runtime, or",
+          "File Explorer windows/preview panes open on the directory."
+        ),
+        "i" = "Close them (or identify lockers with PowerToys File Locksmith / Resource Monitor) and rerun."
+      ),
+      call = call
+    )
+  }
+
+  invisible(gdal_home)
 }
 
 #' @keywords internal

@@ -63,3 +63,16 @@ bundle is too large to vendor), so the fallback path only applies when you
 provide a \code{fallback_zip} yourself.
 }
 
+\section{Overwriting an installed runtime}{
+
+With \code{overwrite = TRUE}, the existing \code{gdal_home} is deleted before the new
+runtime is copied in. Runtime DLLs that were preloaded into the current
+session (the package auto-bootstrap does this at load time when a runtime
+is present) are unloaded first so the process does not block its own
+reinstall. This is not possible when \code{gdalraster} is loaded — its DLL pins
+the GDAL runtime in the process — so reinstalling then requires a fresh R
+session. Deletion is verified before copying: if another process holds
+locks on the runtime (another R session, a File Explorer preview pane), the
+install aborts cleanly instead of leaving a partially-replaced runtime.
+}
+

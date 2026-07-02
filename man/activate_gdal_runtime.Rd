@@ -29,4 +29,9 @@ When the runtime bundle contains a \verb{python/} directory (pure-python
 prepended to \code{PYTHONPATH} so GDAL algorithms that embed Python at runtime
 (e.g. \verb{gdal driver gpkg validate}) can import it. This is session-scoped
 and does not modify machine or user environment variables.
+
+When \code{preload = TRUE} and the GDAL DLL cannot be loaded (most commonly
+because a dependency DLL is missing), activation fails with an error
+rather than deferring the failure to \code{library(gdalraster)}, where the
+Windows loader reports only a generic "module could not be found".
 }

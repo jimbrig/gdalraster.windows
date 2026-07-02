@@ -48,7 +48,10 @@ this session.
 ## `LoadLibrary failure` when loading gdalraster
 
 The Windows loader could not resolve `libgdal-*.dll` or one of its
-transitive dependencies.
+transitive dependencies. `activate_gdal_runtime()` fails loudly when the
+preload of `libgdal-*.dll` itself fails, so a `LoadLibrary failure` surfacing
+only at `library(gdalraster)` usually means the runtime was never activated
+in this session.
 
 - Activate the runtime before `library(gdalraster)` — or use
   `gdalraster.windows::load_gdalraster()`, which does both.
@@ -61,6 +64,26 @@ Rscript -e "gdalraster.windows::activate_gdal_runtime(); library(gdalraster); pr
 - Inspect the dependency tree from an MSYS2/Rtools shell:
   `ntldd -R <gdal_home>/bin/libgdal-*.dll` — any entry that resolves outside
   the bundle and outside Windows system paths indicates a missing bundled DLL.
+  Or list direct imports with
+  `objdump -x <gdal_home>/bin/libgdal-*.dll | findstr "DLL Name"`.
+
+A DLL can be "missing" even when CI verified the bundle: GitHub runner
+images ship products that install DLLs into `System32` (e.g. the Microsoft
+ODBC Driver for SQL Server, `msodbcsql17.dll`), so a dependency on them
+resolves in CI but not on end-user machines. The build disables such
+linkage (`GDAL_USE_MSSQL_ODBC=OFF`) and bundle verification rejects known
+non-OS `System32` DLLs, but any import in the `objdump` output that is
+neither in the bundle's `bin/` nor a Windows system DLL is the culprit.
+
+## `install_gdal_runtime(overwrite = TRUE)` cannot delete the old runtime
+
+Deleting `gdal_home` fails when its DLLs are mapped into a running process.
+The installer releases the current session's own preloaded runtime DLLs
+automatically, and refuses to run at all while `gdalraster` is loaded (its
+DLL pins the runtime — restart R first). If deletion still fails, another
+process holds locks: other R sessions using the runtime, or File Explorer
+windows/preview panes open on the runtime directory. Close them (PowerToys
+File Locksmith or Resource Monitor identify the locker) and rerun.
 
 ## `ModuleNotFoundError: No module named 'osgeo_utils'`
 

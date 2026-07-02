@@ -149,6 +149,88 @@ testthat::test_that("activate_gdal_runtime leaves PYTHONPATH untouched without b
   testthat::expect_equal(Sys.getenv("PYTHONPATH"), "")
 })
 
+testthat::test_that("install_gdal_runtime fails fast on existing gdal_home before any download", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  testthat::local_mocked_bindings(
+    resolve_release_asset = function(...) {
+      cli::cli_abort("download must not be attempted for this test")
+    },
+    .env = asNamespace("gdalraster.windows")
+  )
+
+  gdal_home <- withr::local_tempdir()
+  testthat::expect_error(
+    gdalraster.windows::install_gdal_runtime(
+      gdal_home = gdal_home,
+      overwrite = FALSE
+    ),
+    "already exists"
+  )
+})
+
+testthat::test_that("install_gdal_runtime with overwrite replaces an existing runtime", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  zip_path <- withr::local_tempfile(fileext = ".zip")
+  create_runtime_zip_fixture(zip_path)
+
+  gdal_home <- withr::local_tempdir()
+  dir.create(file.path(gdal_home, "bin"), recursive = TRUE, showWarnings = FALSE)
+  file.create(file.path(gdal_home, "bin", "stale-marker.dll"))
+
+  gdalraster.windows::install_gdal_runtime(
+    gdal_home = gdal_home,
+    overwrite = TRUE,
+    local_zip = zip_path
+  )
+
+  testthat::expect_false(
+    file.exists(file.path(gdal_home, "bin", "stale-marker.dll"))
+  )
+  testthat::expect_true(
+    file.exists(file.path(gdal_home, "bin", "libgdal-39.dll"))
+  )
+})
+
+testthat::test_that("activate_gdal_runtime errors loudly when DLL preload fails", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  # fixture dll is an empty file, so dyn.load must fail
+  gdal_home <- create_gdal_home_fixture(python = FALSE)
+
+  testthat::expect_error(
+    gdalraster.windows::activate_gdal_runtime(
+      gdal_home = gdal_home,
+      preload = TRUE,
+      quiet = TRUE
+    ),
+    "Failed to preload the GDAL runtime DLL"
+  )
+})
+
+testthat::test_that("loaded_runtime_dlls is empty for a never-loaded runtime", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  gdal_home <- create_gdal_home_fixture(python = FALSE)
+  testthat::expect_length(
+    gdalraster.windows:::loaded_runtime_dlls(gdal_home),
+    0L
+  )
+})
+
+testthat::test_that("verify_gdalraster_runtime returns FALSE when activation fails", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  gdal_home <- create_gdal_home_fixture(python = FALSE)
+  ok <- gdalraster.windows::verify_gdalraster_runtime(
+    activate_runtime = TRUE,
+    gdal_home = gdal_home,
+    quiet = TRUE
+  )
+  testthat::expect_false(ok)
+})
+
 testthat::test_that("install_gdal_runtime uses fallback zip when release lookup fails", {
   testthat::skip_if_not(.Platform$OS.type == "windows")
 

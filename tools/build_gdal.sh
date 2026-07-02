@@ -18,6 +18,12 @@
 #     (gdal_global_reg_names() returns non-empty on Windows).
 #   - BUILD_TESTING=OFF, BUILD_APPS=OFF — reduces build time by ~30%.
 #   - GDAL_HIDE_INTERNAL_SYMBOLS=ON — cleaner export table.
+#   - GDAL_USE_MSSQL_ODBC/NCLI=OFF — GitHub runner images ship the proprietary
+#     "Microsoft ODBC Driver 17 for SQL Server" SDK; when auto-detected, GDAL
+#     links libgdal directly against msodbcsql17.dll, which is NOT an
+#     OS-provided DLL and breaks LoadLibrary on end-user machines that don't
+#     have that driver installed. The MSSQLSpatial driver falls back to the
+#     generic ODBC32-based path (same as the MSYS2 gdal package).
 # =============================================================================
 set -euo pipefail
 
@@ -74,6 +80,9 @@ cmake -B build -G Ninja \
     -DGDAL_USE_GEOS=ON \
     -DGDAL_USE_SPATIALITE=ON \
     -DGDAL_HIDE_INTERNAL_SYMBOLS=ON \
+    \
+    -DGDAL_USE_MSSQL_ODBC=OFF \
+    -DGDAL_USE_MSSQL_NCLI=OFF \
     \
     -DBUILD_TESTING=OFF \
     -DBUILD_APPS=OFF \

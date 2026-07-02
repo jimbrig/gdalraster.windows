@@ -1,3 +1,41 @@
+# gdalraster.windows (development version)
+
+## Fixes
+
+- The GDAL CI build no longer links `libgdal` against the proprietary
+  Microsoft ODBC Driver for SQL Server (`msodbcsql17.dll`), which GitHub
+  runner images ship in `System32` but end-user machines typically lack —
+  previously this made the published bundle fail to load
+  (`LoadLibrary failure`) on machines without that driver
+  (`GDAL_USE_MSSQL_ODBC=OFF`, `GDAL_USE_MSSQL_NCLI=OFF`). Bundle
+  verification in `tools/collect_dlls.sh` now rejects known non-OS
+  `System32` DLLs so this class of runner-image leak fails CI instead of
+  shipping.
+- `activate_gdal_runtime()` now fails loudly when preloading
+  `libgdal-*.dll` fails, with the DLL path and a troubleshooting pointer,
+  instead of silently swallowing the error and deferring it to
+  `library(gdalraster)` where Windows reports only a generic
+  "module could not be found".
+- `install_gdal_runtime()` overwrite handling is now robust to DLL file
+  locks: the destination check happens before any download, the current
+  session's own preloaded runtime DLLs (from the load-time auto-bootstrap)
+  are released before deletion, reinstalling while `gdalraster` is loaded
+  aborts up front with restart guidance, and deletion is verified so a
+  runtime locked by another process aborts cleanly instead of leaving a
+  half-deleted install behind.
+- `load_gdalraster()` validates the gdalraster library path before
+  activating the runtime, so a missing source build errors immediately.
+- `verify_gdalraster_runtime()` returns `FALSE` (with a message) when
+  runtime activation fails, instead of erroring.
+
+## Documentation
+
+- `install_gdalraster()` and the runtime guide document installing the
+  source build into the regular user library via the existing `lib`
+  argument (e.g. `lib = .libPaths()[1]`).
+- Troubleshooting vignette covers dependency DLLs that resolve in CI but
+  not on user machines, and runtime deletion blocked by file locks.
+
 # gdalraster.windows 0.2.1
 
 ## Fixes

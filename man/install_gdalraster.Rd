@@ -17,7 +17,9 @@ install_gdalraster(
 \arguments{
 \item{gdal_home}{GDAL home directory used for compile/link flags.}
 
-\item{lib}{Destination library path for installing gdalraster.}
+\item{lib}{Destination library path for installing gdalraster. Defaults to
+an isolated package-managed library; pass \code{.libPaths()[1]} to install
+into your default user library.}
 
 \item{source_tarball}{Optional local path to \code{gdalraster_*.tar.gz}.}
 
@@ -35,5 +37,8 @@ Invisibly returns installed library path.
 \description{
 Downloads or uses a local gdalraster source tarball and installs it from
 source into a dedicated library path (default) so existing user libraries
-are not overwritten.
+are not overwritten. To install into your regular user library instead
+(so plain \code{library(gdalraster)} resolves the source build without this
+package's load helpers), pass it explicitly, e.g.
+\code{install_gdalraster(lib = .libPaths()[1])}.
 }
