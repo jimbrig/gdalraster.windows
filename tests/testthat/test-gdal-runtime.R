@@ -330,12 +330,13 @@ testthat::test_that("install_gdalraster calls install.packages with repos = NULL
 
   testthat::local_mocked_bindings(
     install.packages = function(pkgs, repos, ...) {
-      captured_repos[[length(captured_repos) + 1L]] <<- repos
+      # c(list(NULL)) appends a NULL element; `[[<-` with NULL would drop it
+      captured_repos <<- c(captured_repos, list(repos))
       # Simulate a successful install by creating the package directory.
       dir.create(file.path(list(...)$lib, "gdalraster"), recursive = TRUE, showWarnings = FALSE)
       invisible(NULL)
     },
-    .env = asNamespace("utils")
+    .package = "utils"
   )
 
   gdalraster.windows::install_gdalraster(
