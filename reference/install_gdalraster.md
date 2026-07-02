@@ -2,7 +2,11 @@
 
 Downloads or uses a local gdalraster source tarball and installs it from
 source into a dedicated library path (default) so existing user
-libraries are not overwritten.
+libraries are not overwritten. To install into your regular user library
+instead (so plain
+[`library(gdalraster)`](https://firelab.github.io/gdalraster/) resolves
+the source build without this package's load helpers), pass it
+explicitly, e.g. `install_gdalraster(lib = .libPaths()[1])`.
 
 ## Usage
 
@@ -26,7 +30,9 @@ install_gdalraster(
 
 - lib:
 
-  Destination library path for installing gdalraster.
+  Destination library path for installing gdalraster. Defaults to an
+  isolated package-managed library; pass `.libPaths()[1]` to install
+  into your default user library.
 
 - source_tarball:
 

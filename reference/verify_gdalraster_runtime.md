@@ -35,4 +35,5 @@ verify_gdalraster_runtime(
 
 ## Value
 
-`TRUE` when algorithm API is available, otherwise `FALSE`.
+`TRUE` when algorithm API is available, otherwise `FALSE` (including
+when runtime activation itself fails).

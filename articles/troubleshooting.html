@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,7 +112,11 @@ the CRAN binary (which statically links Rtools’ GDAL).</li>
 <code>LoadLibrary failure</code> when loading gdalraster<a class="anchor" aria-label="anchor" href="#loadlibrary-failure-when-loading-gdalraster"></a>
 </h2>
 <p>The Windows loader could not resolve <code>libgdal-*.dll</code> or
-one of its transitive dependencies.</p>
+one of its transitive dependencies. <code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code>
+fails loudly when the preload of <code>libgdal-*.dll</code> itself
+fails, so a <code>LoadLibrary failure</code> surfacing only at
+<code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> usually means the runtime was never
+activated in this session.</p>
 <ul>
 <li>Activate the runtime before <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> — or
 use <code><a href="../reference/load_gdalraster.html">gdalraster.windows::load_gdalraster()</a></code>, which does
@@ -124,8 +128,32 @@ both.</li>
 <li>Inspect the dependency tree from an MSYS2/Rtools shell:
 <code>ntldd -R &lt;gdal_home&gt;/bin/libgdal-*.dll</code> — any entry
 that resolves outside the bundle and outside Windows system paths
-indicates a missing bundled DLL.</li>
+indicates a missing bundled DLL. Or list direct imports with
+<code>objdump -x &lt;gdal_home&gt;/bin/libgdal-*.dll | findstr "DLL Name"</code>.</li>
 </ul>
+<p>A DLL can be “missing” even when CI verified the bundle: GitHub
+runner images ship products that install DLLs into <code>System32</code>
+(e.g. the Microsoft ODBC Driver for SQL Server,
+<code>msodbcsql17.dll</code>), so a dependency on them resolves in CI
+but not on end-user machines. The build disables such linkage
+(<code>GDAL_USE_MSSQL_ODBC=OFF</code>) and bundle verification rejects
+known non-OS <code>System32</code> DLLs, but any import in the
+<code>objdump</code> output that is neither in the bundle’s
+<code>bin/</code> nor a Windows system DLL is the culprit.</p>
+</div>
+<div class="section level2">
+<h2 id="install_gdal_runtimeoverwrite-true-cannot-delete-the-old-runtime">
+<code>install_gdal_runtime(overwrite = TRUE)</code> cannot delete
+the old runtime<a class="anchor" aria-label="anchor" href="#install_gdal_runtimeoverwrite-true-cannot-delete-the-old-runtime"></a>
+</h2>
+<p>Deleting <code>gdal_home</code> fails when its DLLs are mapped into a
+running process. The installer releases the current session’s own
+preloaded runtime DLLs automatically, and refuses to run at all while
+<code>gdalraster</code> is loaded (its DLL pins the runtime — restart R
+first). If deletion still fails, another process holds locks: other R
+sessions using the runtime, or File Explorer windows/preview panes open
+on the runtime directory. Close them (PowerToys File Locksmith or
+Resource Monitor identify the locker) and rerun.</p>
 </div>
 <div class="section level2">
 <h2 id="modulenotfounderror-no-module-named-osgeo_utils">

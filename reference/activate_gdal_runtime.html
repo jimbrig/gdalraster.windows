@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,10 @@
 prepended to <code>PYTHONPATH</code> so GDAL algorithms that embed Python at runtime
 (e.g. <code>gdal driver gpkg validate</code>) can import it. This is session-scoped
 and does not modify machine or user environment variables.</p>
+<p>When <code>preload = TRUE</code> and the GDAL DLL cannot be loaded (most commonly
+because a dependency DLL is missing), activation fails with an error
+rather than deferring the failure to <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code>, where the
+Windows loader reports only a generic "module could not be found".</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

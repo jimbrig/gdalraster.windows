@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -153,8 +153,19 @@ runtime bundle predates python support — reinstall with
 <li>source-built <code>gdalraster</code> installs to an isolated library
 path</li>
 </ul>
-<p>Persistent startup behavior is optional:</p>
+<p>To install the source-built <code>gdalraster</code> into your regular
+user library instead — so plain <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> picks
+it up without this package’s load helpers — pass <code>lib</code>
+explicitly:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdalraster.html">install_gdalraster</a></span><span class="op">(</span>lib <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths</a></span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>Note this replaces any existing <code>gdalraster</code> (e.g. the
+CRAN binary) in that library. The bundled GDAL runtime must still be
+activated before the package loads in each session
+(<code><a href="../reference/load_gdal_dll.html">load_gdal_dll()</a></code>, or the <code>.Rprofile</code> hook
+below).</p>
+<p>Persistent startup behavior is optional:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/add_gdal_rprofile_hook.html">add_gdal_rprofile_hook</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">

@@ -92,6 +92,22 @@ By default:
 - runtime installs under package-managed user directories
 - source-built `gdalraster` installs to an isolated library path
 
+To install the source-built `gdalraster` into your regular user library
+instead — so plain
+[`library(gdalraster)`](https://firelab.github.io/gdalraster/) picks it
+up without this package’s load helpers — pass `lib` explicitly:
+
+``` r
+
+gdalraster.windows::install_gdalraster(lib = .libPaths()[1])
+```
+
+Note this replaces any existing `gdalraster` (e.g. the CRAN binary) in
+that library. The bundled GDAL runtime must still be activated before
+the package loads in each session
+([`load_gdal_dll()`](https://docs.jimbrig.com/gdalraster.windows/reference/load_gdal_dll.md),
+or the `.Rprofile` hook below).
+
 Persistent startup behavior is optional:
 
 ``` r

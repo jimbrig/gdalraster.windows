@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,6 +42,27 @@
       <small>Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="gdalrasterwindows-development-version">gdalraster.windows (development version)<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-development-version"></a></h2>
+<div class="section level3">
+<h3 id="fixes-development-version">Fixes<a class="anchor" aria-label="anchor" href="#fixes-development-version"></a></h3>
+<ul><li>The GDAL CI build no longer links <code>libgdal</code> against the proprietary Microsoft ODBC Driver for SQL Server (<code>msodbcsql17.dll</code>), which GitHub runner images ship in <code>System32</code> but end-user machines typically lack — previously this made the published bundle fail to load (<code>LoadLibrary failure</code>) on machines without that driver (<code>GDAL_USE_MSSQL_ODBC=OFF</code>, <code>GDAL_USE_MSSQL_NCLI=OFF</code>). Bundle verification in <code>tools/collect_dlls.sh</code> now rejects known non-OS <code>System32</code> DLLs so this class of runner-image leak fails CI instead of shipping.</li>
+<li>
+<code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> now fails loudly when preloading <code>libgdal-*.dll</code> fails, with the DLL path and a troubleshooting pointer, instead of silently swallowing the error and deferring it to <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> where Windows reports only a generic “module could not be found”.</li>
+<li>
+<code><a href="../reference/install_gdal_runtime.html">install_gdal_runtime()</a></code> overwrite handling is now robust to DLL file locks: the destination check happens before any download, the current session’s own preloaded runtime DLLs (from the load-time auto-bootstrap) are released before deletion, reinstalling while <code>gdalraster</code> is loaded aborts up front with restart guidance, and deletion is verified so a runtime locked by another process aborts cleanly instead of leaving a half-deleted install behind.</li>
+<li>
+<code><a href="../reference/load_gdalraster.html">load_gdalraster()</a></code> validates the gdalraster library path before activating the runtime, so a missing source build errors immediately.</li>
+<li>
+<code><a href="../reference/verify_gdalraster_runtime.html">verify_gdalraster_runtime()</a></code> returns <code>FALSE</code> (with a message) when runtime activation fails, instead of erroring.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<ul><li>
+<code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> and the runtime guide document installing the source build into the regular user library via the existing <code>lib</code> argument (e.g. <code>lib = .libPaths()[1]</code>).</li>
+<li>Troubleshooting vignette covers dependency DLLs that resolve in CI but not on user machines, and runtime deletion blocked by file locks.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="gdalrasterwindows-021">gdalraster.windows 0.2.1<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-021"></a></h2>
 <div class="section level3">

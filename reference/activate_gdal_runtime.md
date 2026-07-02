@@ -38,3 +38,9 @@ prepended to `PYTHONPATH` so GDAL algorithms that embed Python at
 runtime (e.g. `gdal driver gpkg validate`) can import it. This is
 session-scoped and does not modify machine or user environment
 variables.
+
+When `preload = TRUE` and the GDAL DLL cannot be loaded (most commonly
+because a dependency DLL is missing), activation fails with an error
+rather than deferring the failure to
+[`library(gdalraster)`](https://firelab.github.io/gdalraster/), where
+the Windows loader reports only a generic "module could not be found".
