@@ -1,4 +1,4 @@
-# gdalraster.windows
+# gdalraster.windows <a href="https://docs.jimbrig.com/gdalraster.windows/"><img src="man/figures/logo.png" align="right" height="139" alt="gdalraster.windows website" /></a>
 
 <!-- badges: start -->
 
@@ -18,10 +18,13 @@ publish a Windows GDAL runtime bundle.
 The package helps you:
 
 - install that runtime locally
-- build `gdalraster` from source against it
+- build [`gdalraster`](https://firelab.github.io/gdalraster/) from source against it
 - load and verify `gdalraster` in a Windows session
 
 By default, installs are isolated under package-managed user directories.
+
+Full documentation is available at
+[docs.jimbrig.com/gdalraster.windows](https://docs.jimbrig.com/gdalraster.windows/).
 
 Latest GDAL runtime release:
 [gdal-v3.13.1](https://github.com/jimbrig/gdalraster.windows/releases/tag/gdal-v3.13.1)
@@ -92,10 +95,11 @@ gdalraster.windows::verify_gdalraster_runtime()
 ## What This Repository Contains
 
 - An R helper package (`gdalraster.windows`)
-- A Windows CI build pipeline for GDAL (`.github/workflows/build.yml`)
+- A Windows CI build pipeline for GDAL
+  ([`.github/workflows/build.yml`](https://github.com/jimbrig/gdalraster.windows/blob/main/.github/workflows/build.yml))
 - Build and bundle scripts:
-  - `tools/build_gdal.sh`
-  - `tools/collect_dlls.sh`
+  - [`tools/build_gdal.sh`](https://github.com/jimbrig/gdalraster.windows/blob/main/tools/build_gdal.sh)
+  - [`tools/collect_dlls.sh`](https://github.com/jimbrig/gdalraster.windows/blob/main/tools/collect_dlls.sh)
 
 The package and build scripts are designed to work together.
 
@@ -110,9 +114,9 @@ git tag gdal-v3.14.0 && git push origin gdal-v3.14.0
 ```
 
 The tag drives the GDAL source checkout, cache key, asset name, and release
-tag. See
-[`dev/docs/03-ci-and-release.md`](dev/docs/03-ci-and-release.md) for the
-full procedure, including local (non-CI) reproduction.
+tag. See the
+[Architecture article](https://docs.jimbrig.com/gdalraster.windows/articles/architecture.html)
+for the full procedure, including local (non-CI) reproduction.
 
 ## Optional startup hook (`.Rprofile`)
 
@@ -145,11 +149,14 @@ loading path, then rebuilding `gdalraster` against that known runtime.
 
 ### 2) Toolchain stack in plain terms
 
-- **MinGW-w64**: GCC-based Windows compiler toolchain for native `.exe`/`.dll`.
-- **MSYS2**: package manager + shell environment used to assemble toolchains and
-  dependencies (`pacman`).
-- **UCRT64**: MSYS2 toolchain target using Microsoft's Universal CRT.
-- **Rtools45**: Windows R package build toolchain, also UCRT-based.
+- **[MinGW-w64](https://www.mingw-w64.org/)**: GCC-based Windows compiler
+  toolchain for native `.exe`/`.dll`.
+- **[MSYS2](https://www.msys2.org/)**: package manager + shell environment
+  used to assemble toolchains and dependencies (`pacman`).
+- **[UCRT64](https://www.msys2.org/docs/environments/)**: MSYS2 toolchain
+  target using Microsoft's Universal CRT.
+- **[Rtools45](https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html)**:
+  Windows R package build toolchain, also UCRT-based.
 
 The practical requirement is to keep compile/runtime toolchains compatible
 (MinGW/UCRT alignment) to avoid C/C++ runtime and ABI mismatch problems.
@@ -175,9 +182,13 @@ compatible.
 
 ### 5) Key CMake/linker flags used and why
 
-Current build uses flags in `tools/build_gdal.sh`, including:
+Current build uses flags in
+[`tools/build_gdal.sh`](https://github.com/jimbrig/gdalraster.windows/blob/main/tools/build_gdal.sh),
+including:
 
-- `-DGDAL_USE_MUPARSER=ON` for muparser-enabled algorithm functionality
+- `-DGDAL_USE_MUPARSER=ON` for
+  [muparser](https://beltoforion.de/en/muparser/)-enabled algorithm
+  functionality
 - `-DGDAL_HIDE_INTERNAL_SYMBOLS=ON` to reduce export-surface pressure on Windows
 - `-Wl,--kill-at` for Windows/MinGW export naming behavior
 - `-static-libgcc -static-libstdc++` and static `winpthread` handling to reduce
@@ -191,9 +202,11 @@ behavior, not arbitrary tuning.
 Building `libgdal-*.dll` is not sufficient by itself. Runtime success depends on
 all non-Windows transitive DLL dependencies being present.
 
-`tools/collect_dlls.sh` performs recursive dependency inspection (`ntldd -R`),
-copies required UCRT64 DLLs into the bundle, and fails when unresolved external
-non-Windows dependencies remain.
+[`tools/collect_dlls.sh`](https://github.com/jimbrig/gdalraster.windows/blob/main/tools/collect_dlls.sh)
+performs recursive dependency inspection with
+[ntldd](https://github.com/LRN/ntldd) (`ntldd -R`), copies required UCRT64
+DLLs into the bundle, and fails when unresolved external non-Windows
+dependencies remain.
 
 ### 7) Windows DLL load order and preloading
 
@@ -231,7 +244,8 @@ that embeds a CPython interpreter at runtime: GDAL locates a `python.exe` on
 `PATH`, dynamically loads the matching `libpython` DLL, calls
 `Py_Initialize()`, and imports `osgeo_utils.samples.validate_gpkg`.
 
-`osgeo_utils` is the pure-Python package shipped by GDAL's `gdal-utils`
+`osgeo_utils` is the pure-Python package shipped by GDAL's
+[`gdal-utils`](https://github.com/OSGeo/gdal/tree/master/swig/python/gdal-utils)
 distribution (`swig/python/gdal-utils/` in the GDAL source tree). Because it
 contains no compiled extension modules, it has no CPython ABI coupling — any
 embedded interpreter version can import it.
@@ -276,15 +290,19 @@ This is optional by design; default behavior stays non-destructive and local.
 
 ## Upstream Context
 
-- [firelab/gdalraster#826](https://github.com/firelab/gdalraster/issues/826)
-- [firelab/gdalraster#858](https://github.com/firelab/gdalraster/issues/858)
-- [firelab/gdalraster#982](https://github.com/firelab/gdalraster/issues/982)
-- [OSGeo/gdal#13592](https://github.com/OSGeo/gdal/pull/13592)
-- [Rtools45 news](https://cran.r-project.org/bin/windows/Rtools/rtools45/news.html)
+- [firelab/gdalraster#826](https://github.com/firelab/gdalraster/issues/826) — algorithm-registry failure mode on Windows
+- [firelab/gdalraster#858](https://github.com/firelab/gdalraster/issues/858) — enabling muparser in the Rtools GDAL build
+- [firelab/gdalraster#982](https://github.com/firelab/gdalraster/issues/982) — working Windows workflow this package productized
+- [OSGeo/gdal#13592](https://github.com/OSGeo/gdal/pull/13592) — upstream registration fix (GDAL 3.12.2)
+- [Rtools45 news](https://cran.r-project.org/bin/windows/Rtools/rtools45/news.html) — muparser added to the Rtools GDAL build in release 6768
 
 ## Package Guide
 
-- [`vignettes/runtime-guide.Rmd`](vignettes/runtime-guide.Rmd)
+- [Getting Started](https://docs.jimbrig.com/gdalraster.windows/articles/getting-started.html) — install, load, and verify the full workflow
+- [Runtime Guide](https://docs.jimbrig.com/gdalraster.windows/articles/runtime-guide.html) — session activation, configuration, source builds, and startup hooks
+- [Architecture](https://docs.jimbrig.com/gdalraster.windows/articles/architecture.html) — why the package exists and how the runtime bundle is built
+- [Troubleshooting](https://docs.jimbrig.com/gdalraster.windows/articles/troubleshooting.html) — common failure modes and fixes
+- [Function reference](https://docs.jimbrig.com/gdalraster.windows/reference/index.html)
 
 ## Testing
 
