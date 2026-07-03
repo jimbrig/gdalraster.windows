@@ -8,6 +8,18 @@
 
 ## Bug Fixes
 
+- Address Copilot PR review - relative manifest icon paths, typo, GDAL
+  release date
+  ([\#19](https://github.com/jimbrig/gdalraster.windows/issues/19))
+  ([c7cf874](https://github.com/jimbrig/gdalraster.windows/commit/c7cf87490fc0080022f141ea35ce5907e9fde9ac)) -
+  (Jimmy Briggs)
+- **dev:** Gh_labels.R passes named vectors to use_github_labels()
+  ([1366d9d](https://github.com/jimbrig/gdalraster.windows/commit/1366d9d6ede3c355fe2c1b0f137f8dd985a93f15)) -
+  (Jimmy Briggs)
+- **dev:** Address PR review - Rbuildignore regex and tribble refactor
+  ([\#19](https://github.com/jimbrig/gdalraster.windows/issues/19))
+  ([5c4bc4e](https://github.com/jimbrig/gdalraster.windows/commit/5c4bc4eefc3035d3c4e0f24994d06275649a42a9)) -
+  (Jimmy Briggs)
 - Prevent msodbcsql17 linkage in bundle; harden runtime activation and
   overwrite installs
   ([f20ebb2](https://github.com/jimbrig/gdalraster.windows/commit/f20ebb253f0067338f195b909f2c5df903220bc9)) -
@@ -16,6 +28,41 @@
   ([\#11](https://github.com/jimbrig/gdalraster.windows/issues/11))
   ([bddba7a](https://github.com/jimbrig/gdalraster.windows/commit/bddba7ae6c1b113413f910ebb1c05eb6ea382b07)) -
   (copilot-swe-agent\[bot\])
+
+## Documentation
+
+- Clarify GitHub Actions badge labels
+  ([3b5bbb4](https://github.com/jimbrig/gdalraster.windows/commit/3b5bbb486fcb1db5ce116d1618685c092d17ee65)) -
+  (Jimmy Briggs)
+- **sync:** Align tooling and maintainer docs with current bundle
+  contract
+  ([47abdd6](https://github.com/jimbrig/gdalraster.windows/commit/47abdd6c343e194ee8766369492f4e96d10cc48b)) -
+  (Jimmy Briggs)
+- **man:** Regenerate install_gdalraster() help (upgrade/repos params)
+  ([ceec7d9](https://github.com/jimbrig/gdalraster.windows/commit/ceec7d971e67b00a515cfeb82df7c067f498db6d)) -
+  (Jimmy Briggs)
+- **readme:** Verified technical claims and comprehensive link pass
+  ([\#15](https://github.com/jimbrig/gdalraster.windows/issues/15))
+  ([5bb4e08](https://github.com/jimbrig/gdalraster.windows/commit/5bb4e083fa8998a4eab32eb3644d97d91b6791eb)) -
+  (Jimmy Briggs)
+- **vignettes:** Migrate vignettes to Quarto with revamped content (#14,
+  \#15)
+  ([20a31ad](https://github.com/jimbrig/gdalraster.windows/commit/20a31ad961ed7e545aa45a8fdc959882da29fc08)) -
+  (Jimmy Briggs)
+
+## Features
+
+- **pkgdown:** Branded site theme, hex logo, and favicons
+  ([\#16](https://github.com/jimbrig/gdalraster.windows/issues/16))
+  ([46754cb](https://github.com/jimbrig/gdalraster.windows/commit/46754cb03c9bf2d107c30ad04c8a81956bb6dda7)) -
+  (Jimmy Briggs)
+
+## Styling
+
+- **docs:** Remove hard-wrapped mid-sentence line breaks in markdown
+  prose
+  ([3849c6b](https://github.com/jimbrig/gdalraster.windows/commit/3849c6b77315801ee32faf4426b2a807857c214c)) -
+  (Jimmy Briggs)
 
 ## Testing
 

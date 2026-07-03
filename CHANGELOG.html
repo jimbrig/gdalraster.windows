@@ -35,7 +35,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/CHANGELOG.md" class="external-link"><code>CHANGELOG.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.3.0/CHANGELOG.md" class="external-link"><code>CHANGELOG.md</code></a></small>
     </div>
 
 <div id="changelog" class="section level1">
@@ -48,8 +48,35 @@
 </div>
 <div class="section level2">
 <h2 id="bug-fixes">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes"></a></h2>
-<ul><li>Prevent msodbcsql17 linkage in bundle; harden runtime activation and overwrite installs (<a href="https://github.com/jimbrig/gdalraster.windows/commit/f20ebb253f0067338f195b909f2c5df903220bc9" class="external-link">f20ebb2</a>) - (Jimmy Briggs)</li>
+<ul><li>Address Copilot PR review - relative manifest icon paths, typo, GDAL release date (<a href="https://github.com/jimbrig/gdalraster.windows/issues/19" class="external-link">#19</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/c7cf87490fc0080022f141ea35ce5907e9fde9ac" class="external-link">c7cf874</a>) - (Jimmy Briggs)</li>
+<li>
+<strong>dev:</strong> Gh_labels.R passes named vectors to use_github_labels() (<a href="https://github.com/jimbrig/gdalraster.windows/commit/1366d9d6ede3c355fe2c1b0f137f8dd985a93f15" class="external-link">1366d9d</a>) - (Jimmy Briggs)</li>
+<li>
+<strong>dev:</strong> Address PR review - Rbuildignore regex and tribble refactor (<a href="https://github.com/jimbrig/gdalraster.windows/issues/19" class="external-link">#19</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/5c4bc4eefc3035d3c4e0f24994d06275649a42a9" class="external-link">5c4bc4e</a>) - (Jimmy Briggs)</li>
+<li>Prevent msodbcsql17 linkage in bundle; harden runtime activation and overwrite installs (<a href="https://github.com/jimbrig/gdalraster.windows/commit/f20ebb253f0067338f195b909f2c5df903220bc9" class="external-link">f20ebb2</a>) - (Jimmy Briggs)</li>
 <li>Install_gdalraster uses repos=NULL for local tarball install (<a href="https://github.com/jimbrig/gdalraster.windows/issues/11" class="external-link">#11</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/bddba7ae6c1b113413f910ebb1c05eb6ea382b07" class="external-link">bddba7a</a>) - (copilot-swe-agent[bot])</li>
+</ul></div>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a></h2>
+<ul><li>Clarify GitHub Actions badge labels (<a href="https://github.com/jimbrig/gdalraster.windows/commit/3b5bbb486fcb1db5ce116d1618685c092d17ee65" class="external-link">3b5bbb4</a>) - (Jimmy Briggs)</li>
+<li>
+<strong>sync:</strong> Align tooling and maintainer docs with current bundle contract (<a href="https://github.com/jimbrig/gdalraster.windows/commit/47abdd6c343e194ee8766369492f4e96d10cc48b" class="external-link">47abdd6</a>) - (Jimmy Briggs)</li>
+<li>
+<strong>man:</strong> Regenerate install_gdalraster() help (upgrade/repos params) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/ceec7d971e67b00a515cfeb82df7c067f498db6d" class="external-link">ceec7d9</a>) - (Jimmy Briggs)</li>
+<li>
+<strong>readme:</strong> Verified technical claims and comprehensive link pass (<a href="https://github.com/jimbrig/gdalraster.windows/issues/15" class="external-link">#15</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/5bb4e083fa8998a4eab32eb3644d97d91b6791eb" class="external-link">5bb4e08</a>) - (Jimmy Briggs)</li>
+<li>
+<strong>vignettes:</strong> Migrate vignettes to Quarto with revamped content (#14, #15) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/20a31ad961ed7e545aa45a8fdc959882da29fc08" class="external-link">20a31ad</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a></h2>
+<ul><li>
+<strong>pkgdown:</strong> Branded site theme, hex logo, and favicons (<a href="https://github.com/jimbrig/gdalraster.windows/issues/16" class="external-link">#16</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/46754cb03c9bf2d107c30ad04c8a81956bb6dda7" class="external-link">46754cb</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="styling">Styling<a class="anchor" aria-label="anchor" href="#styling"></a></h2>
+<ul><li>
+<strong>docs:</strong> Remove hard-wrapped mid-sentence line breaks in markdown prose (<a href="https://github.com/jimbrig/gdalraster.windows/commit/3849c6b77315801ee32faf4426b2a807857c214c" class="external-link">3849c6b</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
 <h2 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a></h2>
@@ -72,7 +99,7 @@
 <li>Add Windows R CMD CHECK workflow (<a href="https://github.com/jimbrig/gdalraster.windows/commit/44a366c281e98ecef759513d481be49d77a8035e" class="external-link">44a366c</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a></h2>
+<h2 id="documentation-1">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1"></a></h2>
 <ul><li>Promote technical docs to published vignettes; fix #2 and #5 code paths (<a href="https://github.com/jimbrig/gdalraster.windows/commit/07b27f597f015da9d25c3aa4feada50490450fe7" class="external-link">07b27f5</a>) - (Jimmy Briggs)</li>
 <li>Address review feedback - clarify fallback_zip default, namespace-qualify troubleshooting calls (<a href="https://github.com/jimbrig/gdalraster.windows/commit/a69ed0f08be46b9b737375459c1865ed8b0c179e" class="external-link">a69ed0f</a>) - (Jimmy Briggs)</li>
 <li>Refresh all docs for embedded-python runtime layer and offline install (<a href="https://github.com/jimbrig/gdalraster.windows/commit/c54717e917c3ace01228ba1409cfa6823c465405" class="external-link">c54717e</a>) - (Jimmy Briggs)</li>
@@ -82,7 +109,7 @@
 <li>Add in-depth Windows GDAL runtime guides and update package docs (<a href="https://github.com/jimbrig/gdalraster.windows/commit/0fac7829cb0e58d53cc0445de057589fc3617064" class="external-link">0fac782</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a></h2>
+<h2 id="features-1">Features<a class="anchor" aria-label="anchor" href="#features-1"></a></h2>
 <ul><li>Bundle pure-python osgeo_utils and expose via PYTHONPATH at runtime activation (<a href="https://github.com/jimbrig/gdalraster.windows/commit/3cba16f5b22b0e881ff11479dfed2582d2cb84e1" class="external-link">3cba16f</a>) - (Jimmy Briggs)</li>
 <li>
 <strong>startup:</strong> Add runtime bootstrap and startup sitrep, streamline verification (<a href="https://github.com/jimbrig/gdalraster.windows/commit/77048b34ad9be25ccb2b136aa78299db352b2645" class="external-link">77048b3</a>) - (Jimmy Briggs)
@@ -132,14 +159,14 @@
 <strong>.cursor:</strong> Add MCP server config and scaffold cursor directories (<a href="https://github.com/jimbrig/gdalraster.windows/commit/84318dac52e12ee4a2d56348509584796aa6901c" class="external-link">84318da</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="documentation-1">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1"></a></h2>
+<h2 id="documentation-2">Documentation<a class="anchor" aria-label="anchor" href="#documentation-2"></a></h2>
 <ul><li>Refresh maintainer docs, AGENTS guidance, and README (<a href="https://github.com/jimbrig/gdalraster.windows/commit/e7beb450ef387a3d2b4bddddc1d0d9c58f62156e" class="external-link">e7beb45</a>) - (Jimmy Briggs)</li>
 <li>Add curated maintainer docs and overhaul top-level README (<a href="https://github.com/jimbrig/gdalraster.windows/commit/bbd3a74073a770c4dadb65e1199b61edfee44245" class="external-link">bbd3a74</a>) - (Jimmy Briggs)</li>
 <li>
 <strong>changelog:</strong> Add GitHub Action to generate and push CHANGELOG.md (<a href="https://github.com/jimbrig/gdalraster.windows/commit/3da74a8d35e926cca2b674d38225091f61ff67c2" class="external-link">3da74a8</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="features-1">Features<a class="anchor" aria-label="anchor" href="#features-1"></a></h2>
+<h2 id="features-2">Features<a class="anchor" aria-label="anchor" href="#features-2"></a></h2>
 <ul><li>
 <strong>gdal:</strong> Add local and fallback zip support to install_gdal_runtime (<a href="https://github.com/jimbrig/gdalraster.windows/commit/74a069fcedebe396e29b10abfebaefd453aaebd8" class="external-link">74a069f</a>) - (Jimmy Briggs)</li>
 <li>
