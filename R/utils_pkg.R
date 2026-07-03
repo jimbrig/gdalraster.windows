@@ -179,11 +179,43 @@ github_release_url <- function(repo, tag = "latest") {
   }
 }
 
+#' Token from the git credential store, empty string when unavailable
 #' @keywords internal
 #' @noRd
-github_api_json <- function(url) {
+gitcreds_pat <- function() {
+  rlang::try_fetch(
+    {
+      creds <- gitcreds::gitcreds_get(url = "https://github.com")
+      creds$password %||% ""
+    },
+    error = function(cnd) ""
+  )
+}
+
+#' Resolve a GitHub PAT: git credential store (gitcreds), then the
+#' GITHUB_PAT and GITHUB_TOKEN environment variables; "" when none found
+#' @keywords internal
+#' @noRd
+github_pat <- function() {
+  pat <- gitcreds_pat()
+  if (nzchar(pat)) {
+    return(pat)
+  }
+  pat <- Sys.getenv("GITHUB_PAT", unset = "")
+  if (nzchar(pat)) {
+    return(pat)
+  }
+  Sys.getenv("GITHUB_TOKEN", unset = "")
+}
+
+#' @keywords internal
+#' @noRd
+github_api_json <- function(url, pat = github_pat()) {
   req <- httr2::request(url)
   req <- httr2::req_user_agent(req, paste0(pkg_name(), "/", pkg_version()))
+  if (is.character(pat) && length(pat) == 1L && nzchar(pat)) {
+    req <- httr2::req_auth_bearer_token(req, pat)
+  }
   req <- httr2::req_error(req, is_error = function(resp) httr2::resp_status(resp) >= 400L)
   resp <- httr2::req_perform(req)
   httr2::resp_body_json(resp, simplifyVector = FALSE)
@@ -206,10 +238,14 @@ select_release_asset <- function(releases, asset_pattern, call = rlang::caller_e
       next
     }
     for (asset in release$assets) {
-      if (grepl(asset_pattern, asset$name, perl = TRUE)) {
+      asset_name <- asset[["name"]]
+      if (is.null(asset_name) || !nzchar(asset_name)) {
+        next
+      }
+      if (grepl(asset_pattern, asset_name, perl = TRUE)) {
         return(list(
           id = asset$id,
-          name = asset$name,
+          name = asset_name,
           url = asset$browser_download_url,
           tag = release$tag_name
         ))
@@ -244,7 +280,14 @@ resolve_release_asset <- function(repo, tag = "latest", asset_pattern = "\\.zip$
     )
   }
 
-  asset_names <- vapply(assets, function(asset) asset$name, character(1))
+  asset_names <- vapply(
+    assets,
+    function(asset) {
+      name <- asset[["name"]]
+      if (is.null(name)) "" else as.character(name)
+    },
+    character(1)
+  )
   match_idx <- which(grepl(asset_pattern, asset_names, perl = TRUE))
   if (length(match_idx) < 1L) {
     cli::cli_abort(

@@ -91,6 +91,51 @@ testthat::test_that("select_release_asset errors when no release carries a bundl
   )
 })
 
+testthat::test_that("select_release_asset tolerates assets with a missing name field", {
+  releases <- list(
+    release_fixture(
+      "gdal-v9.9.1",
+      assets = list(
+        list(id = 1L, browser_download_url = "https://example.com/nameless.zip"),
+        asset_fixture(2L, "gdal-ucrt64-v9.9.1-windows-x64.zip", "https://example.com/bundle.zip")
+      )
+    )
+  )
+
+  asset <- gdalraster.windows:::select_release_asset(
+    releases,
+    asset_pattern = gdalraster.windows:::.bundle_asset_pattern
+  )
+
+  testthat::expect_equal(asset$name, "gdal-ucrt64-v9.9.1-windows-x64.zip")
+})
+
+testthat::test_that("github_pat falls back from gitcreds to GITHUB_PAT to GITHUB_TOKEN", {
+  testthat::local_mocked_bindings(
+    gitcreds_pat = function() "",
+    .env = asNamespace("gdalraster.windows")
+  )
+
+  withr::local_envvar(GITHUB_PAT = "pat-value", GITHUB_TOKEN = "token-value")
+  testthat::expect_equal(gdalraster.windows:::github_pat(), "pat-value")
+
+  withr::local_envvar(GITHUB_PAT = NA)
+  testthat::expect_equal(gdalraster.windows:::github_pat(), "token-value")
+
+  withr::local_envvar(GITHUB_TOKEN = NA)
+  testthat::expect_equal(gdalraster.windows:::github_pat(), "")
+})
+
+testthat::test_that("github_pat prefers the git credential store when populated", {
+  testthat::local_mocked_bindings(
+    gitcreds_pat = function() "gitcreds-value",
+    .env = asNamespace("gdalraster.windows")
+  )
+
+  withr::local_envvar(GITHUB_PAT = "pat-value")
+  testthat::expect_equal(gdalraster.windows:::github_pat(), "gitcreds-value")
+})
+
 testthat::test_that("dll discovery supports dynamic GDAL soname", {
   bin_dir <- withr::local_tempdir()
   file.create(file.path(bin_dir, "libgdal-39.dll"))

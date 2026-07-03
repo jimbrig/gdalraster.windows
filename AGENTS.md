@@ -54,9 +54,9 @@ gdalraster::gdal_global_reg_names()
 
 ## responsibility split
 
-- Build CI's only responsibility is the GDAL runtime bundle: build, verify the
-  bundle contract, and publish durable artifacts (workflow artifact + release
-  asset). A scheduled job in the same workflow checks upstream OSGeo/gdal
+- The build workflow's only responsibility is the GDAL runtime bundle: build,
+  verify the bundle contract, and publish durable artifacts (workflow artifact
+  + release asset). A scheduled job in the same workflow checks upstream OSGeo/gdal
   releases and opens a tracking issue when a newer GDAL exists (never builds
   or publishes on its own).
 - Building `gdalraster` against the bundle is package functionality
