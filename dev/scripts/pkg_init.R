@@ -60,8 +60,3 @@ usethis::use_r("utils_pkg.R")
 # rextendr::use_extendr()
 
 # usethis::edit_r_makevars()
-
-
-# pkgdown ---------------------------------------------------------------------------------------------------------
-
-usethis::use_pkgdown_github_pages()
