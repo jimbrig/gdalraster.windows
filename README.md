@@ -3,11 +3,11 @@
 <!-- badges: start -->
 
 [![R CMD CHECK](https://github.com/jimbrig/gdalraster.windows/actions/workflows/check.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/check.yml)
-[![Build GDAL](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml)
-[![pkgdown](https://github.com/jimbrig/gdalraster.windows/actions/workflows/pkgdown.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/pkgdown.yml)
-[![Changelog](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml)
+[![Build GDAL (Windows)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml)
+[![Build Package Website](https://github.com/jimbrig/gdalraster.windows/actions/workflows/pkgdown.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/pkgdown.yml)
+[![Automate Changelog](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml/badge.svg)](https://github.com/jimbrig/gdalraster.windows/actions/workflows/changelog.yml)
 
- <!-- badges: end -->
+<!-- badges: end -->
 
 > [!NOTE]
 > Self-contained [GDAL](https://gdal.org/) runtime tooling for Windows.
