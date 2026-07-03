@@ -1,18 +1,22 @@
-# GDAL Runtime Architecture on Windows
+# Architecture
 
 This article explains the systems-level design behind
-`gdalraster.windows`: why the package exists, how the GDAL runtime
-bundle is built, and why runtime activation works the way it does.
+`gdalraster.windows`: why the package exists, how the
+[GDAL](https://gdal.org/) runtime bundle is built, and why runtime
+activation works the way it does.
 
 ## The root problem
 
-GDAL’s Algorithm API registers algorithms through static C++
-constructors — file-scope objects whose constructors insert entries into
-a global registry when `libgdal` is loaded. Under some Windows toolchain
-states (notably Rtools/MXE builds where dependencies are static
+GDAL’s [Algorithm API](https://gdal.org/en/stable/api/gdalalg_cpp.html)
+registers algorithms through static C++ constructors, file-scope objects
+whose constructors insert entries into a global registry when `libgdal`
+is loaded. Under some Windows toolchain states (notably
+Rtools/[MXE](https://mxe.cc/) builds where dependencies are static
 archives), the linker’s dead-code elimination discarded those
-self-registration translation units, leaving the registry empty. The
-visible symptom:
+self-registration translation units, leaving the registry empty (see
+[firelab/gdalraster#826](https://github.com/firelab/gdalraster/issues/826)).
+
+The visible symptom:
 
 ``` r
 
@@ -21,22 +25,26 @@ gdalraster::gdal_global_reg_names()
 ```
 
 The upstream fix landed in GDAL 3.12.2
-([OSGeo/gdal#13592](https://github.com/OSGeo/gdal/pull/13592)); muparser
-(required by parts of the Algorithm API) was added to the Rtools GDAL
-build in release 6768. Until a fixed GDAL ships in the default toolchain
-— and for anyone needing a pinned, feature-rich GDAL — this package
-provides a known good runtime: a custom GDAL build plus the activation
-logic to load it reliably.
+([OSGeo/gdal#13592](https://github.com/OSGeo/gdal/pull/13592)), and
+[`muparser`](https://beltoforion.de/en/muparser/) (required by parts of
+the Algorithm API) was added to the Rtools GDAL build in [release
+6768](https://cran.r-project.org/bin/windows/Rtools/rtools45/news.html)
+(see
+[firelab/gdalraster#858](https://github.com/firelab/gdalraster/issues/858)).
+Until a fixed GDAL ships in the default toolchain, and for anyone
+needing a pinned, feature-rich GDAL, this package provides a known good
+runtime: a custom GDAL build plus the activation logic to load it
+reliably.
 
 ## Toolchain stack
 
 | Term | What it is |
 |----|----|
-| MinGW-w64 | GCC-based toolchain producing native Win32 `.exe`/`.dll` (no POSIX emulation layer) |
-| MSYS2 | Distribution + `pacman` package manager shipping several MinGW-w64 toolchain variants; the *build environment*, not the runtime target |
-| UCRT | Microsoft’s Universal C Runtime (default since VS2015); mixing binaries linked against different C runtimes is unsafe (incompatible heap allocators, `FILE*`, etc.) |
-| UCRT64 | The MSYS2 environment targeting UCRT — the variant compatible with Rtools |
-| Rtools45 | CRAN’s Windows toolchain for R 4.5/4.6; UCRT64/MinGW-based, so C++ ABI-compatible with MSYS2 UCRT64 builds of the same GCC line |
+| [MinGW-w64](https://www.mingw-w64.org/) | GCC-based toolchain producing native Win32 `.exe`/`.dll` (no POSIX emulation layer) |
+| [MSYS2](https://www.msys2.org/) | Distribution + `pacman` package manager shipping several MinGW-w64 toolchain variants; the *build environment*, not the runtime target |
+| [UCRT](https://learn.microsoft.com/en-us/cpp/porting/upgrade-your-code-to-the-universal-crt) | Microsoft’s Universal C Runtime (default since VS2015); mixing binaries linked against different C runtimes is unsafe (incompatible heap allocators, `FILE*`, etc.) |
+| [UCRT64](https://www.msys2.org/docs/environments/) | The MSYS2 environment targeting UCRT — the variant compatible with Rtools |
+| [Rtools45](https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html) | CRAN’s Windows toolchain for R 4.5 and later; UCRT64/MinGW-based, so C++ ABI-compatible with MSYS2 UCRT64 builds of the same GCC line |
 
 The invariant this package maintains: GDAL and `gdalraster` are both
 compiled with compatible MinGW/UCRT toolchains.
@@ -46,7 +54,8 @@ compiled with compatible MinGW/UCRT toolchains.
 C++ has no standardized ABI across compilers. Name mangling, vtable
 layout, exception unwinding, and object layout all differ between MSVC
 and MinGW/GCC, and can drift between incompatible GCC configurations.
-`gdalraster` binds to GDAL’s C++ API through Rcpp (not a C `extern "C"`
+[`gdalraster`](https://firelab.github.io/gdalraster/) binds to GDAL’s
+C++ API through [Rcpp](https://www.rcpp.org/) (not a C `extern "C"`
 shim), so `gdalraster.dll` and `libgdal-*.dll` must come from the same
 ABI world.
 
@@ -69,36 +78,44 @@ compile/link flags never leak into your persistent configuration.
 
 ## Key build flags
 
-From `tools/build_gdal.sh`:
+From
+[`tools/build_gdal.sh`](https://github.com/jimbrig/gdalraster.windows/blob/main/tools/build_gdal.sh):
 
 | Flag | Purpose |
 |----|----|
 | `-DGDAL_USE_MUPARSER=ON` | Algorithm API support (expression evaluation) |
 | `-DGDAL_USE_ARROW/PARQUET/HDF5/NETCDF/GEOS/SPATIALITE=ON` | Extended driver profile beyond the lean Rtools build |
-| `-DGDAL_HIDE_INTERNAL_SYMBOLS=ON` | Restricts the export table to the public API (PE/COFF DLLs cap named exports at 65,535; GDAL’s full symbol set exceeds it) |
+| `-DGDAL_HIDE_INTERNAL_SYMBOLS=ON` | Restricts the export table to the public API (PE/COFF DLLs cap export ordinals at 65,535 and GDAL’s full symbol set exceeds it — see [OSGeo/gdal#4706](https://github.com/OSGeo/gdal/issues/4706)) |
 | `-Wl,--kill-at` | Strips `@N` stdcall decoration from exports so symbol names match what loaders expect |
 | `-static-libgcc -static-libstdc++` + whole-archive `winpthread` | Embeds the GCC runtime into the DLLs — end users need neither Rtools nor MSYS2 at runtime |
 
 ## Dependency closure: `collect_dlls.sh`
 
 Producing `libgdal-*.dll` is half the job; it imports dozens of
-transitive DLLs (GEOS, PROJ, Arrow’s deep tree, HDF5, …).
-`tools/collect_dlls.sh` walks the full PE import tree with `ntldd -R`,
-copies every dependency that resolves to the UCRT64 prefix into the
-bundle’s `bin/`, and **fails** if any non-Windows-system dependency
-remains unresolved. The bundle is therefore a verified-closed set: the
-only external imports are Windows system DLLs.
+transitive DLLs ([GEOS](https://libgeos.org/),
+[PROJ](https://proj.org/), [Arrow](https://arrow.apache.org/)’s deep
+tree, [HDF5](https://www.hdfgroup.org/solutions/hdf5/), …).
+[`tools/collect_dlls.sh`](https://github.com/jimbrig/gdalraster.windows/blob/main/tools/collect_dlls.sh)
+walks the full PE import tree with
+[`ntldd -R`](https://github.com/LRN/ntldd), copies every dependency that
+resolves to the UCRT64 prefix into the bundle’s `bin/`, and **fails** if
+any non-Windows-system dependency remains unresolved. The bundle is
+therefore a verified-closed set: the only external imports are Windows
+system DLLs.
 
 Final bundle layout:
 
 ``` text
 <gdal_home>/
-├── bin/        libgdal-*.dll + closed transitive DLL set + GDAL executables
+├── bin/        libgdal-*.dll + closed transitive DLL set
 ├── include/    headers (compile-time, for install_gdalraster())
 ├── lib/        libgdal.dll.a import library (compile-time)
 ├── share/      gdal/ + proj/ runtime data
 └── python/     osgeo_utils (pure-python, for embedded-python algorithms)
 ```
+
+No executables ship in the bundle (`BUILD_APPS=OFF`): consumers are R
+processes loading the DLL, not command-line users.
 
 ## Runtime activation: why loading needs help
 
@@ -123,19 +140,21 @@ handles this, session-scoped:
 
 ## The embedded Python layer
 
-Some GDAL algorithms (e.g. `gdal driver gpkg validate`) are thin C++
-entry points around Python implementations. At first use, `libgdal`
-locates a `python.exe` on `PATH`, dynamically loads the matching
-`libpython` DLL (no static CPython link), calls `Py_Initialize()`, and
-imports `osgeo_utils.samples.validate_gpkg`.
+Some GDAL algorithms
+(e.g. [`gdal driver gpkg validate`](https://gdal.org/en/stable/programs/gdal_driver_gpkg_validate.html))
+are thin C++ entry points around Python implementations. At first use,
+`libgdal` locates a `python.exe` on `PATH`, dynamically loads the
+matching `libpython` DLL (no static CPython link), calls
+`Py_Initialize()`, and imports `osgeo_utils.samples.validate_gpkg`.
 
-`osgeo_utils` is pure Python — no compiled extension modules, hence no
-CPython version/ABI coupling. The bundle ships it under
-`<gdal_home>/python`, version-locked to the built GDAL tag, and
-activation exposes it via `PYTHONPATH`. The compiled `osgeo` SWIG
-bindings are deliberately **not** bundled: they would pin the bundle to
-a single CPython ABI, and the Python-implemented validators degrade
-gracefully without them.
+[`osgeo_utils`](https://github.com/OSGeo/gdal/tree/master/swig/python/gdal-utils)
+(GDAL’s `gdal-utils` distribution) is pure Python — no compiled
+extension modules, hence no CPython version/ABI coupling. The bundle
+ships it under `<gdal_home>/python`, version-locked to the built GDAL
+tag, and activation exposes it via `PYTHONPATH`. The compiled `osgeo`
+SWIG bindings are deliberately **not** bundled: they would pin the
+bundle to a single CPython ABI, and the Python-implemented validators
+degrade gracefully without them.
 
 ``` r
 
@@ -170,11 +189,14 @@ state. For a new GDAL release:
 git tag gdal-v3.14.0 && git push origin gdal-v3.14.0
 ```
 
-or dispatch the build workflow with `gdal_version=v3.14.0`. The version
-string drives the GDAL source checkout, cache key, asset name
-(`gdal-ucrt64-v3.14.0-windows-x64.zip`), and release tag. CI cache keys
-hash the build scripts, so any build-logic change forces a fresh
-compile.
+or dispatch the [build
+workflow](https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml)
+with `gdal_version=v3.14.0`. The version string drives the GDAL source
+checkout, cache key, asset name (`gdal-ucrt64-v3.14.0-windows-x64.zip`),
+and release tag. CI cache keys hash the build scripts, so any
+build-logic change forces a fresh compile. Published bundles are
+available on the [releases
+page](https://github.com/jimbrig/gdalraster.windows/releases).
 
 Local (non-CI) reproduction from an MSYS2 UCRT64 shell:
 

@@ -1,5 +1,10 @@
 # Troubleshooting
 
+``` r
+
+library(gdalraster.windows)
+```
+
 ## Baseline triage
 
 Run these in order; most problems surface at one of these steps.
@@ -8,7 +13,10 @@ Run these in order; most problems surface at one of these steps.
 
 # 1) where is the active runtime, and is the DLL there?
 gdalraster.windows::gdal_home()
-list.files(file.path(gdalraster.windows::gdal_home(), "bin"), pattern = "^libgdal-.*\\.dll$")
+list.files(
+  file.path(gdalraster.windows::gdal_home(), "bin"),
+  pattern = "^libgdal-.*\\.dll$"
+)
 
 # 2) activate runtime (PATH, data vars, PYTHONPATH, DLL preload)
 gdalraster.windows::activate_gdal_runtime()
@@ -17,7 +25,7 @@ gdalraster.windows::activate_gdal_runtime()
 gdalraster.windows::verify_gdalraster_runtime()
 ```
 
-If those pass, the runtime contract is intact and the problem is
+If all three pass, the runtime contract is intact and the problem is
 elsewhere.
 
 ## `gdal_global_reg_names()` returns `character(0)`
@@ -56,7 +64,9 @@ means the runtime was never activated in this session.
 Rscript -e "gdalraster.windows::activate_gdal_runtime(); library(gdalraster); print(length(gdalraster::gdal_global_reg_names()))"
 ```
 
-- Inspect the dependency tree from an MSYS2/Rtools shell:
+- Inspect the dependency tree from an
+  [MSYS2](https://www.msys2.org/)/[Rtools](https://cran.r-project.org/bin/windows/Rtools/)
+  shell with [ntldd](https://github.com/LRN/ntldd):
   `ntldd -R <gdal_home>/bin/libgdal-*.dll` — any entry that resolves
   outside the bundle and outside Windows system paths indicates a
   missing bundled DLL. Or list direct imports with
@@ -79,13 +89,17 @@ runtime DLLs automatically, and refuses to run at all while `gdalraster`
 is loaded (its DLL pins the runtime — restart R first). If deletion
 still fails, another process holds locks: other R sessions using the
 runtime, or File Explorer windows/preview panes open on the runtime
-directory. Close them (PowerToys File Locksmith or Resource Monitor
-identify the locker) and rerun.
+directory. Close them ([PowerToys File
+Locksmith](https://learn.microsoft.com/en-us/windows/powertoys/file-locksmith)
+or Resource Monitor identify the locker) and rerun.
 
 ## `ModuleNotFoundError: No module named 'osgeo_utils'`
 
 Raised by embedded-python algorithms such as
-`gdal driver gpkg validate`.
+[`gdal driver gpkg validate`](https://gdal.org/en/stable/programs/gdal_driver_gpkg_validate.html).
+See the [Runtime
+Guide](https://docs.jimbrig.com/gdalraster.windows/articles/runtime-guide.md)
+for how the embedded-python layer works.
 
 - Check the bundle has the python layer:
 

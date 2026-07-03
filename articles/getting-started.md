@@ -1,0 +1,158 @@
+# Getting Started
+
+``` r
+
+library(gdalraster.windows)
+```
+
+## What this package does
+
+`gdalraster.windows` provides a reliable Windows workflow for using
+[`gdalraster`](https://firelab.github.io/gdalraster/) against a modern,
+self-contained [GDAL](https://gdal.org/) runtime built in CI — including
+features the default
+[Rtools](https://cran.r-project.org/bin/windows/Rtools/) GDAL lacks
+(notably the [GDAL Algorithm
+API](https://gdal.org/en/stable/api/gdalalg_cpp.html) with
+[`muparser`](https://beltoforion.de/en/muparser/), plus
+[Arrow](https://arrow.apache.org/)/[Parquet](https://parquet.apache.org/),
+[HDF5](https://www.hdfgroup.org/solutions/hdf5/),
+[NetCDF](https://www.unidata.ucar.edu/software/netcdf/), and
+[SpatiaLite](https://www.gaia-gis.it/fossil/libspatialite/index)
+drivers).
+
+It does three things:
+
+1.  **Installs a GDAL runtime bundle** — a prebuilt, verified-closed set
+    of DLLs, runtime data, and pure-python utilities published as a
+    [GitHub release
+    asset](https://github.com/jimbrig/gdalraster.windows/releases).
+2.  **Builds `gdalraster` from source** against that bundle, into an
+    isolated library so nothing you already have installed is touched.
+3.  **Activates the runtime per session** so the Windows loader, GDAL,
+    and PROJ all resolve against the bundle.
+
+Everything is non-destructive by default: the runtime lives under a
+package-managed user data directory, and the source-built `gdalraster`
+goes into its own library path rather than replacing a CRAN install.
+
+## Quick start
+
+One-time setup (using [pak](https://pak.r-lib.org/)):
+
+``` r
+
+pak::pak("jimbrig/gdalraster.windows")
+
+# download and install the GDAL runtime bundle (latest release asset)
+gdalraster.windows::install_gdal_runtime()
+
+# build gdalraster from source against that runtime
+gdalraster.windows::install_gdalraster()
+```
+
+Then load and verify:
+
+``` r
+
+gdalraster.windows::load_gdalraster()
+
+gdalraster::gdal_global_reg_names()
+#> [1] "raster" "vector" "convert" "info" ... (non-empty)
+```
+
+A non-empty algorithm registry is the key success signal — on a broken
+toolchain/runtime combination it comes back as `character(0)`.
+
+## Everyday use
+
+After setup, attaching the package is enough. Its load hook
+automatically activates the installed runtime and prepends the isolated
+`gdalraster` library to
+[`.libPaths()`](https://rdrr.io/r/base/libPaths.html):
+
+``` r
+
+library(gdalraster.windows)
+library(gdalraster)
+
+gdalraster::gdal_global_reg_names()
+```
+
+If you prefer explicit control over the load order:
+
+``` r
+
+gdalraster.windows::load_gdal_dll()
+
+library(gdalraster)
+gdalraster::gdal_global_reg_names()
+```
+
+To make sessions bootstrap without attaching this package at all,
+install a managed `.Rprofile` hook (optional, and clearly delimited in
+the file):
+
+``` r
+
+gdalraster.windows::add_gdal_rprofile_hook()
+```
+
+## Verifying the setup
+
+[`verify_gdalraster_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/verify_gdalraster_runtime.md)
+runs the full chain — activate runtime, load `gdalraster`, check the
+algorithm registry — and reports what it finds:
+
+``` r
+
+gdalraster.windows::verify_gdalraster_runtime()
+#> v gdalraster is ready ("3.13.1")
+```
+
+## Offline / air-gapped machines
+
+[`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
+downloads from GitHub Releases by default. Without network access,
+download the release asset from
+<https://github.com/jimbrig/gdalraster.windows/releases> on a connected
+machine, transfer it, and install directly:
+
+``` r
+
+gdalraster.windows::install_gdal_runtime(
+  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"
+)
+```
+
+## Where things are installed
+
+| Component | Default location | Override |
+|----|----|----|
+| GDAL runtime | `tools::R_user_dir("gdalraster.windows", "data")` | [`configure_gdal_home()`](https://docs.jimbrig.com/gdalraster.windows/reference/configure_gdal_home.md), `options(gdalraster.windows.gdal_home = ...)`, or the `GDALRASTER_WINDOWS_GDAL_HOME` environment variable |
+| Source-built `gdalraster` | isolated `library/` folder under the same user data directory | `install_gdalraster(lib = ...)` |
+
+To install the source build into your regular user library instead — so
+plain [`library(gdalraster)`](https://firelab.github.io/gdalraster/)
+resolves it without this package’s helpers — pass the library
+explicitly:
+
+``` r
+
+gdalraster.windows::install_gdalraster(lib = .libPaths()[1])
+```
+
+This replaces any existing `gdalraster` (e.g. the CRAN binary) in that
+library, and the bundled runtime must still be activated before the
+package loads in each session.
+
+## Next steps
+
+- The [Runtime
+  Guide](https://docs.jimbrig.com/gdalraster.windows/articles/runtime-guide.md)
+  covers session activation, configuration options, the startup hook,
+  and embedded-python algorithms in depth.
+- [Architecture](https://docs.jimbrig.com/gdalraster.windows/articles/architecture.md)
+  explains why this package exists and how the runtime bundle is built.
+- [Troubleshooting](https://docs.jimbrig.com/gdalraster.windows/articles/troubleshooting.md)
+  walks through the common failure modes and their fixes.

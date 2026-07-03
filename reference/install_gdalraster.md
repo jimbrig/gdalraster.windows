@@ -48,12 +48,14 @@ install_gdalraster(
 
 - upgrade:
 
-  Whether to allow dependency upgrades during install.
+  When `TRUE`, missing R package dependencies of gdalraster are
+  installed from `repos` before the source build. Has no effect on the
+  compile/link flags used to build gdalraster itself.
 
 - repos:
 
-  CRAN-like repositories passed to
-  [`utils::install.packages()`](https://rdrr.io/r/utils/install.packages.html).
+  CRAN-like repositories used to satisfy R package dependencies when
+  `upgrade = TRUE`. Ignored when `upgrade = FALSE`.
 
 ## Value
 

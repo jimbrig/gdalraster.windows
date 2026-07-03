@@ -2,6 +2,8 @@
 
 ## Runtime Setup
 
+Setup the necessary runtime environment for gdalraster on Windows.
+
 - [`gdal_home()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_home.md)
   : Resolve active GDAL home path
 - [`configure_gdal_home()`](https://docs.jimbrig.com/gdalraster.windows/reference/configure_gdal_home.md)
@@ -15,6 +17,8 @@
 
 ## gdalraster Integration
 
+Integrate gdalraster with the GDAL runtime on Windows.
+
 - [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
   : Install gdalraster from source against bundled GDAL
 - [`load_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/load_gdalraster.md)
@@ -23,6 +27,9 @@
   : Verify gdalraster algorithm API availability
 
 ## Startup Hooks
+
+Configure R to automatically load the GDAL runtime and gdalraster
+package on startup.
 
 - [`gdal_rprofile_snippet()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_rprofile_snippet.md)
   : Build an .Rprofile hook snippet for bundled GDAL

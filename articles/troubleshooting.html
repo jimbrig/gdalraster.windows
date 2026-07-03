@@ -6,21 +6,29 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Troubleshooting • gdalraster.windows</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Troubleshooting">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><script src="troubleshooting_files/libs/quarto-html/popper.min.js"></script><script src="troubleshooting_files/libs/quarto-html/tippy.umd.min.js"></script><link href="troubleshooting_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="troubleshooting_files/libs/quarto-html/light-border.css" rel="stylesheet">
+<!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Troubleshooting">
+<meta property="og:image" content="https://docs.jimbrig.com/gdalraster.windows/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-#2b4a2b" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,16 +41,13 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
-    <li><a class="dropdown-item" href="../articles/runtime-guide.html">Using gdalraster.windows on Windows</a></li>
-    <li><a class="dropdown-item" href="../articles/troubleshooting.html">Troubleshooting</a></li>
+<li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started</a></li>
+    <li><a class="dropdown-item" href="../articles/architecture.html">Architecture</a></li>
+    <li><a class="dropdown-item" href="../articles/runtime-guide.html">Runtime Guide</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Internals</h6></li>
-    <li><a class="dropdown-item" href="../articles/architecture.html">GDAL Runtime Architecture on Windows</a></li>
+    <li><a class="dropdown-item" href="../articles/troubleshooting.html">Troubleshooting</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -54,193 +59,209 @@
 
 
   </div>
-</nav><div class="container template-article">
-
-
-
-
+</nav><div class="container template-quarto">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
+      <img src="../logo.png" class="logo" alt=""><h1>Troubleshooting</h1>
 
-      <h1>Troubleshooting</h1>
-            
-      
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/troubleshooting.Rmd" class="external-link"><code>vignettes/troubleshooting.Rmd</code></a></small>
-      <div class="d-none name"><code>troubleshooting.Rmd</code></div>
+
+
+
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/troubleshooting.qmd" class="external-link"><code>vignettes/troubleshooting.qmd</code></a></small>
+      <div class="d-none name"><code></code></div>
     </div>
 
-    
-    
-<div class="section level2">
-<h2 id="baseline-triage">Baseline triage<a class="anchor" aria-label="anchor" href="#baseline-triage"></a>
+
+
+
+
+
+    <div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jimbrig/gdalraster.windows" class="external-link">gdalraster.windows</a></span><span class="op">)</span></span></code></pre></div>
+</div>
+<section class="level2"><h2 id="baseline-triage">Baseline triage<a class="anchor" aria-label="anchor" href="#baseline-triage"></a>
 </h2>
 <p>Run these in order; most problems surface at one of these steps.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1) where is the active runtime, and is the DLL there?</span></span>
 <span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_home.html">gdal_home</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_home.html">gdal_home</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"bin"</span><span class="op">)</span>, pattern <span class="op">=</span> <span class="st">"^libgdal-.*\\.dll$"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_home.html">gdal_home</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"bin"</span><span class="op">)</span>,</span>
+<span>  pattern <span class="op">=</span> <span class="st">"^libgdal-.*\\.dll$"</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 2) activate runtime (PATH, data vars, PYTHONPATH, DLL preload)</span></span>
 <span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3) end-to-end verification</span></span>
 <span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/verify_gdalraster_runtime.html">verify_gdalraster_runtime</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>If those pass, the runtime contract is intact and the problem is
-elsewhere.</p>
 </div>
-<div class="section level2">
-<h2 id="gdal_global_reg_names-returns-character0">
-<code>gdal_global_reg_names()</code> returns
-<code>character(0)</code><a class="anchor" aria-label="anchor" href="#gdal_global_reg_names-returns-character0"></a>
+<p>If all three pass, the runtime contract is intact and the problem is elsewhere.</p>
+</section><section class="level2"><h2 id="gdal_global_reg_names-returns-character0">
+<code>gdal_global_reg_names()</code> returns <code>character(0)</code>
+<a class="anchor" aria-label="anchor" href="#gdal_global_reg_names-returns-character0"></a>
 </h2>
-<p>Most likely the wrong GDAL DLL was resolved first, or activation
-never ran in this session.</p>
+<p>Most likely the wrong GDAL DLL was resolved first, or activation never ran in this session.</p>
 <ul>
-<li>Run <code><a href="../reference/activate_gdal_runtime.html">gdalraster.windows::activate_gdal_runtime()</a></code> in a
-<strong>fresh</strong> R session, then load
-<code>gdalraster</code>.</li>
-<li>Inspect <code>Sys.getenv("PATH")</code> for competing GDAL
-installations (Rtools, conda/pixi, OSGeo4W) appearing before the
-bundle’s <code>bin/</code>.</li>
-<li>Confirm <code>gdalraster</code> was built by
-<code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> against the bundle, not installed as
-the CRAN binary (which statically links Rtools’ GDAL).</li>
-</ul>
-</div>
-<div class="section level2">
-<h2 id="loadlibrary-failure-when-loading-gdalraster">
+<li>Run <code><a href="../reference/activate_gdal_runtime.html">gdalraster.windows::activate_gdal_runtime()</a></code> in a <strong>fresh</strong> R session, then load <code>gdalraster</code>.</li>
+<li>Inspect <code>Sys.getenv("PATH")</code> for competing GDAL installations (Rtools, conda/pixi, OSGeo4W) appearing before the bundle’s <code>bin/</code>.</li>
+<li>Confirm <code>gdalraster</code> was built by <code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> against the bundle, not installed as the CRAN binary (which statically links Rtools’ GDAL).</li>
+</ul></section><section class="level2"><h2 id="loadlibrary-failure-when-loading-gdalraster">
 <code>LoadLibrary failure</code> when loading gdalraster<a class="anchor" aria-label="anchor" href="#loadlibrary-failure-when-loading-gdalraster"></a>
 </h2>
-<p>The Windows loader could not resolve <code>libgdal-*.dll</code> or
-one of its transitive dependencies. <code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code>
-fails loudly when the preload of <code>libgdal-*.dll</code> itself
-fails, so a <code>LoadLibrary failure</code> surfacing only at
-<code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> usually means the runtime was never
-activated in this session.</p>
+<p>The Windows loader could not resolve <code>libgdal-*.dll</code> or one of its transitive dependencies. <code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> fails loudly when the preload of <code>libgdal-*.dll</code> itself fails, so a <code>LoadLibrary failure</code> surfacing only at <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> usually means the runtime was never activated in this session.</p>
 <ul>
-<li>Activate the runtime before <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> — or
-use <code><a href="../reference/load_gdalraster.html">gdalraster.windows::load_gdalraster()</a></code>, which does
-both.</li>
+<li>Activate the runtime before <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> — or use <code><a href="../reference/load_gdalraster.html">gdalraster.windows::load_gdalraster()</a></code>, which does both.</li>
 <li>Isolate profile effects with a clean subprocess:</li>
 </ul>
-<div class="sourceCode" id="cb2"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>Rscript <span class="op">-</span>e <span class="st">"gdalraster.windows::activate_gdal_runtime(); library(gdalraster); print(length(gdalraster::gdal_global_reg_names()))"</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>Rscript <span class="op">-</span>e <span class="st">"gdalraster.windows::activate_gdal_runtime(); library(gdalraster); print(length(gdalraster::gdal_global_reg_names()))"</span></span></code></pre></div>
 <ul>
-<li>Inspect the dependency tree from an MSYS2/Rtools shell:
-<code>ntldd -R &lt;gdal_home&gt;/bin/libgdal-*.dll</code> — any entry
-that resolves outside the bundle and outside Windows system paths
-indicates a missing bundled DLL. Or list direct imports with
-<code>objdump -x &lt;gdal_home&gt;/bin/libgdal-*.dll | findstr "DLL Name"</code>.</li>
+<li>Inspect the dependency tree from an <a href="https://www.msys2.org/" class="external-link">MSYS2</a>/<a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> shell with <a href="https://github.com/LRN/ntldd" class="external-link">ntldd</a>: <code>ntldd -R &lt;gdal_home&gt;/bin/libgdal-*.dll</code> — any entry that resolves outside the bundle and outside Windows system paths indicates a missing bundled DLL. Or list direct imports with <code>objdump -x &lt;gdal_home&gt;/bin/libgdal-*.dll | findstr "DLL Name"</code>.</li>
 </ul>
-<p>A DLL can be “missing” even when CI verified the bundle: GitHub
-runner images ship products that install DLLs into <code>System32</code>
-(e.g. the Microsoft ODBC Driver for SQL Server,
-<code>msodbcsql17.dll</code>), so a dependency on them resolves in CI
-but not on end-user machines. The build disables such linkage
-(<code>GDAL_USE_MSSQL_ODBC=OFF</code>) and bundle verification rejects
-known non-OS <code>System32</code> DLLs, but any import in the
-<code>objdump</code> output that is neither in the bundle’s
-<code>bin/</code> nor a Windows system DLL is the culprit.</p>
-</div>
-<div class="section level2">
-<h2 id="install_gdal_runtimeoverwrite-true-cannot-delete-the-old-runtime">
-<code>install_gdal_runtime(overwrite = TRUE)</code> cannot delete
-the old runtime<a class="anchor" aria-label="anchor" href="#install_gdal_runtimeoverwrite-true-cannot-delete-the-old-runtime"></a>
+<p>A DLL can be “missing” even when CI verified the bundle: GitHub runner images ship products that install DLLs into <code>System32</code> (e.g. the Microsoft ODBC Driver for SQL Server, <code>msodbcsql17.dll</code>), so a dependency on them resolves in CI but not on end-user machines. The build disables such linkage (<code>GDAL_USE_MSSQL_ODBC=OFF</code>) and bundle verification rejects known non-OS <code>System32</code> DLLs, but any import in the <code>objdump</code> output that is neither in the bundle’s <code>bin/</code> nor a Windows system DLL is the culprit.</p>
+</section><section class="level2"><h2 id="install_gdal_runtimeoverwrite-true-cannot-delete-the-old-runtime">
+<code>install_gdal_runtime(overwrite = TRUE)</code> cannot delete the old runtime<a class="anchor" aria-label="anchor" href="#install_gdal_runtimeoverwrite-true-cannot-delete-the-old-runtime"></a>
 </h2>
-<p>Deleting <code>gdal_home</code> fails when its DLLs are mapped into a
-running process. The installer releases the current session’s own
-preloaded runtime DLLs automatically, and refuses to run at all while
-<code>gdalraster</code> is loaded (its DLL pins the runtime — restart R
-first). If deletion still fails, another process holds locks: other R
-sessions using the runtime, or File Explorer windows/preview panes open
-on the runtime directory. Close them (PowerToys File Locksmith or
-Resource Monitor identify the locker) and rerun.</p>
-</div>
-<div class="section level2">
-<h2 id="modulenotfounderror-no-module-named-osgeo_utils">
+<p>Deleting <code>gdal_home</code> fails when its DLLs are mapped into a running process. The installer releases the current session’s own preloaded runtime DLLs automatically, and refuses to run at all while <code>gdalraster</code> is loaded (its DLL pins the runtime — restart R first). If deletion still fails, another process holds locks: other R sessions using the runtime, or File Explorer windows/preview panes open on the runtime directory. Close them (<a href="https://learn.microsoft.com/en-us/windows/powertoys/file-locksmith" class="external-link">PowerToys File Locksmith</a> or Resource Monitor identify the locker) and rerun.</p>
+</section><section class="level2"><h2 id="modulenotfounderror-no-module-named-osgeo_utils">
 <code>ModuleNotFoundError: No module named 'osgeo_utils'</code><a class="anchor" aria-label="anchor" href="#modulenotfounderror-no-module-named-osgeo_utils"></a>
 </h2>
-<p>Raised by embedded-python algorithms such as
-<code>gdal driver gpkg validate</code>.</p>
+<p>Raised by embedded-python algorithms such as <a href="https://gdal.org/en/stable/programs/gdal_driver_gpkg_validate.html" class="external-link"><code>gdal driver gpkg validate</code></a>. See the <a href="runtime-guide.html">Runtime Guide</a> for how the embedded-python layer works.</p>
 <ul>
 <li>Check the bundle has the python layer:</li>
 </ul>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_home.html">gdal_home</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"python"</span>, <span class="st">"osgeo_utils"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
 <ul>
-<li>If missing, the installed runtime predates python support —
-reinstall:</li>
+<li>If missing, the installed runtime predates python support — reinstall:</li>
 </ul>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdal_runtime.html">install_gdal_runtime</a></span><span class="op">(</span>overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+</div>
 <ul>
-<li>Re-activate and confirm <code>Sys.getenv("PYTHONPATH")</code>
-contains <code>&lt;gdal_home&gt;/python</code>.</li>
-<li>A <code>python.exe</code> must be discoverable on <code>PATH</code>
-for GDAL to embed an interpreter at all (the GDAL debug stream shows
-which python/libpython it loads).</li>
+<li>Re-activate and confirm <code>Sys.getenv("PYTHONPATH")</code> contains <code>&lt;gdal_home&gt;/python</code>.</li>
+<li>A <code>python.exe</code> must be discoverable on <code>PATH</code> for GDAL to embed an interpreter at all (the GDAL debug stream shows which python/libpython it loads).</li>
 </ul>
-<p>Note: <code>validate_gpkg</code> treats the compiled
-<code>osgeo</code> bindings as optional; the bundle intentionally omits
-them, which skips only tiled gridded coverage content checks.</p>
-</div>
-<div class="section level2">
-<h2 id="crs-projection-errors-despite-gdal-loading">CRS / projection errors despite GDAL loading<a class="anchor" aria-label="anchor" href="#crs-projection-errors-despite-gdal-loading"></a>
+<p>Note: <code>validate_gpkg</code> treats the compiled <code>osgeo</code> bindings as optional; the bundle intentionally omits them, which skips only tiled gridded coverage content checks.</p>
+</section><section class="level2"><h2 id="crs-projection-errors-despite-gdal-loading">CRS / projection errors despite GDAL loading<a class="anchor" aria-label="anchor" href="#crs-projection-errors-despite-gdal-loading"></a>
 </h2>
-<p><code>GDAL_DATA</code> / <code>PROJ_DATA</code> are not pointing at
-the bundle’s <code>share/</code> tree.
-<code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> sets all three
-(<code>GDAL_DATA</code>, <code>PROJ_LIB</code>, <code>PROJ_DATA</code>);
-check whether something later in your startup overwrites them.</p>
-</div>
-<div class="section level2">
-<h2 id="download-failures-during-install_gdal_runtime">Download failures during <code>install_gdal_runtime()</code><a class="anchor" aria-label="anchor" href="#download-failures-during-install_gdal_runtime"></a>
+<p><code>GDAL_DATA</code> / <code>PROJ_DATA</code> are not pointing at the bundle’s <code>share/</code> tree. <code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> sets all three (<code>GDAL_DATA</code>, <code>PROJ_LIB</code>, <code>PROJ_DATA</code>); check whether something later in your startup overwrites them.</p>
+</section><section class="level2"><h2 id="download-failures-during-install_gdal_runtime">Download failures during <code>install_gdal_runtime()</code>
+<a class="anchor" aria-label="anchor" href="#download-failures-during-install_gdal_runtime"></a>
 </h2>
-<p>On machines without network access (or behind strict proxies),
-install from a manually transferred release asset:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>On machines without network access (or behind strict proxies), install from a manually transferred release asset:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdal_runtime.html">install_gdal_runtime</a></span><span class="op">(</span></span>
 <span>  local_zip <span class="op">=</span> <span class="st">"C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Assets are published at <a href="https://github.com/jimbrig/gdalraster.windows/releases" class="external-link uri">https://github.com/jimbrig/gdalraster.windows/releases</a>.</p>
 </div>
-<div class="section level2">
-<h2 id="install_gdalraster-reports-source-install-did-not-produce-an-installed-package">
-<code>install_gdalraster()</code> reports “source install did not
-produce an installed package”<a class="anchor" aria-label="anchor" href="#install_gdalraster-reports-source-install-did-not-produce-an-installed-package"></a>
+<p>Assets are published at <a href="https://github.com/jimbrig/gdalraster.windows/releases" class="external-link uri">https://github.com/jimbrig/gdalraster.windows/releases</a>.</p>
+</section><section class="level2"><h2 id="install_gdalraster-reports-source-install-did-not-produce-an-installed-package">
+<code>install_gdalraster()</code> reports “source install did not produce an installed package”<a class="anchor" aria-label="anchor" href="#install_gdalraster-reports-source-install-did-not-produce-an-installed-package"></a>
 </h2>
-<p>If <code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> fails with this error and R also
-printed a warning like
-<code>package '…tar.gz' is not available for this version of R</code>,
-the underlying cause was that <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> received
-<code>repos</code> set to a CRAN mirror together with a local file path.
-In that combination R looks the path up as a <em>package name</em> in
-the repository rather than installing from the file, so the install
-silently does nothing.</p>
-<p>This was fixed in <code>gdalraster.windows</code> ≥ 0.2.1 by always
-calling <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> with <code>repos = NULL</code>
-for local-file installation. If you encounter this with an older
-version, upgrade the package:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p>If <code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> fails with this error and R also printed a warning like <code>package '…tar.gz' is not available for this version of R</code>, the underlying cause was that <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> received <code>repos</code> set to a CRAN mirror together with a local file path. In that combination R looks the path up as a <em>package name</em> in the repository rather than installing from the file, so the install silently does nothing.</p>
+<p>This was fixed in <code>gdalraster.windows</code> ≥ 0.2.1 by always calling <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> with <code>repos = NULL</code> for local-file installation. If you encounter this with an older version, upgrade the package:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jimbrig/gdalraster.windows"</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="after-a-gdal-version-upgrade">After a GDAL version upgrade<a class="anchor" aria-label="anchor" href="#after-a-gdal-version-upgrade"></a>
+</section><section class="level2"><h2 id="after-a-gdal-version-upgrade">After a GDAL version upgrade<a class="anchor" aria-label="anchor" href="#after-a-gdal-version-upgrade"></a>
 </h2>
 <ul>
-<li>Reinstall the runtime
-(<code>install_gdal_runtime(overwrite = TRUE)</code>), then rebuild
-<code>gdalraster</code> against it (<code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code>) —
-the previous <code>gdalraster.dll</code> is bound to the previous GDAL’s
-ABI/import names.</li>
-<li>Never assume the GDAL SONAME is stable across versions; everything
-in this package discovers <code>libgdal-*.dll</code> by glob, and your
-own scripts should too.</li>
-</ul>
-</div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+<li>Reinstall the runtime (<code>install_gdal_runtime(overwrite = TRUE)</code>), then rebuild <code>gdalraster</code> against it (<code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code>) — the previous <code>gdalraster.dll</code> is bound to the previous GDAL’s ABI/import names.</li>
+<li>Never assume the GDAL SONAME is stable across versions; everything in this package discovers <code>libgdal-*.dll</code> by glob, and your own scripts should too.</li>
+</ul></section><script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config);
+    }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script></main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
-
 
 
     <footer><div class="pkgdown-footer-left">

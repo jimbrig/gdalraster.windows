@@ -1,5 +1,180 @@
 # Changelog
 
-## gdalraster.windows (development version)
+## gdalraster.windows 0.3.0
 
-- Initial CRAN submission.
+### Documentation
+
+- All vignettes migrated from R Markdown (`knitr::rmarkdown`) to Quarto
+  (`quarto::html`); `VignetteBuilder` is now `quarto`.
+- New “Getting Started” vignette covering the full install → build →
+  load → verify workflow, everyday use, install locations and overrides,
+  and offline installation.
+- “Runtime Guide” rewritten around the current API: `gdal_home`
+  resolution order, session activation, auto-bootstrap options
+  (`gdalraster.windows.auto_bootstrap`,
+  `gdalraster.windows.auto_load_gdalraster`), source builds against the
+  bundle, managed `.Rprofile` hooks, embedded-python algorithms, and
+  runtime upgrades.
+- “Architecture” claims verified against upstream sources (GDAL 3.12.2
+  registration fix, Rtools45 release 6768 muparser addition, PE/COFF
+  export-ordinal limit); corrected the bundle layout description — no
+  executables ship in the bundle (`BUILD_APPS=OFF`).
+- Extensive linking across README and vignettes: toolchain components
+  (MinGW-w64, MSYS2, UCRT64, Rtools45), GDAL/PROJ/driver references,
+  upstream issues, and build scripts. The README package guide now
+  points at the pkgdown-hosted articles.
+- [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
+  and the runtime guide document installing the source build into the
+  regular user library via the existing `lib` argument
+  (e.g. `lib = .libPaths()[1]`).
+- Troubleshooting vignette covers dependency DLLs that resolve in CI but
+  not on user machines, and runtime deletion blocked by file locks.
+
+### pkgdown site
+
+- Themed site with branded colors, dark navbar, hex logo, and favicons.
+- Articles navbar menu and reference section descriptions.
+
+### Package
+
+- `gdalraster` remains declared in `Suggests` as a soft,
+  conditionally-used dependency, but development tooling no longer
+  requires it to be installed (attachment config: `pkg_ignore` +
+  `extra.suggests` + `check_if_suggests_is_installed: no`). The
+  package’s own installer
+  ([`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md))
+  is the supported way to provision it.
+- Reproducible hex logo generation script (`dev/scripts/pkg_logo.R`).
+
+### Fixes
+
+- The GDAL CI build no longer links `libgdal` against the proprietary
+  Microsoft ODBC Driver for SQL Server (`msodbcsql17.dll`), which GitHub
+  runner images ship in `System32` but end-user machines typically lack
+  — previously this made the published bundle fail to load
+  (`LoadLibrary failure`) on machines without that driver
+  (`GDAL_USE_MSSQL_ODBC=OFF`, `GDAL_USE_MSSQL_NCLI=OFF`). Bundle
+  verification in `tools/collect_dlls.sh` now rejects known non-OS
+  `System32` DLLs so this class of runner-image leak fails CI instead of
+  shipping
+  ([\#13](https://github.com/jimbrig/gdalraster.windows/issues/13)).
+- [`activate_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.md)
+  now fails loudly when preloading `libgdal-*.dll` fails, with the DLL
+  path and a troubleshooting pointer, instead of silently swallowing the
+  error and deferring it to
+  [`library(gdalraster)`](https://firelab.github.io/gdalraster/) where
+  Windows reports only a generic “module could not be found”.
+- [`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
+  overwrite handling is now robust to DLL file locks: the destination
+  check happens before any download, the current session’s own preloaded
+  runtime DLLs (from the load-time auto-bootstrap) are released before
+  deletion, reinstalling while `gdalraster` is loaded aborts up front
+  with restart guidance, and deletion is verified so a runtime locked by
+  another process aborts cleanly instead of leaving a half-deleted
+  install behind.
+- [`load_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/load_gdalraster.md)
+  validates the gdalraster library path before activating the runtime,
+  so a missing source build errors immediately.
+- [`verify_gdalraster_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/verify_gdalraster_runtime.md)
+  returns `FALSE` (with a message) when runtime activation fails,
+  instead of erroring.
+
+## gdalraster.windows 0.2.1
+
+### Fixes
+
+- [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
+  now passes `repos = NULL` to
+  [`utils::install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+  when installing from a local source tarball. Previously, `repos` was
+  set to the active CRAN mirror, which caused R to treat the tarball
+  path as a package name to look up remotely rather than a local file to
+  install. The symptom was a silent no-op accompanied by the warning
+  “package ‘…tar.gz’ is not available for this version of R”, followed
+  by the error “gdalraster source install did not produce an installed
+  package”
+  ([\#11](https://github.com/jimbrig/gdalraster.windows/issues/11)).
+- When `upgrade = TRUE`, R package dependencies are now installed via a
+  separate `install.packages("gdalraster", repos = repos)` call before
+  the source build, so CRAN-resolution still works for the upgrade case
+  while the tarball install itself always uses `repos = NULL`.
+
+## gdalraster.windows 0.2.0
+
+### Documentation
+
+- Technical documentation promoted to published vignettes:
+  [`vignette("architecture")`](https://docs.jimbrig.com/gdalraster.windows/articles/architecture.md)
+  (toolchain, ABI, DLL loading, embedded python, bundle reproduction)
+  and
+  [`vignette("troubleshooting")`](https://docs.jimbrig.com/gdalraster.windows/articles/troubleshooting.md)
+  (triage flow and symptom matrix). These are now the canonical docs;
+  `dev/docs/` is explicitly non-normative maintainer notes.
+
+### Fixes
+
+- `tools/build_gdal.sh` discovers the produced `libgdal-*.dll` by glob
+  in its final verification instead of hardcoding the SONAME, and fails
+  loudly when no DLL is produced
+  ([\#2](https://github.com/jimbrig/gdalraster.windows/issues/2)).
+- [`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
+  now emits actionable guidance on download failure: the releases URL
+  and the `local_zip` offline install path
+  ([\#5](https://github.com/jimbrig/gdalraster.windows/issues/5)).
+
+### Build
+
+- GDAL runtime baseline bumped to 3.13.1 (upstream release 2026-06-05);
+  default `gdal_version` in the build workflow updated accordingly.
+
+## gdalraster.windows 0.1.0
+
+### New features
+
+- The GDAL runtime bundle now ships GDAL’s pure-python `osgeo_utils`
+  package (`gdal-utils`) under `<gdal_home>/python`, version-locked to
+  the built GDAL tag.
+  [`activate_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.md)
+  prepends this directory to `PYTHONPATH` (session-scoped) so GDAL
+  algorithms that embed a Python interpreter at runtime
+  (e.g. `gdal driver gpkg validate`) can import it.
+- [`activate_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.md)
+  now returns `gdal_python` in its invisible result alongside the other
+  configured paths.
+
+### Documentation
+
+- New README technical section on the embedded CPython layer and why the
+  compiled `osgeo` SWIG bindings are intentionally not bundled.
+- Offline / air-gapped installation documented in the README, vignette,
+  and
+  [`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
+  help (`local_zip` workflow).
+- Troubleshooting guide gains a triage entry for
+  `ModuleNotFoundError: No module named 'osgeo_utils'`.
+- Maintainer docs aligned with the current bundle contract (`bin`,
+  `include`, `lib`, `share`, `python`).
+
+### Build and CI
+
+- CI is now scoped to its single responsibility: build, verify, and
+  publish the GDAL runtime bundle. The `gdalraster` source-build
+  verification job was removed; building `gdalraster` against the bundle
+  is package functionality
+  ([`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)).
+- Every CI run now produces durable output: a 30-day workflow artifact
+  and the distributable zip are always created; release publication is
+  gated on tag pushes or the `publish_release` dispatch input (default
+  `true`).
+- Bundle verification asserts the full runtime contract, including
+  `python/osgeo_utils`.
+
+### Package
+
+- `gdalraster` declared in `Suggests` (resolves an R CMD check warning).
+
+## gdalraster.windows 0.0.1
+
+- Initial development version: GDAL runtime bundle install/activation
+  helpers, `gdalraster` source-build integration, startup hooks, and the
+  Windows CI build pipeline.
