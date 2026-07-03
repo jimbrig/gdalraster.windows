@@ -1,8 +1,41 @@
 url: https://docs.jimbrig.com/gdalraster.windows/
 template:
   bootstrap: 5
+  bslib:
+    bg: "#f9f7f3"
+    fg: "#2b4a2b"
+    primary: "#355e3b"
+    secondary: "#6b8e6b"
+    link-color: "#2e8cb8"
+    code-color: "#355e3b"
+
+home:
+  title: gdalraster.windows
+  description: Installs and activates a self-contained GDAL runtime & gdalraster package on Windows.
+
+navbar:
+  bg: "#2b4a2b"
+  type: dark
+  structure:
+    left:  [intro, reference, articles]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: Getting Started
+        href: articles/getting-started.html
+      - text: Architecture
+        href: articles/architecture.html
+      - text: Runtime Guide
+        href: articles/runtime-guide.html
+      - text: "---"
+      - text: Troubleshooting
+        href: articles/troubleshooting.html
+
 reference:
   - title: Runtime Setup
+    desc: Setup the necessary runtime environment for gdalraster on Windows.
     contents:
       - gdal_home
       - configure_gdal_home
@@ -10,21 +43,13 @@ reference:
       - activate_gdal_runtime
       - load_gdal_dll
   - title: gdalraster Integration
+    desc: Integrate gdalraster with the GDAL runtime on Windows.
     contents:
       - install_gdalraster
       - load_gdalraster
       - verify_gdalraster_runtime
   - title: Startup Hooks
+    desc: Configure R to automatically load the GDAL runtime and gdalraster package on startup.
     contents:
       - gdal_rprofile_snippet
       - add_gdal_rprofile_hook
-articles:
-  - title: Guides
-    navbar: Guides
-    contents:
-      - runtime-guide
-      - troubleshooting
-  - title: Internals
-    navbar: Internals
-    contents:
-      - architecture
