@@ -18,7 +18,9 @@ gh_labels <- tibble::tibble(
     "cicd",
     "dependencies",
     "bug",
-    "tools"
+    "tools",
+    "investigation",
+    "upstream"
   ),
   description = c(
     feature = "New feature or enhancement",
@@ -31,7 +33,9 @@ gh_labels <- tibble::tibble(
     cicd = "CI/CD related tasks",
     dependencies = "Dependency related tasks",
     bug = "Bug related tasks",
-    tools = "Tool related tasks"
+    tools = "Tool related tasks",
+    investigation = "Needs investigation or root-cause analysis",
+    upstream = "Tracks upstream projects (GDAL, Rtools, gdalraster)"
   ),
   color = c(
     feature = "0e8a16",
@@ -43,8 +47,10 @@ gh_labels <- tibble::tibble(
     build = "c2e0c6",
     cicd = "1d76db",
     dependencies = "0e8a16",
-    bug = "fbca04",
-    tools = "bfe5bf"
+    bug = "d73a4a",
+    tools = "bfe5bf",
+    investigation = "e99695",
+    upstream = "0052cc"
   )
 )
 
