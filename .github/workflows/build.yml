@@ -196,6 +196,14 @@ jobs:
       #   muparser        — Algorithmic API (gdal_global_reg_names fix)
       #   pkgconf         — pkg-config shim used by cmake find-modules
       #   ntldd           — walk PE import tree to find transitive DLL deps
+      #
+      # Intentionally omitted (see build_gdal.sh Key build decisions):
+      #   hdf5    — pulls in libopenblas/libgfortran/libgomp which conflict with
+      #             Rtools DLLs in the R process (ERROR_DLL_INIT_FAILED).
+      #             GDAL_USE_HDF5=OFF in cmake configure.
+      #   netcdf  — depends on hdf5; same issue. GDAL_USE_NETCDF=OFF.
+      #   poppler — pulls in NSS/NSPR which can fail DllMain on restricted
+      #             Windows environments. GDAL_USE_POPPLER=OFF.
       - name: Setup MSYS2 UCRT64
         id: msys2
         uses: msys2/setup-msys2@v2
@@ -220,11 +228,8 @@ jobs:
             mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-muparser
             mingw-w64-ucrt-x86_64-arrow
-            mingw-w64-ucrt-x86_64-hdf5
-            mingw-w64-ucrt-x86_64-netcdf
             mingw-w64-ucrt-x86_64-geos
             mingw-w64-ucrt-x86_64-libspatialite
-            mingw-w64-ucrt-x86_64-poppler
             mingw-w64-ucrt-x86_64-openjpeg2
             mingw-w64-ucrt-x86_64-libwebp
             mingw-w64-ucrt-x86_64-libjxl
@@ -375,6 +380,9 @@ jobs:
             | `GDAL_HIDE_INTERNAL_SYMBOLS` | `ON` | Cleaner export table |
             | `--kill-at` | (linker) | Correct stdcall symbol decoration for MinGW DLLs |
             | Static GCC/stdc++/winpthread | (linker) | No Rtools or MSYS2 required at runtime |
+            | `GDAL_USE_HDF5` | `OFF` | Eliminates libopenblas/libgfortran/libgomp chain that conflicts with Rtools DLLs already loaded by R (ERROR_DLL_INIT_FAILED) |
+            | `GDAL_USE_NETCDF` | `OFF` | NetCDF depends on HDF5; disabled for the same reason |
+            | `GDAL_USE_POPPLER` | `OFF` | Poppler links NSS/NSPR which can fail DllMain initialization on restricted Windows environments |
 
             ### Runtime bundle asset
             Download:

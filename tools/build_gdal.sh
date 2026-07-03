@@ -24,6 +24,21 @@
 #     OS-provided DLL and breaks LoadLibrary on end-user machines that don't
 #     have that driver installed. The MSSQLSpatial driver falls back to the
 #     generic ODBC32-based path (same as the MSYS2 gdal package).
+#   - GDAL_USE_HDF5=OFF, GDAL_USE_NETCDF=OFF — HDF5 (and its dependent
+#     NetCDF) pulls in libopenblas → libgfortran-5/libgomp-1/libquadmath-0.
+#     R on Windows (Rtools45) already loads its own versions of libgfortran
+#     and libgomp at process startup. Windows' "loaded-module list" rule means
+#     these Rtools copies are reused by any subsequently loaded DLL, even when
+#     a different version lives in the bundle's bin/. When the Rtools and MSYS2
+#     versions diverge (e.g. GCC 14 vs GCC 15 snapshot) the mismatched
+#     libopenblas DllMain returns FALSE → ERROR_DLL_INIT_FAILED (1114) for
+#     libgdal itself. Disabling HDF5/NetCDF eliminates the entire
+#     OpenBLAS/Fortran/OpenMP dependency chain from the bundle.
+#   - GDAL_USE_POPPLER=OFF — Poppler links against Mozilla NSS/NSPR
+#     (libnspr4/nss3/nssutil3) which perform process-wide initialization on
+#     load. On locked-down Windows environments this can also produce
+#     ERROR_DLL_INIT_FAILED. PDF driver support is rarely needed in R spatial
+#     workflows, so disabling it is a safe trade-off.
 # =============================================================================
 set -euo pipefail
 
@@ -75,12 +90,13 @@ cmake -B build -G Ninja \
     -DGDAL_USE_MUPARSER=ON \
     -DGDAL_USE_ARROW=ON \
     -DGDAL_USE_PARQUET=ON \
-    -DGDAL_USE_HDF5=ON \
-    -DGDAL_USE_NETCDF=ON \
     -DGDAL_USE_GEOS=ON \
     -DGDAL_USE_SPATIALITE=ON \
     -DGDAL_HIDE_INTERNAL_SYMBOLS=ON \
     \
+    -DGDAL_USE_HDF5=OFF \
+    -DGDAL_USE_NETCDF=OFF \
+    -DGDAL_USE_POPPLER=OFF \
     -DGDAL_USE_MSSQL_ODBC=OFF \
     -DGDAL_USE_MSSQL_NCLI=OFF \
     \
