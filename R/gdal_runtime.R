@@ -79,7 +79,11 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #' install aborts cleanly instead of leaving a partially-replaced runtime.
 #'
 #' @param repo GitHub repo slug, e.g. `"jimbrig/gdalraster.windows"`.
-#' @param tag Release tag or `"latest"`.
+#' @param tag Release tag or `"latest"`. With `"latest"`, the newest release
+#'   that publishes a runtime bundle asset (matching `asset_pattern`) is
+#'   selected; releases without a bundle asset — such as R package releases
+#'   (`v*`) — are skipped, so GitHub's "latest release" pointer does not need
+#'   to be a GDAL bundle release.
 #' @param asset_pattern Regex used to select the release asset.
 #' @param gdal_home Destination GDAL home directory.
 #' @param overwrite Whether to replace existing `gdal_home`.

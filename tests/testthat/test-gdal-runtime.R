@@ -30,6 +30,67 @@ create_gdal_home_fixture <- function(python = TRUE) {
   gdal_home
 }
 
+testthat::test_that("select_release_asset skips releases without a matching bundle asset", {
+  releases <- list(
+    list(
+      tag_name = "v0.3.0",
+      draft = FALSE,
+      prerelease = FALSE,
+      assets = list()
+    ),
+    list(
+      tag_name = "gdal-v3.13.2",
+      draft = TRUE,
+      prerelease = FALSE,
+      assets = list(
+        list(id = 30L, name = "gdal-ucrt64-v3.13.2-windows-x64.zip", browser_download_url = "https://example.com/draft.zip")
+      )
+    ),
+    list(
+      tag_name = "gdal-v3.13.1",
+      draft = FALSE,
+      prerelease = FALSE,
+      assets = list(
+        list(id = 10L, name = "checksums.txt", browser_download_url = "https://example.com/checksums.txt"),
+        list(id = 11L, name = "gdal-ucrt64-v3.13.1-windows-x64.zip", browser_download_url = "https://example.com/bundle.zip")
+      )
+    ),
+    list(
+      tag_name = "gdal-v3.13.0",
+      draft = FALSE,
+      prerelease = FALSE,
+      assets = list(
+        list(id = 20L, name = "gdal-ucrt64-v3.13.0-windows-x64.zip", browser_download_url = "https://example.com/old.zip")
+      )
+    )
+  )
+
+  asset <- gdalraster.windows:::select_release_asset(
+    releases,
+    asset_pattern = "gdal-(bundle|ucrt64)-.*\\.zip$"
+  )
+
+  # the package release (no assets) and the draft are skipped; the newest
+  # published bundle release wins and non-matching assets within it are ignored
+  testthat::expect_equal(asset$tag, "gdal-v3.13.1")
+  testthat::expect_equal(asset$name, "gdal-ucrt64-v3.13.1-windows-x64.zip")
+  testthat::expect_equal(asset$url, "https://example.com/bundle.zip")
+})
+
+testthat::test_that("select_release_asset errors when no release carries a bundle asset", {
+  releases <- list(
+    list(tag_name = "v0.3.0", draft = FALSE, prerelease = FALSE, assets = list())
+  )
+
+  testthat::expect_error(
+    gdalraster.windows:::select_release_asset(
+      releases,
+      asset_pattern = "gdal-(bundle|ucrt64)-.*\\.zip$"
+    ),
+    "No release with an asset matching"
+  )
+})
+
 testthat::test_that("dll discovery supports dynamic GDAL soname", {
   bin_dir <- withr::local_tempdir()
   file.create(file.path(bin_dir, "libgdal-39.dll"))

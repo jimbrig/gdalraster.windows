@@ -1,3 +1,9 @@
+# gdalraster.windows (development version)
+
+## Fixes
+
+- `install_gdal_runtime(tag = "latest")` no longer trusts GitHub's single "latest release" pointer, which broke the default install path whenever an R package release (`v*`, no bundle asset) was marked latest. "latest" now scans the release list and selects the newest non-draft, non-prerelease release that publishes a runtime bundle asset matching `asset_pattern`, decoupling the package release track from the GDAL bundle release track.
+
 # gdalraster.windows 0.3.0
 
 ## Documentation

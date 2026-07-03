@@ -173,7 +173,7 @@ github_release_url <- function(repo, tag = "latest") {
   }
 
   if (identical(tag, "latest")) {
-    paste0("https://api.github.com/repos/", repo, "/releases/latest")
+    paste0("https://api.github.com/repos/", repo, "/releases?per_page=100")
   } else {
     paste0("https://api.github.com/repos/", repo, "/releases/tags/", tag)
   }
@@ -181,18 +181,60 @@ github_release_url <- function(repo, tag = "latest") {
 
 #' @keywords internal
 #' @noRd
+github_api_json <- function(url) {
+  req <- httr2::request(url)
+  req <- httr2::req_user_agent(req, paste0(pkg_name(), "/", pkg_version()))
+  req <- httr2::req_error(req, is_error = function(resp) httr2::resp_status(resp) >= 400L)
+  resp <- httr2::req_perform(req)
+  httr2::resp_body_json(resp, simplifyVector = FALSE)
+}
+
+#' Pick the first (newest) non-draft, non-prerelease release carrying an
+#' asset that matches `asset_pattern`.
+#'
+#' The repository publishes two kinds of releases: GDAL runtime bundle
+#' releases (`gdal-v*`, with a bundle zip asset) and R package releases
+#' (`v*`, no bundle asset). GitHub's single "latest release" pointer usually
+#' tracks the package releases, so "latest" here is resolved by scanning the
+#' release list for bundle assets instead of trusting `/releases/latest`.
+#'
+#' @keywords internal
+#' @noRd
+select_release_asset <- function(releases, asset_pattern, call = rlang::caller_env()) {
+  for (release in releases) {
+    if (isTRUE(release$draft) || isTRUE(release$prerelease)) {
+      next
+    }
+    for (asset in release$assets) {
+      if (grepl(asset_pattern, asset$name, perl = TRUE)) {
+        return(list(
+          id = asset$id,
+          name = asset$name,
+          url = asset$browser_download_url,
+          tag = release$tag_name
+        ))
+      }
+    }
+  }
+
+  cli::cli_abort(
+    "No release with an asset matching {.val {asset_pattern}} was found.",
+    call = call
+  )
+}
+
+#' @keywords internal
+#' @noRd
 resolve_release_asset <- function(repo, tag = "latest", asset_pattern = "\\.zip$") {
-  release_req <- httr2::request(github_release_url(repo = repo, tag = tag))
-  release_req <- httr2::req_user_agent(
-    release_req,
-    paste0(pkg_name(), "/", pkg_version())
-  )
-  release_req <- httr2::req_error(
-    release_req,
-    is_error = function(resp) httr2::resp_status(resp) >= 400L
-  )
-  release_resp <- httr2::req_perform(release_req)
-  release_json <- httr2::resp_body_json(release_resp, simplifyVector = TRUE)
+  release_json <- github_api_json(github_release_url(repo = repo, tag = tag))
+
+  if (identical(tag, "latest")) {
+    return(select_release_asset(
+      release_json,
+      asset_pattern = asset_pattern,
+      call = rlang::caller_env()
+    ))
+  }
 
   assets <- release_json$assets
   if (is.null(assets) || length(assets) == 0L) {
@@ -202,7 +244,8 @@ resolve_release_asset <- function(repo, tag = "latest", asset_pattern = "\\.zip$
     )
   }
 
-  match_idx <- which(grepl(asset_pattern, assets$name, perl = TRUE))
+  asset_names <- vapply(assets, function(asset) asset$name, character(1))
+  match_idx <- which(grepl(asset_pattern, asset_names, perl = TRUE))
   if (length(match_idx) < 1L) {
     cli::cli_abort(
       c(
@@ -214,12 +257,12 @@ resolve_release_asset <- function(repo, tag = "latest", asset_pattern = "\\.zip$
     )
   }
 
-  asset <- assets[match_idx[[1]], , drop = FALSE]
+  asset <- assets[[match_idx[[1]]]]
   list(
-    id = asset$id[[1]],
-    name = asset$name[[1]],
-    url = asset$browser_download_url[[1]],
-    tag = release_json$tag_name[[1]]
+    id = asset$id,
+    name = asset$name,
+    url = asset$browser_download_url,
+    tag = release_json$tag_name
   )
 }
 

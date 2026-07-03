@@ -17,7 +17,11 @@ install_gdal_runtime(
 \arguments{
 \item{repo}{GitHub repo slug, e.g. \code{"jimbrig/gdalraster.windows"}.}
 
-\item{tag}{Release tag or \code{"latest"}.}
+\item{tag}{Release tag or \code{"latest"}. With \code{"latest"}, the newest release
+that publishes a runtime bundle asset (matching \code{asset_pattern}) is
+selected; releases without a bundle asset — such as R package releases
+(\verb{v*}) — are skipped, so GitHub's "latest release" pointer does not need
+to be a GDAL bundle release.}
 
 \item{asset_pattern}{Regex used to select the release asset.}
 
