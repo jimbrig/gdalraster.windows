@@ -8,7 +8,7 @@ install_gdalraster(
   gdal_home = default_gdal_home(),
   lib = default_gdalraster_lib(),
   source_tarball = NULL,
-  repo = "firelab/gdalraster",
+  repo = default_gdalraster_repo(),
   ref = "HEAD",
   upgrade = FALSE,
   repos = getOption("repos")
@@ -23,7 +23,8 @@ into your default user library.}
 
 \item{source_tarball}{Optional local path to \code{gdalraster_*.tar.gz}.}
 
-\item{repo}{Source GitHub repo slug for gdalraster.}
+\item{repo}{Source GitHub repo slug for gdalraster. Defaults to
+\code{"firelab/gdalraster"}.}
 
 \item{ref}{Git ref (branch, tag, commit) used when downloading from GitHub.}
 

@@ -37,6 +37,8 @@ on:
       gdal_version:
         description: 'GDAL git tag to build (e.g. v3.13.1)'
         required: true
+        # current bundle baseline — keep in sync with env.GDAL_VERSION below
+        # and the "Latest GDAL runtime release" line in README.md
         default: 'v3.13.1'
       force_rebuild_gdal:
         description: 'Force full GDAL rebuild, ignoring cache'
@@ -65,6 +67,7 @@ permissions:
   contents: write
 
 # Centralise defaults for manual runs.
+# keep the fallback in sync with the gdal_version input default above
 env:
   GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.1' }}
 

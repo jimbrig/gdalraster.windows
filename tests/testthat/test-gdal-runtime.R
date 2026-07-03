@@ -30,74 +30,62 @@ create_gdal_home_fixture <- function(python = TRUE) {
   gdal_home
 }
 
+# builds a synthetic github release list entry; versions are deliberately
+# fake (v9.x) so the fixtures cannot be mistaken for real release tags
+release_fixture <- function(tag, assets = list(), draft = FALSE, prerelease = FALSE) {
+  list(tag_name = tag, draft = draft, prerelease = prerelease, assets = assets)
+}
+
+asset_fixture <- function(id, name, url) {
+  list(id = id, name = name, browser_download_url = url)
+}
+
 testthat::test_that("select_release_asset skips releases without a matching bundle asset", {
   releases <- list(
-    list(
-      tag_name = "v0.3.0",
-      draft = FALSE,
-      prerelease = FALSE,
-      assets = list()
-    ),
-    list(
-      tag_name = "gdal-v3.13.2",
+    # package release: no bundle asset, must be skipped
+    release_fixture("v9.0.0"),
+    # draft bundle release: must be skipped even though the asset matches
+    release_fixture(
+      "gdal-v9.9.2",
       draft = TRUE,
-      prerelease = FALSE,
       assets = list(
-        list(
-          id = 30L,
-          name = "gdal-ucrt64-v3.13.2-windows-x64.zip",
-          browser_download_url = "https://example.com/draft.zip"
-        )
+        asset_fixture(30L, "gdal-ucrt64-v9.9.2-windows-x64.zip", "https://example.com/draft.zip")
       )
     ),
-    list(
-      tag_name = "gdal-v3.13.1",
-      draft = FALSE,
-      prerelease = FALSE,
+    # newest published bundle release: wins, non-matching assets ignored
+    release_fixture(
+      "gdal-v9.9.1",
       assets = list(
-        list(id = 10L, name = "checksums.txt", browser_download_url = "https://example.com/checksums.txt"),
-        list(
-          id = 11L,
-          name = "gdal-ucrt64-v3.13.1-windows-x64.zip",
-          browser_download_url = "https://example.com/bundle.zip"
-        )
+        asset_fixture(10L, "checksums.txt", "https://example.com/checksums.txt"),
+        asset_fixture(11L, "gdal-ucrt64-v9.9.1-windows-x64.zip", "https://example.com/bundle.zip")
       )
     ),
-    list(
-      tag_name = "gdal-v3.13.0",
-      draft = FALSE,
-      prerelease = FALSE,
+    # older published bundle release: valid but not first
+    release_fixture(
+      "gdal-v9.9.0",
       assets = list(
-        list(
-          id = 20L,
-          name = "gdal-ucrt64-v3.13.0-windows-x64.zip",
-          browser_download_url = "https://example.com/old.zip"
-        )
+        asset_fixture(20L, "gdal-ucrt64-v9.9.0-windows-x64.zip", "https://example.com/old.zip")
       )
     )
   )
 
   asset <- gdalraster.windows:::select_release_asset(
     releases,
-    asset_pattern = "gdal-(bundle|ucrt64)-.*\\.zip$"
+    asset_pattern = gdalraster.windows:::bundle_asset_pattern()
   )
 
-  # the package release (no assets) and the draft are skipped; the newest
-  # published bundle release wins and non-matching assets within it are ignored
-  testthat::expect_equal(asset$tag, "gdal-v3.13.1")
-  testthat::expect_equal(asset$name, "gdal-ucrt64-v3.13.1-windows-x64.zip")
+  testthat::expect_equal(asset$tag, "gdal-v9.9.1")
+  testthat::expect_equal(asset$name, "gdal-ucrt64-v9.9.1-windows-x64.zip")
   testthat::expect_equal(asset$url, "https://example.com/bundle.zip")
 })
 
 testthat::test_that("select_release_asset errors when no release carries a bundle asset", {
-  releases <- list(
-    list(tag_name = "v0.3.0", draft = FALSE, prerelease = FALSE, assets = list())
-  )
+  releases <- list(release_fixture("v9.0.0"))
 
   testthat::expect_error(
     gdalraster.windows:::select_release_asset(
       releases,
-      asset_pattern = "gdal-(bundle|ucrt64)-.*\\.zip$"
+      asset_pattern = gdalraster.windows:::bundle_asset_pattern()
     ),
     "No release with an asset matching"
   )

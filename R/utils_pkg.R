@@ -73,7 +73,7 @@ gdal_dll_candidates <- function(gdal_home = default_gdal_home()) {
 
   list.files(
     path = bin_dir,
-    pattern = "^libgdal-[0-9]+\\.dll$",
+    pattern = gdal_dll_name_pattern(),
     full.names = TRUE
   )
 }
@@ -83,7 +83,7 @@ gdal_dll_candidates <- function(gdal_home = default_gdal_home()) {
 gdal_dll_path <- function(gdal_home = default_gdal_home()) {
   dlls <- gdal_dll_candidates(gdal_home = gdal_home)
   if (length(dlls) < 1L) {
-    return(file.path(gdal_bin_dir(gdal_home), "libgdal-39.dll"))
+    return(file.path(gdal_bin_dir(gdal_home), gdal_dll_fallback_name()))
   }
   dlls[[1]]
 }
