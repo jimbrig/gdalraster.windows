@@ -98,6 +98,8 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #'
 #' @return Invisibly returns installed GDAL home path.
 #' @export
+#'
+#' @importFrom httr2 request req_user_agent req_error req_perform resp_body_raw resp_status
 install_gdal_runtime <- function(
   repo = .bundle_repo,
   tag = "latest",
@@ -364,6 +366,9 @@ load_gdal_dll <- function(gdal_home = default_gdal_home(), quiet = FALSE) {
 #'
 #' @return Invisibly returns installed library path.
 #' @export
+#'
+#' @importFrom httr2 request req_user_agent req_error req_perform resp_body_raw resp_status
+#' @importFrom withr with_makevars with_envvar
 install_gdalraster <- function(
   gdal_home = default_gdal_home(),
   lib = default_gdalraster_lib(),

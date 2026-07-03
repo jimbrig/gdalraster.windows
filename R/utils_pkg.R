@@ -182,6 +182,8 @@ github_release_url <- function(repo, tag = "latest") {
 #' Token from the git credential store, empty string when unavailable
 #' @keywords internal
 #' @noRd
+#' @importFrom gitcreds gitcreds_get
+#' @importFrom rlang try_fetch
 gitcreds_pat <- function() {
   rlang::try_fetch(
     {
@@ -210,6 +212,7 @@ github_pat <- function() {
 
 #' @keywords internal
 #' @noRd
+#' @importFrom httr2 request req_user_agent req_auth_bearer_token req_error req_perform resp_body_json resp_status
 github_api_json <- function(url, pat = github_pat()) {
   req <- httr2::request(url)
   req <- httr2::req_user_agent(req, paste0(pkg_name(), "/", pkg_version()))
