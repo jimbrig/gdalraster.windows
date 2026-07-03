@@ -78,9 +78,16 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #' locks on the runtime (another R session, a File Explorer preview pane), the
 #' install aborts cleanly instead of leaving a partially-replaced runtime.
 #'
-#' @param repo GitHub repo slug, e.g. `"jimbrig/gdalraster.windows"`.
-#' @param tag Release tag or `"latest"`.
-#' @param asset_pattern Regex used to select the release asset.
+#' @param repo GitHub repo slug publishing the runtime bundle releases.
+#'   Defaults to `"jimbrig/gdalraster.windows"`.
+#' @param tag Release tag or `"latest"`. With `"latest"`, the newest release
+#'   that publishes a runtime bundle asset (matching `asset_pattern`) is
+#'   selected; releases without a bundle asset — such as R package releases
+#'   (`v*`) — are skipped, so GitHub's "latest release" pointer does not need
+#'   to be a GDAL bundle release.
+#' @param asset_pattern Regex used to select the release asset. Defaults to
+#'   the runtime bundle zip naming convention
+#'   (`gdal-(bundle|ucrt64)-.*\.zip$`).
 #' @param gdal_home Destination GDAL home directory.
 #' @param overwrite Whether to replace existing `gdal_home`.
 #' @param local_zip Optional local GDAL runtime zip to install directly.
@@ -91,10 +98,12 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #'
 #' @return Invisibly returns installed GDAL home path.
 #' @export
+#'
+#' @importFrom httr2 request req_user_agent req_error req_perform resp_body_raw resp_status
 install_gdal_runtime <- function(
-  repo = "jimbrig/gdalraster.windows",
+  repo = .bundle_repo,
   tag = "latest",
-  asset_pattern = "gdal-(bundle|ucrt64)-.*\\.zip$",
+  asset_pattern = .bundle_asset_pattern,
   gdal_home = default_gdal_home(),
   overwrite = FALSE,
   local_zip = NULL,
@@ -346,7 +355,8 @@ load_gdal_dll <- function(gdal_home = default_gdal_home(), quiet = FALSE) {
 #'   an isolated package-managed library; pass `.libPaths()[1]` to install
 #'   into your default user library.
 #' @param source_tarball Optional local path to `gdalraster_*.tar.gz`.
-#' @param repo Source GitHub repo slug for gdalraster.
+#' @param repo Source GitHub repo slug for gdalraster. Defaults to
+#'   `"firelab/gdalraster"`.
 #' @param ref Git ref (branch, tag, commit) used when downloading from GitHub.
 #' @param upgrade When `TRUE`, missing R package dependencies of gdalraster are
 #'   installed from `repos` before the source build. Has no effect on the
@@ -356,11 +366,14 @@ load_gdal_dll <- function(gdal_home = default_gdal_home(), quiet = FALSE) {
 #'
 #' @return Invisibly returns installed library path.
 #' @export
+#'
+#' @importFrom httr2 request req_user_agent req_error req_perform resp_body_raw resp_status
+#' @importFrom withr with_makevars with_envvar
 install_gdalraster <- function(
   gdal_home = default_gdal_home(),
   lib = default_gdalraster_lib(),
   source_tarball = NULL,
-  repo = "firelab/gdalraster",
+  repo = .gdalraster_repo,
   ref = "HEAD",
   upgrade = FALSE,
   repos = getOption("repos")

@@ -54,12 +54,20 @@ gdalraster::gdal_global_reg_names()
 
 ## responsibility split
 
-- CI's only responsibility is the GDAL runtime bundle: build, verify the
-  bundle contract, and publish durable artifacts (workflow artifact + release
-  asset).
+- The build workflow's only responsibility is the GDAL runtime bundle: build,
+  verify the bundle contract, and publish durable artifacts (workflow artifact
+  + release asset). A scheduled job in the same workflow checks upstream OSGeo/gdal
+  releases and opens a tracking issue when a newer GDAL exists (never builds
+  or publishes on its own).
 - Building `gdalraster` against the bundle is package functionality
   (`install_gdalraster()` with scoped Makevars via `withr`), exercised on user
   machines and by package tests — never reimplemented inside CI.
+- The e2e workflow ([`.github/workflows/e2e.yml`](.github/workflows/e2e.yml))
+  proves the full user workflow on a clean Windows runner by consuming the
+  exported package functions (`install_gdal_runtime()`,
+  `install_gdalraster()`, `verify_gdalraster_runtime()`,
+  `add_gdal_rprofile_hook()`) exactly as a user machine would; it runs on
+  dispatch, weekly, and whenever a `gdal-v*` bundle release is published.
 
 ## source of truth
 

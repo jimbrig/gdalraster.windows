@@ -30,6 +30,112 @@ create_gdal_home_fixture <- function(python = TRUE) {
   gdal_home
 }
 
+# builds a synthetic github release list entry; versions are deliberately
+# fake (v9.x) so the fixtures cannot be mistaken for real release tags
+release_fixture <- function(tag, assets = list(), draft = FALSE, prerelease = FALSE) {
+  list(tag_name = tag, draft = draft, prerelease = prerelease, assets = assets)
+}
+
+asset_fixture <- function(id, name, url) {
+  list(id = id, name = name, browser_download_url = url)
+}
+
+testthat::test_that("select_release_asset skips releases without a matching bundle asset", {
+  releases <- list(
+    # package release: no bundle asset, must be skipped
+    release_fixture("v9.0.0"),
+    # draft bundle release: must be skipped even though the asset matches
+    release_fixture(
+      "gdal-v9.9.2",
+      draft = TRUE,
+      assets = list(
+        asset_fixture(30L, "gdal-ucrt64-v9.9.2-windows-x64.zip", "https://example.com/draft.zip")
+      )
+    ),
+    # newest published bundle release: wins, non-matching assets ignored
+    release_fixture(
+      "gdal-v9.9.1",
+      assets = list(
+        asset_fixture(10L, "checksums.txt", "https://example.com/checksums.txt"),
+        asset_fixture(11L, "gdal-ucrt64-v9.9.1-windows-x64.zip", "https://example.com/bundle.zip")
+      )
+    ),
+    # older published bundle release: valid but not first
+    release_fixture(
+      "gdal-v9.9.0",
+      assets = list(
+        asset_fixture(20L, "gdal-ucrt64-v9.9.0-windows-x64.zip", "https://example.com/old.zip")
+      )
+    )
+  )
+
+  asset <- gdalraster.windows:::select_release_asset(
+    releases,
+    asset_pattern = gdalraster.windows:::.bundle_asset_pattern
+  )
+
+  testthat::expect_equal(asset$tag, "gdal-v9.9.1")
+  testthat::expect_equal(asset$name, "gdal-ucrt64-v9.9.1-windows-x64.zip")
+  testthat::expect_equal(asset$url, "https://example.com/bundle.zip")
+})
+
+testthat::test_that("select_release_asset errors when no release carries a bundle asset", {
+  releases <- list(release_fixture("v9.0.0"))
+
+  testthat::expect_error(
+    gdalraster.windows:::select_release_asset(
+      releases,
+      asset_pattern = gdalraster.windows:::.bundle_asset_pattern
+    ),
+    "No release with an asset matching"
+  )
+})
+
+testthat::test_that("select_release_asset tolerates assets with a missing name field", {
+  releases <- list(
+    release_fixture(
+      "gdal-v9.9.1",
+      assets = list(
+        list(id = 1L, browser_download_url = "https://example.com/nameless.zip"),
+        asset_fixture(2L, "gdal-ucrt64-v9.9.1-windows-x64.zip", "https://example.com/bundle.zip")
+      )
+    )
+  )
+
+  asset <- gdalraster.windows:::select_release_asset(
+    releases,
+    asset_pattern = gdalraster.windows:::.bundle_asset_pattern
+  )
+
+  testthat::expect_equal(asset$name, "gdal-ucrt64-v9.9.1-windows-x64.zip")
+})
+
+testthat::test_that("github_pat falls back from gitcreds to GITHUB_PAT to GITHUB_TOKEN", {
+  testthat::local_mocked_bindings(
+    gitcreds_pat = function() "",
+    .env = asNamespace("gdalraster.windows")
+  )
+
+  withr::local_envvar(GITHUB_PAT = "pat-value", GITHUB_TOKEN = "token-value")
+  testthat::expect_equal(gdalraster.windows:::github_pat(), "pat-value")
+
+  withr::local_envvar(GITHUB_PAT = NA)
+  testthat::expect_equal(gdalraster.windows:::github_pat(), "token-value")
+
+  withr::local_envvar(GITHUB_TOKEN = NA)
+  testthat::expect_equal(gdalraster.windows:::github_pat(), "")
+})
+
+testthat::test_that("github_pat prefers the git credential store when populated", {
+  testthat::local_mocked_bindings(
+    gitcreds_pat = function() "gitcreds-value",
+    .env = asNamespace("gdalraster.windows")
+  )
+
+  withr::local_envvar(GITHUB_PAT = "pat-value")
+  testthat::expect_equal(gdalraster.windows:::github_pat(), "gitcreds-value")
+})
+
 testthat::test_that("dll discovery supports dynamic GDAL soname", {
   bin_dir <- withr::local_tempdir()
   file.create(file.path(bin_dir, "libgdal-39.dll"))
