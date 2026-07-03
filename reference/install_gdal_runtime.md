@@ -6,9 +6,9 @@ Installs the GDAL runtime into `gdal_home` from one of:
 
 ``` r
 install_gdal_runtime(
-  repo = "jimbrig/gdalraster.windows",
+  repo = .bundle_repo,
   tag = "latest",
-  asset_pattern = "gdal-(bundle|ucrt64)-.*\\.zip$",
+  asset_pattern = .bundle_asset_pattern,
   gdal_home = default_gdal_home(),
   overwrite = FALSE,
   local_zip = NULL,
@@ -20,15 +20,21 @@ install_gdal_runtime(
 
 - repo:
 
-  GitHub repo slug, e.g. `"jimbrig/gdalraster.windows"`.
+  GitHub repo slug publishing the runtime bundle releases. Defaults to
+  `"jimbrig/gdalraster.windows"`.
 
 - tag:
 
-  Release tag or `"latest"`.
+  Release tag or `"latest"`. With `"latest"`, the newest release that
+  publishes a runtime bundle asset (matching `asset_pattern`) is
+  selected; releases without a bundle asset — such as R package releases
+  (`v*`) — are skipped, so GitHub's "latest release" pointer does not
+  need to be a GDAL bundle release.
 
 - asset_pattern:
 
-  Regex used to select the release asset.
+  Regex used to select the release asset. Defaults to the runtime bundle
+  zip naming convention (`gdal-(bundle|ucrt64)-.*\.zip$`).
 
 - gdal_home:
 

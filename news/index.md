@@ -1,5 +1,22 @@
 # Changelog
 
+## gdalraster.windows (development version)
+
+### Fixes
+
+- `install_gdal_runtime(tag = "latest")` no longer trusts GitHub’s
+  single “latest release” pointer, which broke the default install path
+  whenever an R package release (`v*`, no bundle asset) was marked
+  latest. “latest” now scans the release list and selects the newest
+  non-draft, non-prerelease release that publishes a runtime bundle
+  asset matching `asset_pattern`, decoupling the package release track
+  from the GDAL bundle release track.
+- GitHub API requests are now authenticated when a token is available —
+  resolved from the git credential store (`gitcreds`), then the
+  `GITHUB_PAT` and `GITHUB_TOKEN` environment variables — avoiding
+  anonymous rate limits in CI and behind shared networks. Release-asset
+  selection also tolerates assets with a missing `name` field.
+
 ## gdalraster.windows 0.3.0
 
 ### Documentation

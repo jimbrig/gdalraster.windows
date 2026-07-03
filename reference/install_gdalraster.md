@@ -15,7 +15,7 @@ install_gdalraster(
   gdal_home = default_gdal_home(),
   lib = default_gdalraster_lib(),
   source_tarball = NULL,
-  repo = "firelab/gdalraster",
+  repo = .gdalraster_repo,
   ref = "HEAD",
   upgrade = FALSE,
   repos = getOption("repos")
@@ -40,7 +40,8 @@ install_gdalraster(
 
 - repo:
 
-  Source GitHub repo slug for gdalraster.
+  Source GitHub repo slug for gdalraster. Defaults to
+  `"firelab/gdalraster"`.
 
 - ref:
 

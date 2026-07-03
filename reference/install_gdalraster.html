@@ -17,7 +17,7 @@ install_gdalraster(lib = .libPaths()[1])."><meta property="og:image" content="ht
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,7 +45,7 @@ install_gdalraster(lib = .libPaths()[1])."><meta property="og:image" content="ht
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Install gdalraster from source against bundled GDAL</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.3.0/R/gdal_runtime.R" class="external-link"><code>R/gdal_runtime.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/R/gdal_runtime.R" class="external-link"><code>R/gdal_runtime.R</code></a></small>
       <div class="d-none name"><code>install_gdalraster.Rd</code></div>
     </div>
 
@@ -64,7 +64,7 @@ package's load helpers), pass it explicitly, e.g.
 <span>  gdal_home <span class="op">=</span> <span class="fu">default_gdal_home</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  lib <span class="op">=</span> <span class="fu">default_gdalraster_lib</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  source_tarball <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  repo <span class="op">=</span> <span class="st">"firelab/gdalraster"</span>,</span>
+<span>  repo <span class="op">=</span> <span class="va">.gdalraster_repo</span>,</span>
 <span>  ref <span class="op">=</span> <span class="st">"HEAD"</span>,</span>
 <span>  upgrade <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span></span>
@@ -90,7 +90,8 @@ into your default user library.</p></dd>
 
 
 <dt id="arg-repo">repo<a class="anchor" aria-label="anchor" href="#arg-repo"></a></dt>
-<dd><p>Source GitHub repo slug for gdalraster.</p></dd>
+<dd><p>Source GitHub repo slug for gdalraster. Defaults to
+<code>"firelab/gdalraster"</code>.</p></dd>
 
 
 <dt id="arg-ref">ref<a class="anchor" aria-label="anchor" href="#arg-ref"></a></dt>
