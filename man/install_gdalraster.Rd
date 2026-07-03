@@ -27,9 +27,12 @@ into your default user library.}
 
 \item{ref}{Git ref (branch, tag, commit) used when downloading from GitHub.}
 
-\item{upgrade}{Whether to allow dependency upgrades during install.}
+\item{upgrade}{When \code{TRUE}, missing R package dependencies of gdalraster are
+installed from \code{repos} before the source build. Has no effect on the
+compile/link flags used to build gdalraster itself.}
 
-\item{repos}{CRAN-like repositories passed to \code{\link[utils:install.packages]{utils::install.packages()}}.}
+\item{repos}{CRAN-like repositories used to satisfy R package dependencies
+when \code{upgrade = TRUE}. Ignored when \code{upgrade = FALSE}.}
 }
 \value{
 Invisibly returns installed library path.
