@@ -10,10 +10,12 @@
 
 Canonical published docs:
 
-- `vignettes/runtime-guide.Rmd` — install/activate/load user guide
-- `vignettes/architecture.Rmd` — toolchain, ABI, DLL loading, embedded
+- `vignettes/getting-started.qmd` — install → build → load → verify workflow
+- `vignettes/runtime-guide.qmd` — runtime activation, configuration, source
+  builds, startup hooks
+- `vignettes/architecture.qmd` — toolchain, ABI, DLL loading, embedded
   python, bundle reproduction
-- `vignettes/troubleshooting.Rmd` — triage flow and symptom matrix
+- `vignettes/troubleshooting.qmd` — triage flow and symptom matrix
 
 ## Recommended reading order (these notes)
 

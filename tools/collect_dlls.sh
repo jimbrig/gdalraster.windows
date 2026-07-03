@@ -4,7 +4,7 @@
 #
 # Takes the cmake-installed GDAL tree (INSTALL_DIR) and produces a bundle
 # (BUNDLE_DIR) containing:
-#   bin/      — libgdal-39.dll + all non-Windows transitive deps
+#   bin/      — libgdal-*.dll + all non-Windows transitive deps
 #   include/  — public headers (for compiling against the bundle)
 #   lib/      — import libraries (.dll.a) (for linking against the bundle)
 #   share/    — gdal/proj runtime data files
