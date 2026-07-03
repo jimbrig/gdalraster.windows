@@ -23,9 +23,10 @@ gh_labels <- tibble::tribble(
   "upstream",      "Tracks upstream projects (GDAL, Rtools, gdalraster)",       "0052cc"
 )
 
+# colours and descriptions must be named vectors keyed by label name
 usethis::use_github_labels(
   labels = gh_labels$name,
-  colours = gh_labels$color,
-  descriptions = gh_labels$description,
-  delete_default = FALSE
+  colours = rlang::set_names(gh_labels$color, gh_labels$name),
+  descriptions = rlang::set_names(gh_labels$description, gh_labels$name),
+  delete_default = TRUE
 )
