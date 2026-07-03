@@ -9,4 +9,4 @@ document: yes
 normalize: yes
 inside_rmd: ~
 must.exist: yes
-check_if_suggests_is_installed: yes
+check_if_suggests_is_installed: no
