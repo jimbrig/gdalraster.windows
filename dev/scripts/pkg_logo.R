@@ -46,7 +46,7 @@ purrr::walk2(
 
 # set pkgdown favicon ---------------------------------------------------------------------------------------------
 
-# using the GDAL favicon instead of the hex logo, need to first temporarilly set the project logo to be GDAL
+# using the GDAL favicon instead of the hex logo, need to first temporarily set the project logo to be GDAL
 usethis::use_logo("man/figures/gdal_favicon.png")
 pkgdown::build_favicons(overwrite = TRUE)
 file.rename("man/figures/logo.png", "man/figures/logo_gdal.png")
