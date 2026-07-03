@@ -99,9 +99,9 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #' @return Invisibly returns installed GDAL home path.
 #' @export
 install_gdal_runtime <- function(
-  repo = default_bundle_repo(),
+  repo = .bundle_repo,
   tag = "latest",
-  asset_pattern = bundle_asset_pattern(),
+  asset_pattern = .bundle_asset_pattern,
   gdal_home = default_gdal_home(),
   overwrite = FALSE,
   local_zip = NULL,
@@ -368,7 +368,7 @@ install_gdalraster <- function(
   gdal_home = default_gdal_home(),
   lib = default_gdalraster_lib(),
   source_tarball = NULL,
-  repo = default_gdalraster_repo(),
+  repo = .gdalraster_repo,
   ref = "HEAD",
   upgrade = FALSE,
   repos = getOption("repos")

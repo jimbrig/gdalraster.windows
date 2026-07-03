@@ -8,7 +8,7 @@ install_gdalraster(
   gdal_home = default_gdal_home(),
   lib = default_gdalraster_lib(),
   source_tarball = NULL,
-  repo = default_gdalraster_repo(),
+  repo = .gdalraster_repo,
   ref = "HEAD",
   upgrade = FALSE,
   repos = getOption("repos")

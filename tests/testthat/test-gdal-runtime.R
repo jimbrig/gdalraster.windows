@@ -71,7 +71,7 @@ testthat::test_that("select_release_asset skips releases without a matching bund
 
   asset <- gdalraster.windows:::select_release_asset(
     releases,
-    asset_pattern = gdalraster.windows:::bundle_asset_pattern()
+    asset_pattern = gdalraster.windows:::.bundle_asset_pattern
   )
 
   testthat::expect_equal(asset$tag, "gdal-v9.9.1")
@@ -85,7 +85,7 @@ testthat::test_that("select_release_asset errors when no release carries a bundl
   testthat::expect_error(
     gdalraster.windows:::select_release_asset(
       releases,
-      asset_pattern = gdalraster.windows:::bundle_asset_pattern()
+      asset_pattern = gdalraster.windows:::.bundle_asset_pattern
     ),
     "No release with an asset matching"
   )

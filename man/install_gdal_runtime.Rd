@@ -5,9 +5,9 @@
 \title{Install precompiled GDAL runtime}
 \usage{
 install_gdal_runtime(
-  repo = default_bundle_repo(),
+  repo = .bundle_repo,
   tag = "latest",
-  asset_pattern = bundle_asset_pattern(),
+  asset_pattern = .bundle_asset_pattern,
   gdal_home = default_gdal_home(),
   overwrite = FALSE,
   local_zip = NULL,
