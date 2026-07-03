@@ -52,7 +52,12 @@
 </div>
 <div class="section level2">
 <h2 id="bug-fixes">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes"></a></h2>
-<ul><li>Install_gdalraster uses repos=NULL for local tarball install (<a href="https://github.com/jimbrig/gdalraster.windows/issues/11" class="external-link">#11</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/bddba7ae6c1b113413f910ebb1c05eb6ea382b07" class="external-link">bddba7a</a>) - (copilot-swe-agent[bot])</li>
+<ul><li>Prevent msodbcsql17 linkage in bundle; harden runtime activation and overwrite installs (<a href="https://github.com/jimbrig/gdalraster.windows/commit/f20ebb253f0067338f195b909f2c5df903220bc9" class="external-link">f20ebb2</a>) - (Jimmy Briggs)</li>
+<li>Install_gdalraster uses repos=NULL for local tarball install (<a href="https://github.com/jimbrig/gdalraster.windows/issues/11" class="external-link">#11</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/bddba7ae6c1b113413f910ebb1c05eb6ea382b07" class="external-link">bddba7a</a>) - (copilot-swe-agent[bot])</li>
+</ul></div>
+<div class="section level2">
+<h2 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a></h2>
+<ul><li>Fix repos-capture test from #12 (mock utils via .package; preserve NULL in capture list) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/7e64a1ab009e9ef1a41e991dd7c943cee7bc8196" class="external-link">7e64a1a</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
 <h2 id="gdal-v3131--2026-06-09">
@@ -97,7 +102,7 @@
 <strong>gdal:</strong> Add local and fallback zip support to install_gdal_runtime (<a href="https://github.com/jimbrig/gdalraster.windows/commit/a4c1445cd5f11b70ee5dc08f2aa1793020d7a9e2" class="external-link">a4c1445</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a></h2>
+<h2 id="testing-1">Testing<a class="anchor" aria-label="anchor" href="#testing-1"></a></h2>
 <ul><li>Add Windows clean-room e2e tests, helpers, and README docs (<a href="https://github.com/jimbrig/gdalraster.windows/commit/a0378d034f048713d2dde5088dab3934cb0a4ab3" class="external-link">a0378d0</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">

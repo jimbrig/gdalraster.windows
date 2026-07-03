@@ -44,85 +44,9 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="gdalrasterwindows-development-version">gdalraster.windows (development version)<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-development-version"></a></h2>
-<div class="section level3">
-<h3 id="fixes-development-version">Fixes<a class="anchor" aria-label="anchor" href="#fixes-development-version"></a></h3>
-<ul><li>The GDAL CI build no longer links <code>libgdal</code> against the proprietary Microsoft ODBC Driver for SQL Server (<code>msodbcsql17.dll</code>), which GitHub runner images ship in <code>System32</code> but end-user machines typically lack — previously this made the published bundle fail to load (<code>LoadLibrary failure</code>) on machines without that driver (<code>GDAL_USE_MSSQL_ODBC=OFF</code>, <code>GDAL_USE_MSSQL_NCLI=OFF</code>). Bundle verification in <code>tools/collect_dlls.sh</code> now rejects known non-OS <code>System32</code> DLLs so this class of runner-image leak fails CI instead of shipping.</li>
-<li>
-<code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> now fails loudly when preloading <code>libgdal-*.dll</code> fails, with the DLL path and a troubleshooting pointer, instead of silently swallowing the error and deferring it to <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> where Windows reports only a generic “module could not be found”.</li>
-<li>
-<code><a href="../reference/install_gdal_runtime.html">install_gdal_runtime()</a></code> overwrite handling is now robust to DLL file locks: the destination check happens before any download, the current session’s own preloaded runtime DLLs (from the load-time auto-bootstrap) are released before deletion, reinstalling while <code>gdalraster</code> is loaded aborts up front with restart guidance, and deletion is verified so a runtime locked by another process aborts cleanly instead of leaving a half-deleted install behind.</li>
-<li>
-<code><a href="../reference/load_gdalraster.html">load_gdalraster()</a></code> validates the gdalraster library path before activating the runtime, so a missing source build errors immediately.</li>
-<li>
-<code><a href="../reference/verify_gdalraster_runtime.html">verify_gdalraster_runtime()</a></code> returns <code>FALSE</code> (with a message) when runtime activation fails, instead of erroring.</li>
+<ul><li>Initial CRAN submission.</li>
 </ul></div>
-<div class="section level3">
-<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
-<ul><li>
-<code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> and the runtime guide document installing the source build into the regular user library via the existing <code>lib</code> argument (e.g. <code>lib = .libPaths()[1]</code>).</li>
-<li>Troubleshooting vignette covers dependency DLLs that resolve in CI but not on user machines, and runtime deletion blocked by file locks.</li>
-</ul></div>
-</div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.1" id="gdalrasterwindows-021">gdalraster.windows 0.2.1<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-021"></a></h2>
-<div class="section level3">
-<h3 id="fixes-0-2-1">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-2-1"></a></h3>
-<ul><li>
-<code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> now passes <code>repos = NULL</code> to <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">utils::install.packages()</a></code> when installing from a local source tarball. Previously, <code>repos</code> was set to the active CRAN mirror, which caused R to treat the tarball path as a package name to look up remotely rather than a local file to install. The symptom was a silent no-op accompanied by the warning “package ‘…tar.gz’ is not available for this version of R”, followed by the error “gdalraster source install did not produce an installed package” (<a href="https://github.com/jimbrig/gdalraster.windows/issues/11" class="external-link">#11</a>).</li>
-<li>When <code>upgrade = TRUE</code>, R package dependencies are now installed via a separate <code>install.packages("gdalraster", repos = repos)</code> call before the source build, so CRAN-resolution still works for the upgrade case while the tarball install itself always uses <code>repos = NULL</code>.</li>
-</ul></div>
-</div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.0" id="gdalrasterwindows-020">gdalraster.windows 0.2.0<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-020"></a></h2>
-<div class="section level3">
-<h3 id="documentation-0-2-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-2-0"></a></h3>
-<ul><li>Technical documentation promoted to published vignettes: <code><a href="../articles/architecture.html">vignette("architecture")</a></code> (toolchain, ABI, DLL loading, embedded python, bundle reproduction) and <code><a href="../articles/troubleshooting.html">vignette("troubleshooting")</a></code> (triage flow and symptom matrix). These are now the canonical docs; <code>dev/docs/</code> is explicitly non-normative maintainer notes.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="fixes-0-2-0">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-2-0"></a></h3>
-<ul><li>
-<code>tools/build_gdal.sh</code> discovers the produced <code>libgdal-*.dll</code> by glob in its final verification instead of hardcoding the SONAME, and fails loudly when no DLL is produced (<a href="https://github.com/jimbrig/gdalraster.windows/issues/2" class="external-link">#2</a>).</li>
-<li>
-<code><a href="../reference/install_gdal_runtime.html">install_gdal_runtime()</a></code> now emits actionable guidance on download failure: the releases URL and the <code>local_zip</code> offline install path (<a href="https://github.com/jimbrig/gdalraster.windows/issues/5" class="external-link">#5</a>).</li>
-</ul></div>
-<div class="section level3">
-<h3 id="build-0-2-0">Build<a class="anchor" aria-label="anchor" href="#build-0-2-0"></a></h3>
-<ul><li>GDAL runtime baseline bumped to 3.13.1 (upstream release 2026-06-05); default <code>gdal_version</code> in the build workflow updated accordingly.</li>
-</ul></div>
-</div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.0" id="gdalrasterwindows-010">gdalraster.windows 0.1.0<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-010"></a></h2>
-<div class="section level3">
-<h3 id="new-features-0-1-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-1-0"></a></h3>
-<ul><li>The GDAL runtime bundle now ships GDAL’s pure-python <code>osgeo_utils</code> package (<code>gdal-utils</code>) under <code>&lt;gdal_home&gt;/python</code>, version-locked to the built GDAL tag. <code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> prepends this directory to <code>PYTHONPATH</code> (session-scoped) so GDAL algorithms that embed a Python interpreter at runtime (e.g. <code>gdal driver gpkg validate</code>) can import it.</li>
-<li>
-<code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> now returns <code>gdal_python</code> in its invisible result alongside the other configured paths.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="documentation-0-1-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-1-0"></a></h3>
-<ul><li>New README technical section on the embedded CPython layer and why the compiled <code>osgeo</code> SWIG bindings are intentionally not bundled.</li>
-<li>Offline / air-gapped installation documented in the README, vignette, and <code><a href="../reference/install_gdal_runtime.html">install_gdal_runtime()</a></code> help (<code>local_zip</code> workflow).</li>
-<li>Troubleshooting guide gains a triage entry for <code>ModuleNotFoundError: No module named 'osgeo_utils'</code>.</li>
-<li>Maintainer docs aligned with the current bundle contract (<code>bin</code>, <code>include</code>, <code>lib</code>, <code>share</code>, <code>python</code>).</li>
-</ul></div>
-<div class="section level3">
-<h3 id="build-and-ci-0-1-0">Build and CI<a class="anchor" aria-label="anchor" href="#build-and-ci-0-1-0"></a></h3>
-<ul><li>CI is now scoped to its single responsibility: build, verify, and publish the GDAL runtime bundle. The <code>gdalraster</code> source-build verification job was removed; building <code>gdalraster</code> against the bundle is package functionality (<code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code>).</li>
-<li>Every CI run now produces durable output: a 30-day workflow artifact and the distributable zip are always created; release publication is gated on tag pushes or the <code>publish_release</code> dispatch input (default <code>true</code>).</li>
-<li>Bundle verification asserts the full runtime contract, including <code>python/osgeo_utils</code>.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="package-0-1-0">Package<a class="anchor" aria-label="anchor" href="#package-0-1-0"></a></h3>
-<ul><li>
-<code>gdalraster</code> declared in <code>Suggests</code> (resolves an R CMD check warning).</li>
-</ul></div>
-</div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.0.1" id="gdalrasterwindows-001">gdalraster.windows 0.0.1<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-001"></a></h2>
-<ul><li>Initial development version: GDAL runtime bundle install/activation helpers, <code>gdalraster</code> source-build integration, startup hooks, and the Windows CI build pipeline.</li>
-</ul></div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
-    </nav></aside></div>
+  </main></div>
 
 
     <footer><div class="pkgdown-footer-left">
