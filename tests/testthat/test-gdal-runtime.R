@@ -43,7 +43,11 @@ testthat::test_that("select_release_asset skips releases without a matching bund
       draft = TRUE,
       prerelease = FALSE,
       assets = list(
-        list(id = 30L, name = "gdal-ucrt64-v3.13.2-windows-x64.zip", browser_download_url = "https://example.com/draft.zip")
+        list(
+          id = 30L,
+          name = "gdal-ucrt64-v3.13.2-windows-x64.zip",
+          browser_download_url = "https://example.com/draft.zip"
+        )
       )
     ),
     list(
@@ -52,7 +56,11 @@ testthat::test_that("select_release_asset skips releases without a matching bund
       prerelease = FALSE,
       assets = list(
         list(id = 10L, name = "checksums.txt", browser_download_url = "https://example.com/checksums.txt"),
-        list(id = 11L, name = "gdal-ucrt64-v3.13.1-windows-x64.zip", browser_download_url = "https://example.com/bundle.zip")
+        list(
+          id = 11L,
+          name = "gdal-ucrt64-v3.13.1-windows-x64.zip",
+          browser_download_url = "https://example.com/bundle.zip"
+        )
       )
     ),
     list(
@@ -60,7 +68,11 @@ testthat::test_that("select_release_asset skips releases without a matching bund
       draft = FALSE,
       prerelease = FALSE,
       assets = list(
-        list(id = 20L, name = "gdal-ucrt64-v3.13.0-windows-x64.zip", browser_download_url = "https://example.com/old.zip")
+        list(
+          id = 20L,
+          name = "gdal-ucrt64-v3.13.0-windows-x64.zip",
+          browser_download_url = "https://example.com/old.zip"
+        )
       )
     )
   )

@@ -10,6 +10,11 @@
 # Triggers:
 #   - workflow_dispatch  : manually, with configurable GDAL version + force flag
 #   - push to tag        : gdal-v* (e.g. git tag gdal-v3.13.1)
+#   - schedule           : weekly upstream check only — compares the latest
+#                          OSGeo/gdal release against our newest published
+#                          gdal-v* bundle and opens a tracking issue when a
+#                          newer GDAL exists. Never builds or publishes on its
+#                          own; a human dispatches the build after review.
 #
 # Artefact strategy (every run produces durable output):
 #   Workflow artifact : upload-artifact@v5  retention=30d  no compression
@@ -50,8 +55,12 @@ on:
     tags:
       - 'gdal-v*'   # e.g. gdal-v3.13.1
 
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 06:00 UTC — upstream release check only
+
 # Required by softprops/action-gh-release to create releases and upload assets.
-# Using minimum required scope — contents:write only.
+# Using minimum required scope — contents:write only (the scheduled upstream
+# check job narrows/extends its own permissions at job level).
 permissions:
   contents: write
 
@@ -60,11 +69,71 @@ env:
   GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.1' }}
 
 # ─────────────────────────────────────────────────────────────────────────────
-# JOB 1 — Build GDAL from source
+# JOB 0 — Scheduled upstream release check (schedule trigger only)
 # ─────────────────────────────────────────────────────────────────────────────
 jobs:
+  check-upstream:
+    name: "Check upstream GDAL release"
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Compare upstream GDAL release with newest published bundle
+        run: |
+          set -euo pipefail
+
+          upstream_tag=$(gh api repos/OSGeo/gdal/releases/latest --jq '.tag_name')
+          ours_tag=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+            --jq '[.[] | select(.draft == false and .prerelease == false) | .tag_name | select(startswith("gdal-v"))][0] // empty')
+          ours_version="${ours_tag#gdal-}"
+
+          echo "upstream: ${upstream_tag}"
+          echo "ours:     ${ours_version:-<none>} (${ours_tag:-no gdal-v* release})"
+
+          # sort -V puts the newest version last; equal versions mean up to date
+          newest=$(printf '%s\n%s\n' "${upstream_tag}" "${ours_version:-v0.0.0}" | sort -V | tail -n 1)
+          if [ "${newest}" = "${ours_version}" ] || [ "${upstream_tag}" = "${ours_version}" ]; then
+            echo "Bundle is up to date with upstream GDAL."
+            exit 0
+          fi
+
+          issue_title="upstream: GDAL ${upstream_tag} released — build new runtime bundle"
+          existing=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open \
+            --search "\"${issue_title}\" in:title" --json number --jq 'length')
+          if [ "${existing}" -gt 0 ]; then
+            echo "Tracking issue already open; nothing to do."
+            exit 0
+          fi
+
+          gh issue create --repo "${GITHUB_REPOSITORY}" \
+            --title "${issue_title}" \
+            --label upstream,build \
+            --body "$(printf '%s\n' \
+              "The scheduled upstream check found a newer GDAL release." \
+              "" \
+              "- Upstream: [\`${upstream_tag}\`](https://github.com/OSGeo/gdal/releases/tag/${upstream_tag})" \
+              "- Newest published bundle: \`${ours_tag:-none}\`" \
+              "" \
+              "To build and publish a new runtime bundle after reviewing upstream release notes:" \
+              "" \
+              '```bash' \
+              "git tag gdal-${upstream_tag} && git push origin gdal-${upstream_tag}" \
+              '```' \
+              "" \
+              "or dispatch the Build GDAL (Windows) workflow with \`gdal_version=${upstream_tag}\`." \
+              "" \
+              "After publishing, rebuild gdalraster against the new bundle and verify with \`gdalraster.windows::verify_gdalraster_runtime()\`, then update the README latest-release line and the default \`gdal_version\` in build.yml.")"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 1 — Build GDAL from source
+# ─────────────────────────────────────────────────────────────────────────────
   build-gdal:
     name: "Build GDAL"
+    if: github.event_name != 'schedule'
     runs-on: windows-latest
 
     outputs:
