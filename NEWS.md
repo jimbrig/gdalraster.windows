@@ -1,4 +1,4 @@
-# gdalraster.windows (development version)
+# gdalraster.windows 0.3.1
 
 ## GDAL runtime bundle
 
@@ -166,3 +166,5 @@
 - Initial development version: GDAL runtime bundle install/activation
   helpers, `gdalraster` source-build integration, startup hooks, and the
   Windows CI build pipeline.
+
+<!-- CHECKPOINT id="ckpt_mr5nqr3t_xizns8" time="2026-07-04T01:02:23.417Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
