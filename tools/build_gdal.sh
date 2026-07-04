@@ -24,21 +24,26 @@
 #     OS-provided DLL and breaks LoadLibrary on end-user machines that don't
 #     have that driver installed. The MSSQLSpatial driver falls back to the
 #     generic ODBC32-based path (same as the MSYS2 gdal package).
-#   - GDAL_USE_HDF5=OFF, GDAL_USE_NETCDF=OFF — HDF5 (and its dependent
-#     NetCDF) pulls in libopenblas → libgfortran-5/libgomp-1/libquadmath-0.
-#     R on Windows (Rtools45) already loads its own versions of libgfortran
-#     and libgomp at process startup. Windows' "loaded-module list" rule means
-#     these Rtools copies are reused by any subsequently loaded DLL, even when
-#     a different version lives in the bundle's bin/. When the Rtools and MSYS2
-#     versions diverge (e.g. GCC 14 vs GCC 15 snapshot) the mismatched
-#     libopenblas DllMain returns FALSE → ERROR_DLL_INIT_FAILED (1114) for
-#     libgdal itself. Disabling HDF5/NetCDF eliminates the entire
-#     OpenBLAS/Fortran/OpenMP dependency chain from the bundle.
-#   - GDAL_USE_POPPLER=OFF — Poppler links against Mozilla NSS/NSPR
-#     (libnspr4/nss3/nssutil3) which perform process-wide initialization on
-#     load. On locked-down Windows environments this can also produce
-#     ERROR_DLL_INIT_FAILED. PDF driver support is rarely needed in R spatial
-#     workflows, so disabling it is a safe trade-off.
+#   - GDAL_ENABLE_DRIVER_PDF=OFF (plus GDAL_USE_POPPLER/PODOFO/PDFIUM=OFF) —
+#     libpodofo.dll fails its DllMain with ERROR_DLL_INIT_FAILED (1114) in
+#     ANY process (verified with plain LoadLibrary outside R) when it
+#     resolves the MSYS2-bundle libcrypto-3-x64.dll. PoDoFo performs OpenSSL
+#     initialization inside its static initializers (DllMain, under loader
+#     lock) and that init fails against the libcrypto builds shipped in the
+#     2026-06/2026-07 bundles; preloading Rtools45's libcrypto (OpenSSL
+#     3.6.2, C:\rtools45\ucrt64\bin) makes the identical libpodofo.dll load
+#     fine. Because libgdal imports libpodofo directly when the PDF driver
+#     is built, that single fragile dependency makes libgdal-*.dll itself
+#     unloadable. Turning off only GDAL_USE_POPPLER is NOT enough: the PDF
+#     driver then falls back to podofo. The driver must be disabled
+#     outright. PDF support is rarely needed in R spatial workflows, so this
+#     is a safe trade-off.
+#     Empirical note (2026-07): every other bundled DLL — including
+#     libopenblas/libgfortran-5/libgomp-1 (HDF5 chain) and nss3/libpoppler —
+#     loads cleanly via dyn.load() inside an R 4.6 (Rtools45-era) session.
+#     An earlier theory that the HDF5→OpenBLAS→Fortran chain conflicts with
+#     Rtools DLLs already loaded by R was disproven by that test, so HDF5 and
+#     NetCDF stay enabled.
 # =============================================================================
 set -euo pipefail
 
@@ -92,11 +97,14 @@ cmake -B build -G Ninja \
     -DGDAL_USE_PARQUET=ON \
     -DGDAL_USE_GEOS=ON \
     -DGDAL_USE_SPATIALITE=ON \
+    -DGDAL_USE_HDF5=ON \
+    -DGDAL_USE_NETCDF=ON \
     -DGDAL_HIDE_INTERNAL_SYMBOLS=ON \
     \
-    -DGDAL_USE_HDF5=OFF \
-    -DGDAL_USE_NETCDF=OFF \
+    -DGDAL_ENABLE_DRIVER_PDF=OFF \
     -DGDAL_USE_POPPLER=OFF \
+    -DGDAL_USE_PODOFO=OFF \
+    -DGDAL_USE_PDFIUM=OFF \
     -DGDAL_USE_MSSQL_ODBC=OFF \
     -DGDAL_USE_MSSQL_NCLI=OFF \
     \

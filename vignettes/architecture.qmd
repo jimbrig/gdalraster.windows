@@ -65,6 +65,7 @@ From [`tools/build_gdal.sh`](https://github.com/jimbrig/gdalraster.windows/blob/
 |------|---------|
 | `-DGDAL_USE_MUPARSER=ON` | Algorithm API support (expression evaluation) |
 | `-DGDAL_USE_ARROW/PARQUET/HDF5/NETCDF/GEOS/SPATIALITE=ON` | Extended driver profile beyond the lean Rtools build |
+| `-DGDAL_ENABLE_DRIVER_PDF=OFF` (+ poppler/podofo/pdfium `OFF`) | The MSYS2 `libpodofo.dll` fails its DLL initialization routine (Windows error 1114) in any process; a `libgdal` that imports it cannot be loaded at all, so the PDF driver is excluded from the bundle |
 | `-DGDAL_HIDE_INTERNAL_SYMBOLS=ON` | Restricts the export table to the public API (PE/COFF DLLs cap export ordinals at 65,535 and GDAL's full symbol set exceeds it — see [OSGeo/gdal#4706](https://github.com/OSGeo/gdal/issues/4706)) |
 | `-Wl,--kill-at` | Strips `@N` stdcall decoration from exports so symbol names match what loaders expect |
 | `-static-libgcc -static-libstdc++` + whole-archive `winpthread` | Embeds the GCC runtime into the DLLs — end users need neither Rtools nor MSYS2 at runtime |
