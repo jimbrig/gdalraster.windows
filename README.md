@@ -30,6 +30,11 @@ Full documentation is available at
 Latest GDAL runtime release:
 [gdal-v3.13.1](https://github.com/jimbrig/gdalraster.windows/releases/tag/gdal-v3.13.1)
 
+## Prerequisites
+
+- Windows with R installed
+- [Rtools](https://cran.r-project.org/bin/windows/Rtools/) matching your R version — `install_gdalraster()` compiles gdalraster from source against the bundled GDAL, which is the one step the prebuilt runtime cannot eliminate (the function checks for a toolchain up front and tells you if one is missing)
+
 ## Installation
 
 ```r

@@ -15,6 +15,7 @@ Imports:
     cli,
     gitcreds,
     httr2,
+    pkgbuild,
     rlang,
     stats,
     tools,

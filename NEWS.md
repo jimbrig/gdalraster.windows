@@ -1,5 +1,9 @@
 # gdalraster.windows 0.3.1
 
+## Package
+
+- `install_gdalraster()` now checks for a working Rtools toolchain up front (`pkgbuild::has_build_tools()`) and aborts with installation guidance when none is found, instead of failing mid-compile with a raw make/gcc error. Rtools is documented as the one prerequisite the prebuilt runtime bundle cannot eliminate — in the README, the Getting Started vignette, and the `install_gdalraster()` help page (which also gains an Upgrading section: rebuild gdalraster after every runtime bundle upgrade).
+
 ## GDAL runtime bundle
 
 - Fixed the bundle-wide `LoadLibrary failure: A dynamic link library (DLL) initialization routine failed` (Windows error 1114) that made published bundles unloadable on machines without Rtools' UCRT64 tree. Root cause: the MSYS2 `libpodofo.dll` (PDF driver backend) fails its `DllMain`-time OpenSSL initialization against the MSYS2 `libcrypto-3-x64.dll`. The PDF driver is now disabled outright (`GDAL_ENABLE_DRIVER_PDF=OFF` plus the poppler/podofo/pdfium backends).
@@ -168,3 +172,5 @@
   Windows CI build pipeline.
 
 <!-- CHECKPOINT id="ckpt_mr5nqr3t_xizns8" time="2026-07-04T01:02:23.417Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mr5o3m2m_haj1ep" time="2026-07-04T01:12:23.422Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

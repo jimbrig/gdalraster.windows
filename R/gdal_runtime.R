@@ -350,6 +350,20 @@ load_gdal_dll <- function(gdal_home = default_gdal_home(), quiet = FALSE) {
 #' package's load helpers), pass it explicitly, e.g.
 #' `install_gdalraster(lib = .libPaths()[1])`.
 #'
+#' @section Prerequisites:
+#' This is a source compilation, so
+#' [Rtools](https://cran.r-project.org/bin/windows/Rtools/) matching your R
+#' version must be installed (the one thing the prebuilt runtime bundle cannot
+#' eliminate). The function checks for a toolchain up front and aborts with
+#' guidance when none is found. The GDAL runtime bundle itself must already be
+#' installed via [install_gdal_runtime()].
+#'
+#' @section Upgrading:
+#' After installing a new runtime bundle version
+#' (`install_gdal_runtime(overwrite = TRUE)`), rerun this function — the
+#' previous gdalraster build is bound to the previous bundle's GDAL and must
+#' be recompiled against the new one.
+#'
 #' @param gdal_home GDAL home directory used for compile/link flags.
 #' @param lib Destination library path for installing gdalraster. Defaults to
 #'   an isolated package-managed library; pass `.libPaths()[1]` to install
@@ -379,6 +393,7 @@ install_gdalraster <- function(
   repos = getOption("repos")
 ) {
   abort_if_not_windows()
+  abort_if_no_build_tools()
   activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = TRUE)
 
   if (!is.character(lib) || length(lib) != 1L || !nzchar(lib)) {

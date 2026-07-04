@@ -132,6 +132,29 @@ abort_if_not_windows <- function(call = rlang::caller_env()) {
   }
 }
 
+#' Preflight check that a source-compilation toolchain (Rtools) is available.
+#' pkgbuild::has_build_tools() locates Rtools (PATH, then registry), verifies
+#' the found version matches the running R, and confirms a working compile
+#' environment; the result is cached for the session.
+#' @keywords internal
+#' @noRd
+#' @importFrom pkgbuild has_build_tools
+abort_if_no_build_tools <- function(call = rlang::caller_env()) {
+  if (isTRUE(pkgbuild::has_build_tools())) {
+    return(invisible(TRUE))
+  }
+
+  cli::cli_abort(
+    c(
+      "No working Windows build toolchain (Rtools) was found.",
+      "x" = "{.fn install_gdalraster} compiles gdalraster from source, which requires Rtools.",
+      "i" = "Install the Rtools version matching your R ({.val {as.character(getRversion())}}) from {.url https://cran.r-project.org/bin/windows/Rtools/} and restart R.",
+      "i" = "Run {.code pkgbuild::check_build_tools(debug = TRUE)} for detection diagnostics."
+    ),
+    call = call
+  )
+}
+
 #' @keywords internal
 #' @noRd
 abort_if_missing_dir <- function(path, arg, call = rlang::caller_env()) {

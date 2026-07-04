@@ -46,3 +46,21 @@ are not overwritten. To install into your regular user library instead
 package's load helpers), pass it explicitly, e.g.
 \code{install_gdalraster(lib = .libPaths()[1])}.
 }
+\section{Prerequisites}{
+
+This is a source compilation, so
+\href{https://cran.r-project.org/bin/windows/Rtools/}{Rtools} matching your R
+version must be installed (the one thing the prebuilt runtime bundle cannot
+eliminate). The function checks for a toolchain up front and aborts with
+guidance when none is found. The GDAL runtime bundle itself must already be
+installed via \code{\link[=install_gdal_runtime]{install_gdal_runtime()}}.
+}
+
+\section{Upgrading}{
+
+After installing a new runtime bundle version
+(\code{install_gdal_runtime(overwrite = TRUE)}), rerun this function — the
+previous gdalraster build is bound to the previous bundle's GDAL and must
+be recompiled against the new one.
+}
+
