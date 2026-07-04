@@ -9,7 +9,6 @@
 .Renviron
 inst/doc
 .positai
-.build/
 inst/extdata/gdal-ucrt64-fallback.zip
-docs
+/docs/
 **/.quarto/
