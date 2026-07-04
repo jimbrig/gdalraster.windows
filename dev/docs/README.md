@@ -19,6 +19,8 @@ Canonical published docs:
 
 ## Recommended reading order (these notes)
 
+0. [`00-the-full-picture.md`](00-the-full-picture.md) — start here: the
+   narrative connecting every design decision to the failure that forced it
 1. [`01-overview.md`](01-overview.md)
 2. [`06-toolchain-and-abi.md`](06-toolchain-and-abi.md)
 3. [`02-runtime-model.md`](02-runtime-model.md)
@@ -31,6 +33,13 @@ Canonical published docs:
 - Keep notes implementation-anchored and general.
 - Prefer references to code and upstream sources over narrative speculation.
 - Avoid session-specific conclusions in core maintainer docs.
+
+## Deep dives
+
+- [`08-windows-dll-abi-deep-dive.md`](08-windows-dll-abi-deep-dive.md) —
+  learning-oriented reference on Windows DLL loading, C/C++ ABI, linkers,
+  MinGW-vs-MSVC distribution models, and this project's failure history
+  (written after the July 2026 e2e investigation)
 
 ## Archive material
 

@@ -196,6 +196,16 @@ jobs:
       #   muparser        — Algorithmic API (gdal_global_reg_names fix)
       #   pkgconf         — pkg-config shim used by cmake find-modules
       #   ntldd           — walk PE import tree to find transitive DLL deps
+      #
+      #   hdf5, netcdf    — HDF5/NetCDF raster drivers (their DLL chains,
+      #                     incl. libopenblas/libgfortran, load cleanly in R;
+      #                     verified empirically 2026-07)
+      #
+      # NOTE: mingw-w64-ucrt-x86_64-gdal transitively installs podofo and
+      # poppler into /ucrt64 regardless of this list, so the PDF driver is
+      # disabled at cmake level (GDAL_ENABLE_DRIVER_PDF=OFF in build_gdal.sh):
+      # the MSYS2 libpodofo.dll fails DllMain (ERROR_DLL_INIT_FAILED 1114) in
+      # any process, which would make libgdal itself unloadable.
       - name: Setup MSYS2 UCRT64
         id: msys2
         uses: msys2/setup-msys2@v2
@@ -219,12 +229,11 @@ jobs:
             mingw-w64-ucrt-x86_64-curl
             mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-muparser
-            mingw-w64-ucrt-x86_64-arrow
             mingw-w64-ucrt-x86_64-hdf5
             mingw-w64-ucrt-x86_64-netcdf
+            mingw-w64-ucrt-x86_64-arrow
             mingw-w64-ucrt-x86_64-geos
             mingw-w64-ucrt-x86_64-libspatialite
-            mingw-w64-ucrt-x86_64-poppler
             mingw-w64-ucrt-x86_64-openjpeg2
             mingw-w64-ucrt-x86_64-libwebp
             mingw-w64-ucrt-x86_64-libjxl
@@ -323,6 +332,37 @@ jobs:
             Select-Object Name, @{N='MB';E={[math]::Round($_.Length/1MB,2)}} |
             Sort-Object Name | Format-Table -AutoSize
 
+      # ── 7b. Smoke-test DLL loadability ────────────────────────────────────
+      # LoadLibrary every bundled DLL in a plain Windows process. This catches
+      # DllMain initialization failures (ERROR_DLL_INIT_FAILED, 1114) before a
+      # broken bundle can be published — the exact failure mode that shipped
+      # in July 2026 when MSYS2's libpodofo.dll started failing DllMain and
+      # made libgdal-*.dll unloadable in every consumer process, including R.
+      # File-presence checks alone cannot detect this class of breakage.
+      - name: Smoke-test bundle DLL loadability
+        shell: pwsh
+        run: |
+          $bin = Join-Path $PWD "gdal-bundle\bin"
+          $env:PATH = "$bin;$env:PATH"
+          $sig = @'
+          [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+          public static extern IntPtr LoadLibraryW(string path);
+          '@
+          $k32 = Add-Type -MemberDefinition $sig -Name Loader -Namespace Smoke -PassThru
+          $failures = @()
+          foreach ($dll in (Get-ChildItem "$bin\*.dll" | Sort-Object Name)) {
+            $h = $k32::LoadLibraryW($dll.FullName)
+            if ($h -eq [IntPtr]::Zero) {
+              $code = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
+              $failures += "$($dll.Name) (Win32 error $code)"
+            }
+          }
+          if ($failures.Count -gt 0) {
+            Write-Error ("FATAL: bundled DLLs failed to load:`n  " + ($failures -join "`n  "))
+            exit 1
+          }
+          Write-Host "✓ All $((Get-ChildItem "$bin\*.dll").Count) bundled DLLs load cleanly (no DllMain failures)"
+
       # ── 8. Upload bundle as workflow artifact (always) ────────────────────
       # compression-level: 0 — DLLs are already-compressed PE binaries.
       #                        Re-compressing wastes 30-60s and gains <5%.
@@ -375,6 +415,8 @@ jobs:
             | `GDAL_HIDE_INTERNAL_SYMBOLS` | `ON` | Cleaner export table |
             | `--kill-at` | (linker) | Correct stdcall symbol decoration for MinGW DLLs |
             | Static GCC/stdc++/winpthread | (linker) | No Rtools or MSYS2 required at runtime |
+            | `GDAL_ENABLE_DRIVER_PDF` | `OFF` | MSYS2 libpodofo.dll fails DllMain (ERROR_DLL_INIT_FAILED 1114) in any process, making libgdal unloadable; poppler/podofo/pdfium backends all disabled |
+            | Loadability gate | (CI) | Every bundled DLL is LoadLibrary-tested in CI before publishing |
 
             ### Runtime bundle asset
             Download:

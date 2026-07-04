@@ -1,4 +1,10 @@
-# gdalraster.windows (development version)
+# gdalraster.windows 0.3.1
+
+## GDAL runtime bundle
+
+- Fixed the bundle-wide `LoadLibrary failure: A dynamic link library (DLL) initialization routine failed` (Windows error 1114) that made published bundles unloadable on machines without Rtools' UCRT64 tree. Root cause: the MSYS2 `libpodofo.dll` (PDF driver backend) fails its `DllMain`-time OpenSSL initialization against the MSYS2 `libcrypto-3-x64.dll`. The PDF driver is now disabled outright (`GDAL_ENABLE_DRIVER_PDF=OFF` plus the poppler/podofo/pdfium backends).
+- HDF5 and NetCDF drivers are enabled again; the earlier theory that their OpenBLAS/Fortran dependency chain conflicts with R's own DLLs was disproven empirically (every DLL in that chain loads cleanly inside R).
+- Bundle verification now has three layers: dependency closure (`ntldd` walk plus a banned-DLL guard for PDF/NSS chains in `collect_dlls.sh`), loadability (every bundled DLL is `LoadLibrary`-tested in CI before an asset can publish), and functionality (the e2e workflow runs on every published bundle release).
 
 ## Fixes
 
@@ -160,3 +166,5 @@
 - Initial development version: GDAL runtime bundle install/activation
   helpers, `gdalraster` source-build integration, startup hooks, and the
   Windows CI build pipeline.
+
+<!-- CHECKPOINT id="ckpt_mr5nqr3t_xizns8" time="2026-07-04T01:02:23.417Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
