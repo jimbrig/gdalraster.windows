@@ -67,7 +67,7 @@
 
 
 
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/troubleshooting.qmd" class="external-link"><code>vignettes/troubleshooting.qmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/smoke-gdal-v3.13.1/vignettes/troubleshooting.qmd" class="external-link"><code>vignettes/troubleshooting.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
     </div>
 
@@ -121,6 +121,30 @@
 <li>Inspect the dependency tree from an <a href="https://www.msys2.org/" class="external-link">MSYS2</a>/<a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> shell with <a href="https://github.com/LRN/ntldd" class="external-link">ntldd</a>: <code>ntldd -R &lt;gdal_home&gt;/bin/libgdal-*.dll</code> — any entry that resolves outside the bundle and outside Windows system paths indicates a missing bundled DLL. Or list direct imports with <code>objdump -x &lt;gdal_home&gt;/bin/libgdal-*.dll | findstr "DLL Name"</code>.</li>
 </ul>
 <p>A DLL can be “missing” even when CI verified the bundle: GitHub runner images ship products that install DLLs into <code>System32</code> (e.g. the Microsoft ODBC Driver for SQL Server, <code>msodbcsql17.dll</code>), so a dependency on them resolves in CI but not on end-user machines. The build disables such linkage (<code>GDAL_USE_MSSQL_ODBC=OFF</code>) and bundle verification rejects known non-OS <code>System32</code> DLLs, but any import in the <code>objdump</code> output that is neither in the bundle’s <code>bin/</code> nor a Windows system DLL is the culprit.</p>
+</section><section class="level2"><h2 id="loadlibrary-failure-a-dynamic-link-library-dll-initialization-routine-failed">
+<code>LoadLibrary failure: A dynamic link library (DLL) initialization routine failed</code><a class="anchor" aria-label="anchor" href="#loadlibrary-failure-a-dynamic-link-library-dll-initialization-routine-failed"></a>
+</h2>
+<p>This is a different failure class from “module could not be found” (Windows error 1114 vs 126). Every dependency was <em>found</em> and mapped into the process, but one of them failed its own initialization (<code>DllMain</code> / C++ static constructors), which makes the whole <code>libgdal-*.dll</code> load fail. Two properties make it confusing:</p>
+<ul>
+<li>
+<strong>Dependency-closure checks cannot detect it.</strong> The bundle can be verified complete (<code>ntldd</code> reports every import resolved) and still fail this way — the broken DLL is present, it just cannot initialize. This is why bundle builds are also <em>load-tested</em> in CI (every DLL is passed through <code>LoadLibrary</code> in a plain process before an asset is published).</li>
+<li>
+<strong>The same DLL bytes can load in one process and fail in another</strong>, because its initializer’s behavior depends on which copies of <em>its</em> dependencies the loader resolved (first-loaded-wins by base name).</li>
+</ul>
+<p>To isolate the culprit, sweep-load the bundle’s DLLs individually in a fresh session — the failing one is rarely <code>libgdal</code> itself:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_home.html">gdal_home</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"bin"</span><span class="op">)</span></span>
+<span><span class="fu">withr</span><span class="fu">::</span><span class="fu"><a href="https://withr.r-lib.org/reference/with_envvar.html" class="external-link">local_envvar</a></span><span class="op">(</span>PATH <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">bin</span>, <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"PATH"</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">";"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">dll</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">bin</span>, pattern <span class="op">=</span> <span class="st">"\\.dll$"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">ok</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
+<span>    <span class="op">{</span> <span class="fu"><a href="https://rdrr.io/r/base/dynload.html" class="external-link">dyn.load</a></span><span class="op">(</span><span class="va">dll</span>, local <span class="op">=</span> <span class="cn">FALSE</span>, now <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>; <span class="cn">TRUE</span> <span class="op">}</span>,</span>
+<span>    error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">ok</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"FAILS TO INITIALIZE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">dll</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<p>Historical instance: bundles published before July 2026 shipped <code>libpodofo.dll</code> (a PDF-driver backend), whose static initializers run OpenSSL setup during <code>DllMain</code> and fail against the MSYS2-built <code>libcrypto-3-x64.dll</code> — in any process, R or not. Current bundles exclude the PDF driver entirely (<code>GDAL_ENABLE_DRIVER_PDF=OFF</code>) and CI refuses to publish a bundle containing any DLL that fails to load. If you see this error with a current bundle, reinstall the runtime first (<code>install_gdal_runtime(overwrite = TRUE)</code>), then run the sweep above and report the failing DLL in an issue.</p>
 </section><section class="level2"><h2 id="install_gdal_runtimeoverwrite-true-cannot-delete-the-old-runtime">
 <code>install_gdal_runtime(overwrite = TRUE)</code> cannot delete the old runtime<a class="anchor" aria-label="anchor" href="#install_gdal_runtimeoverwrite-true-cannot-delete-the-old-runtime"></a>
 </h2>
@@ -133,14 +157,14 @@
 <li>Check the bundle has the python layer:</li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_home.html">gdal_home</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"python"</span>, <span class="st">"osgeo_utils"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <ul>
 <li>If missing, the installed runtime predates python support — reinstall:</li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdal_runtime.html">install_gdal_runtime</a></span><span class="op">(</span>overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <ul>
@@ -156,7 +180,7 @@
 </h2>
 <p>On machines without network access (or behind strict proxies), install from a manually transferred release asset:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdal_runtime.html">install_gdal_runtime</a></span><span class="op">(</span></span>
 <span>  local_zip <span class="op">=</span> <span class="st">"C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -168,7 +192,7 @@
 <p>If <code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> fails with this error and R also printed a warning like <code>package '…tar.gz' is not available for this version of R</code>, the underlying cause was that <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> received <code>repos</code> set to a CRAN mirror together with a local file path. In that combination R looks the path up as a <em>package name</em> in the repository rather than installing from the file, so the install silently does nothing.</p>
 <p>This was fixed in <code>gdalraster.windows</code> ≥ 0.2.1 by always calling <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> with <code>repos = NULL</code> for local-file installation. If you encounter this with an older version, upgrade the package:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jimbrig/gdalraster.windows"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </section><section class="level2"><h2 id="after-a-gdal-version-upgrade">After a GDAL version upgrade<a class="anchor" aria-label="anchor" href="#after-a-gdal-version-upgrade"></a>

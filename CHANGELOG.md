@@ -8,6 +8,37 @@
 
 ## Bug Fixes
 
+- Authenticate GitHub API requests and harden asset selection (#21
+  review)
+  ([c661683](https://github.com/jimbrig/gdalraster.windows/commit/c661683ffafe8833befe24cbe17affef22b976e7)) -
+  (Jimmy Briggs)
+- Resolve “latest” runtime by scanning releases for bundle assets
+  ([0c3fbb3](https://github.com/jimbrig/gdalraster.windows/commit/0c3fbb38e6841462c58c81b89b32c849b9c77892)) -
+  (Jimmy Briggs)
+
+## Features
+
+- **cicd:** Scheduled upstream GDAL check and e2e verification workflow
+  ([\#20](https://github.com/jimbrig/gdalraster.windows/issues/20))
+  ([d87de00](https://github.com/jimbrig/gdalraster.windows/commit/d87de0090ab2dc0fd15491f7365cf65b320878a4)) -
+  (Jimmy Briggs)
+
+## Refactoring
+
+- **docs:** Move importFrom tags to the functions that use them
+  ([576b89a](https://github.com/jimbrig/gdalraster.windows/commit/576b89a159ce444128730ca6f74c401c016e24d8)) -
+  (Jimmy Briggs)
+- Move shared constants to R/aaa.R using dot-prefixed convention
+  ([8eb0f46](https://github.com/jimbrig/gdalraster.windows/commit/8eb0f46683c5b7ea475025b1fdd5f75a4bf6bbaf)) -
+  (Jimmy Briggs)
+- Centralize repo slugs, asset patterns, and dll naming in R/constants.R
+  ([4b908ba](https://github.com/jimbrig/gdalraster.windows/commit/4b908ba87a567c092552b966f492d4549ae5f4e5)) -
+  (Jimmy Briggs)
+
+## [0.3.0](https://github.com/jimbrig/gdalraster.windows/compare/gdal-v3.13.1...v0.3.0)- (2026-07-03)
+
+## Bug Fixes
+
 - Address Copilot PR review - relative manifest icon paths, typo, GDAL
   release date
   ([\#19](https://github.com/jimbrig/gdalraster.windows/issues/19))

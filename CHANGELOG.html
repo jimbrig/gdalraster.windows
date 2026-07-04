@@ -35,7 +35,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/CHANGELOG.md" class="external-link"><code>CHANGELOG.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/smoke-gdal-v3.13.1/CHANGELOG.md" class="external-link"><code>CHANGELOG.md</code></a></small>
     </div>
 
 <div id="changelog" class="section level1">
@@ -48,6 +48,27 @@
 </div>
 <div class="section level2">
 <h2 id="bug-fixes">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes"></a></h2>
+<ul><li>Authenticate GitHub API requests and harden asset selection (#21 review) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/c661683ffafe8833befe24cbe17affef22b976e7" class="external-link">c661683</a>) - (Jimmy Briggs)</li>
+<li>Resolve “latest” runtime by scanning releases for bundle assets (<a href="https://github.com/jimbrig/gdalraster.windows/commit/0c3fbb38e6841462c58c81b89b32c849b9c77892" class="external-link">0c3fbb3</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a></h2>
+<ul><li>
+<strong>cicd:</strong> Scheduled upstream GDAL check and e2e verification workflow (<a href="https://github.com/jimbrig/gdalraster.windows/issues/20" class="external-link">#20</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/d87de0090ab2dc0fd15491f7365cf65b320878a4" class="external-link">d87de00</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="refactoring">Refactoring<a class="anchor" aria-label="anchor" href="#refactoring"></a></h2>
+<ul><li>
+<strong>docs:</strong> Move importFrom tags to the functions that use them (<a href="https://github.com/jimbrig/gdalraster.windows/commit/576b89a159ce444128730ca6f74c401c016e24d8" class="external-link">576b89a</a>) - (Jimmy Briggs)</li>
+<li>Move shared constants to R/aaa.R using dot-prefixed convention (<a href="https://github.com/jimbrig/gdalraster.windows/commit/8eb0f46683c5b7ea475025b1fdd5f75a4bf6bbaf" class="external-link">8eb0f46</a>) - (Jimmy Briggs)</li>
+<li>Centralize repo slugs, asset patterns, and dll naming in R/constants.R (<a href="https://github.com/jimbrig/gdalraster.windows/commit/4b908ba87a567c092552b966f492d4549ae5f4e5" class="external-link">4b908ba</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="id_030--2026-07-03">
+<a href="https://github.com/jimbrig/gdalraster.windows/compare/gdal-v3.13.1...v0.3.0" class="external-link">0.3.0</a>- (2026-07-03)<a class="anchor" aria-label="anchor" href="#id_030--2026-07-03"></a></h2>
+</div>
+<div class="section level2">
+<h2 id="bug-fixes-1">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1"></a></h2>
 <ul><li>Address Copilot PR review - relative manifest icon paths, typo, GDAL release date (<a href="https://github.com/jimbrig/gdalraster.windows/issues/19" class="external-link">#19</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/c7cf87490fc0080022f141ea35ce5907e9fde9ac" class="external-link">c7cf874</a>) - (Jimmy Briggs)</li>
 <li>
 <strong>dev:</strong> Gh_labels.R passes named vectors to use_github_labels() (<a href="https://github.com/jimbrig/gdalraster.windows/commit/1366d9d6ede3c355fe2c1b0f137f8dd985a93f15" class="external-link">1366d9d</a>) - (Jimmy Briggs)</li>
@@ -69,7 +90,7 @@
 <strong>vignettes:</strong> Migrate vignettes to Quarto with revamped content (#14, #15) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/20a31ad961ed7e545aa45a8fdc959882da29fc08" class="external-link">20a31ad</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a></h2>
+<h2 id="features-1">Features<a class="anchor" aria-label="anchor" href="#features-1"></a></h2>
 <ul><li>
 <strong>pkgdown:</strong> Branded site theme, hex logo, and favicons (<a href="https://github.com/jimbrig/gdalraster.windows/issues/16" class="external-link">#16</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/46754cb03c9bf2d107c30ad04c8a81956bb6dda7" class="external-link">46754cb</a>) - (Jimmy Briggs)</li>
 </ul></div>
@@ -109,7 +130,7 @@
 <li>Add in-depth Windows GDAL runtime guides and update package docs (<a href="https://github.com/jimbrig/gdalraster.windows/commit/0fac7829cb0e58d53cc0445de057589fc3617064" class="external-link">0fac782</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="features-1">Features<a class="anchor" aria-label="anchor" href="#features-1"></a></h2>
+<h2 id="features-2">Features<a class="anchor" aria-label="anchor" href="#features-2"></a></h2>
 <ul><li>Bundle pure-python osgeo_utils and expose via PYTHONPATH at runtime activation (<a href="https://github.com/jimbrig/gdalraster.windows/commit/3cba16f5b22b0e881ff11479dfed2582d2cb84e1" class="external-link">3cba16f</a>) - (Jimmy Briggs)</li>
 <li>
 <strong>startup:</strong> Add runtime bootstrap and startup sitrep, streamline verification (<a href="https://github.com/jimbrig/gdalraster.windows/commit/77048b34ad9be25ccb2b136aa78299db352b2645" class="external-link">77048b3</a>) - (Jimmy Briggs)
@@ -133,7 +154,7 @@
 <a href="https://github.com/jimbrig/gdalraster.windows/tree/gdal-v3.13.0" class="external-link">gdal-v3.13.0</a>- (2026-05-23)<a class="anchor" aria-label="anchor" href="#gdal-v3130--2026-05-23"></a></h2>
 </div>
 <div class="section level2">
-<h2 id="bug-fixes-1">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1"></a></h2>
+<h2 id="bug-fixes-2">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2"></a></h2>
 <ul><li>
 <strong>gdalraster:</strong> Add –no-test-load to source install to avoid test-load failures (<a href="https://github.com/jimbrig/gdalraster.windows/commit/326f2c2d752729abac7770e8ee2010c682adbc45" class="external-link">326f2c2</a>) - (Jimmy Briggs)</li>
 <li>
@@ -166,7 +187,7 @@
 <strong>changelog:</strong> Add GitHub Action to generate and push CHANGELOG.md (<a href="https://github.com/jimbrig/gdalraster.windows/commit/3da74a8d35e926cca2b674d38225091f61ff67c2" class="external-link">3da74a8</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="features-2">Features<a class="anchor" aria-label="anchor" href="#features-2"></a></h2>
+<h2 id="features-3">Features<a class="anchor" aria-label="anchor" href="#features-3"></a></h2>
 <ul><li>
 <strong>gdal:</strong> Add local and fallback zip support to install_gdal_runtime (<a href="https://github.com/jimbrig/gdalraster.windows/commit/74a069fcedebe396e29b10abfebaefd453aaebd8" class="external-link">74a069f</a>) - (Jimmy Briggs)</li>
 <li>

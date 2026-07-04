@@ -67,7 +67,7 @@
 
 
 
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/architecture.qmd" class="external-link"><code>vignettes/architecture.qmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/smoke-gdal-v3.13.1/vignettes/architecture.qmd" class="external-link"><code>vignettes/architecture.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
     </div>
 
@@ -145,14 +145,19 @@
 <td>Extended driver profile beyond the lean Rtools build</td>
 </tr>
 <tr class="odd">
+<td>
+<code>-DGDAL_ENABLE_DRIVER_PDF=OFF</code> (+ poppler/podofo/pdfium <code>OFF</code>)</td>
+<td>The MSYS2 <code>libpodofo.dll</code> fails its DLL initialization routine (Windows error 1114) in any process; a <code>libgdal</code> that imports it cannot be loaded at all, so the PDF driver is excluded from the bundle</td>
+</tr>
+<tr class="even">
 <td><code>-DGDAL_HIDE_INTERNAL_SYMBOLS=ON</code></td>
 <td>Restricts the export table to the public API (PE/COFF DLLs cap export ordinals at 65,535 and GDAL’s full symbol set exceeds it — see <a href="https://github.com/OSGeo/gdal/issues/4706" class="external-link">OSGeo/gdal#4706</a>)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>-Wl,--kill-at</code></td>
 <td>Strips <code>@N</code> stdcall decoration from exports so symbol names match what loaders expect</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>
 <code>-static-libgcc -static-libstdc++</code> + whole-archive <code>winpthread</code>
 </td>

@@ -81,6 +81,50 @@ verification rejects known non-OS `System32` DLLs, but any import in the
 `objdump` output that is neither in the bundle’s `bin/` nor a Windows
 system DLL is the culprit.
 
+## `LoadLibrary failure: A dynamic link library (DLL) initialization routine failed`
+
+This is a different failure class from “module could not be found”
+(Windows error 1114 vs 126). Every dependency was *found* and mapped
+into the process, but one of them failed its own initialization
+(`DllMain` / C++ static constructors), which makes the whole
+`libgdal-*.dll` load fail. Two properties make it confusing:
+
+- **Dependency-closure checks cannot detect it.** The bundle can be
+  verified complete (`ntldd` reports every import resolved) and still
+  fail this way — the broken DLL is present, it just cannot initialize.
+  This is why bundle builds are also *load-tested* in CI (every DLL is
+  passed through `LoadLibrary` in a plain process before an asset is
+  published).
+- **The same DLL bytes can load in one process and fail in another**,
+  because its initializer’s behavior depends on which copies of *its*
+  dependencies the loader resolved (first-loaded-wins by base name).
+
+To isolate the culprit, sweep-load the bundle’s DLLs individually in a
+fresh session — the failing one is rarely `libgdal` itself:
+
+``` r
+
+bin <- file.path(gdalraster.windows::gdal_home(), "bin")
+withr::local_envvar(PATH = paste(bin, Sys.getenv("PATH"), sep = ";"))
+for (dll in list.files(bin, pattern = "\\.dll$", full.names = TRUE)) {
+  ok <- tryCatch(
+    { dyn.load(dll, local = FALSE, now = TRUE); TRUE },
+    error = function(e) FALSE
+  )
+  if (!ok) cat("FAILS TO INITIALIZE:", basename(dll), "\n")
+}
+```
+
+Historical instance: bundles published before July 2026 shipped
+`libpodofo.dll` (a PDF-driver backend), whose static initializers run
+OpenSSL setup during `DllMain` and fail against the MSYS2-built
+`libcrypto-3-x64.dll` — in any process, R or not. Current bundles
+exclude the PDF driver entirely (`GDAL_ENABLE_DRIVER_PDF=OFF`) and CI
+refuses to publish a bundle containing any DLL that fails to load. If
+you see this error with a current bundle, reinstall the runtime first
+(`install_gdal_runtime(overwrite = TRUE)`), then run the sweep above and
+report the failing DLL in an issue.
+
 ## `install_gdal_runtime(overwrite = TRUE)` cannot delete the old runtime
 
 Deleting `gdal_home` fails when its DLLs are mapped into a running
