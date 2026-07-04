@@ -41,6 +41,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.1" id="gdalrasterwindows-031">gdalraster.windows 0.3.1<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-031"></a></h2>
 <div class="section level3">
+<h3 id="package-0-3-1">Package<a class="anchor" aria-label="anchor" href="#package-0-3-1"></a></h3>
+<ul><li>
+<code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> now checks for a working Rtools toolchain up front (<code><a href="https://pkgbuild.r-lib.org/reference/has_build_tools.html" class="external-link">pkgbuild::has_build_tools()</a></code>) and aborts with installation guidance when none is found, instead of failing mid-compile with a raw make/gcc error. Rtools is documented as the one prerequisite the prebuilt runtime bundle cannot eliminate — in the README, the Getting Started vignette, and the <code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> help page (which also gains an Upgrading section: rebuild gdalraster after every runtime bundle upgrade).</li>
+</ul></div>
+<div class="section level3">
 <h3 id="gdal-runtime-bundle-0-3-1">GDAL runtime bundle<a class="anchor" aria-label="anchor" href="#gdal-runtime-bundle-0-3-1"></a></h3>
 <ul><li>Fixed the bundle-wide <code>LoadLibrary failure: A dynamic link library (DLL) initialization routine failed</code> (Windows error 1114) that made published bundles unloadable on machines without Rtools’ UCRT64 tree. Root cause: the MSYS2 <code>libpodofo.dll</code> (PDF driver backend) fails its <code>DllMain</code>-time OpenSSL initialization against the MSYS2 <code>libcrypto-3-x64.dll</code>. The PDF driver is now disabled outright (<code>GDAL_ENABLE_DRIVER_PDF=OFF</code> plus the poppler/podofo/pdfium backends).</li>
 <li>HDF5 and NetCDF drivers are enabled again; the earlier theory that their OpenBLAS/Fortran dependency chain conflicts with R’s own DLLs was disproven empirically (every DLL in that chain loads cleanly inside R).</li>
@@ -147,7 +152,7 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.1" id="gdalrasterwindows-001">gdalraster.windows 0.0.1<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-001"></a></h2>
 <ul><li>Initial development version: GDAL runtime bundle install/activation helpers, <code>gdalraster</code> source-build integration, startup hooks, and the Windows CI build pipeline.</li>
-</ul><!-- CHECKPOINT id="ckpt_mr5nqr3t_xizns8" time="2026-07-04T01:02:23.417Z" note="auto" fixes=0 questions=0 highlights=0 sections="" --></div>
+</ul><!-- CHECKPOINT id="ckpt_mr5nqr3t_xizns8" time="2026-07-04T01:02:23.417Z" note="auto" fixes=0 questions=0 highlights=0 sections="" --><!-- CHECKPOINT id="ckpt_mr5o3m2m_haj1ep" time="2026-07-04T01:12:23.422Z" note="auto" fixes=0 questions=0 highlights=0 sections="" --></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

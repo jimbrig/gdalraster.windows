@@ -61,3 +61,20 @@ install_gdalraster(
 ## Value
 
 Invisibly returns installed library path.
+
+## Prerequisites
+
+This is a source compilation, so
+[Rtools](https://cran.r-project.org/bin/windows/Rtools/) matching your R
+version must be installed (the one thing the prebuilt runtime bundle
+cannot eliminate). The function checks for a toolchain up front and
+aborts with guidance when none is found. The GDAL runtime bundle itself
+must already be installed via
+[`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md).
+
+## Upgrading
+
+After installing a new runtime bundle version
+(`install_gdal_runtime(overwrite = TRUE)`), rerun this function — the
+previous gdalraster build is bound to the previous bundle's GDAL and
+must be recompiled against the new one.

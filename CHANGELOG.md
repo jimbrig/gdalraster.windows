@@ -6,14 +6,40 @@
 
 ## \[Unreleased\]
 
+## Documentation
+
+- **readme:** Add e2e workflow badge
+  ([93f31fb](https://github.com/jimbrig/gdalraster.windows/commit/93f31fbe0f0ab876481ef8b8e2a46d1e44632e29)) -
+  (Jimmy Briggs)
+
+## [smoke-gdal-v3.13.1](https://github.com/jimbrig/gdalraster.windows/compare/v0.3.0...smoke-gdal-v3.13.1)- (2026-07-04)
+
 ## Bug Fixes
 
+- **gdal:** Disable PDF driver to fix DLL init failure; restore
+  HDF5/NetCDF; gate bundles on loadability
+  ([a4c01ac](https://github.com/jimbrig/gdalraster.windows/commit/a4c01ac2dc7c10a78a618b2c51dce60a88147c6c)) -
+  (Jimmy Briggs)
+- Disable HDF5, NetCDF, Poppler in GDAL build to fix DLL init failure
+  ([66f4c77](https://github.com/jimbrig/gdalraster.windows/commit/66f4c77167aea839fb2947974c9ed2d5536a0a0f)) -
+  (copilot-swe-agent\[bot\])
 - Authenticate GitHub API requests and harden asset selection (#21
   review)
   ([c661683](https://github.com/jimbrig/gdalraster.windows/commit/c661683ffafe8833befe24cbe17affef22b976e7)) -
   (Jimmy Briggs)
 - Resolve “latest” runtime by scanning releases for bundle assets
   ([0c3fbb3](https://github.com/jimbrig/gdalraster.windows/commit/0c3fbb38e6841462c58c81b89b32c849b9c77892)) -
+  (Jimmy Briggs)
+
+## Documentation
+
+- Unwrap hard-wrapped markdown in new dev docs and NEWS; archive
+  reference material under dev/archive (local-only)
+  ([28d5e16](https://github.com/jimbrig/gdalraster.windows/commit/28d5e16d93f61ed722c1ed1095b85920c4f34f1d)) -
+  (Jimmy Briggs)
+- **dev:** Add full-picture narrative and windows dll/abi deep dive;
+  update troubleshooting and toolchain notes for the 1114 failure class
+  ([62abd21](https://github.com/jimbrig/gdalraster.windows/commit/62abd2145ea6d77a0cca741e8b04778c0208b1b0)) -
   (Jimmy Briggs)
 
 ## Features

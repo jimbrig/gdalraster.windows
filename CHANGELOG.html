@@ -47,9 +47,27 @@
 <h2 id="unreleased">[Unreleased]<a class="anchor" aria-label="anchor" href="#unreleased"></a></h2>
 </div>
 <div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a></h2>
+<ul><li>
+<strong>readme:</strong> Add e2e workflow badge (<a href="https://github.com/jimbrig/gdalraster.windows/commit/93f31fbe0f0ab876481ef8b8e2a46d1e44632e29" class="external-link">93f31fb</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="smoke-gdal-v3131--2026-07-04">
+<a href="https://github.com/jimbrig/gdalraster.windows/compare/v0.3.0...smoke-gdal-v3.13.1" class="external-link">smoke-gdal-v3.13.1</a>- (2026-07-04)<a class="anchor" aria-label="anchor" href="#smoke-gdal-v3131--2026-07-04"></a></h2>
+</div>
+<div class="section level2">
 <h2 id="bug-fixes">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes"></a></h2>
-<ul><li>Authenticate GitHub API requests and harden asset selection (#21 review) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/c661683ffafe8833befe24cbe17affef22b976e7" class="external-link">c661683</a>) - (Jimmy Briggs)</li>
+<ul><li>
+<strong>gdal:</strong> Disable PDF driver to fix DLL init failure; restore HDF5/NetCDF; gate bundles on loadability (<a href="https://github.com/jimbrig/gdalraster.windows/commit/a4c01ac2dc7c10a78a618b2c51dce60a88147c6c" class="external-link">a4c01ac</a>) - (Jimmy Briggs)</li>
+<li>Disable HDF5, NetCDF, Poppler in GDAL build to fix DLL init failure (<a href="https://github.com/jimbrig/gdalraster.windows/commit/66f4c77167aea839fb2947974c9ed2d5536a0a0f" class="external-link">66f4c77</a>) - (copilot-swe-agent[bot])</li>
+<li>Authenticate GitHub API requests and harden asset selection (#21 review) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/c661683ffafe8833befe24cbe17affef22b976e7" class="external-link">c661683</a>) - (Jimmy Briggs)</li>
 <li>Resolve “latest” runtime by scanning releases for bundle assets (<a href="https://github.com/jimbrig/gdalraster.windows/commit/0c3fbb38e6841462c58c81b89b32c849b9c77892" class="external-link">0c3fbb3</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="documentation-1">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1"></a></h2>
+<ul><li>Unwrap hard-wrapped markdown in new dev docs and NEWS; archive reference material under dev/archive (local-only) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/28d5e16d93f61ed722c1ed1095b85920c4f34f1d" class="external-link">28d5e16</a>) - (Jimmy Briggs)</li>
+<li>
+<strong>dev:</strong> Add full-picture narrative and windows dll/abi deep dive; update troubleshooting and toolchain notes for the 1114 failure class (<a href="https://github.com/jimbrig/gdalraster.windows/commit/62abd2145ea6d77a0cca741e8b04778c0208b1b0" class="external-link">62abd21</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
 <h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a></h2>
@@ -78,7 +96,7 @@
 <li>Install_gdalraster uses repos=NULL for local tarball install (<a href="https://github.com/jimbrig/gdalraster.windows/issues/11" class="external-link">#11</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/bddba7ae6c1b113413f910ebb1c05eb6ea382b07" class="external-link">bddba7a</a>) - (copilot-swe-agent[bot])</li>
 </ul></div>
 <div class="section level2">
-<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a></h2>
+<h2 id="documentation-2">Documentation<a class="anchor" aria-label="anchor" href="#documentation-2"></a></h2>
 <ul><li>Clarify GitHub Actions badge labels (<a href="https://github.com/jimbrig/gdalraster.windows/commit/3b5bbb486fcb1db5ce116d1618685c092d17ee65" class="external-link">3b5bbb4</a>) - (Jimmy Briggs)</li>
 <li>
 <strong>sync:</strong> Align tooling and maintainer docs with current bundle contract (<a href="https://github.com/jimbrig/gdalraster.windows/commit/47abdd6c343e194ee8766369492f4e96d10cc48b" class="external-link">47abdd6</a>) - (Jimmy Briggs)</li>
@@ -120,7 +138,7 @@
 <li>Add Windows R CMD CHECK workflow (<a href="https://github.com/jimbrig/gdalraster.windows/commit/44a366c281e98ecef759513d481be49d77a8035e" class="external-link">44a366c</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="documentation-1">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1"></a></h2>
+<h2 id="documentation-3">Documentation<a class="anchor" aria-label="anchor" href="#documentation-3"></a></h2>
 <ul><li>Promote technical docs to published vignettes; fix #2 and #5 code paths (<a href="https://github.com/jimbrig/gdalraster.windows/commit/07b27f597f015da9d25c3aa4feada50490450fe7" class="external-link">07b27f5</a>) - (Jimmy Briggs)</li>
 <li>Address review feedback - clarify fallback_zip default, namespace-qualify troubleshooting calls (<a href="https://github.com/jimbrig/gdalraster.windows/commit/a69ed0f08be46b9b737375459c1865ed8b0c179e" class="external-link">a69ed0f</a>) - (Jimmy Briggs)</li>
 <li>Refresh all docs for embedded-python runtime layer and offline install (<a href="https://github.com/jimbrig/gdalraster.windows/commit/c54717e917c3ace01228ba1409cfa6823c465405" class="external-link">c54717e</a>) - (Jimmy Briggs)</li>
@@ -180,7 +198,7 @@
 <strong>.cursor:</strong> Add MCP server config and scaffold cursor directories (<a href="https://github.com/jimbrig/gdalraster.windows/commit/84318dac52e12ee4a2d56348509584796aa6901c" class="external-link">84318da</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="documentation-2">Documentation<a class="anchor" aria-label="anchor" href="#documentation-2"></a></h2>
+<h2 id="documentation-4">Documentation<a class="anchor" aria-label="anchor" href="#documentation-4"></a></h2>
 <ul><li>Refresh maintainer docs, AGENTS guidance, and README (<a href="https://github.com/jimbrig/gdalraster.windows/commit/e7beb450ef387a3d2b4bddddc1d0d9c58f62156e" class="external-link">e7beb45</a>) - (Jimmy Briggs)</li>
 <li>Add curated maintainer docs and overhaul top-level README (<a href="https://github.com/jimbrig/gdalraster.windows/commit/bbd3a74073a770c4dadb65e1199b61edfee44245" class="external-link">bbd3a74</a>) - (Jimmy Briggs)</li>
 <li>

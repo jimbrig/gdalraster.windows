@@ -2,6 +2,19 @@
 
 ## gdalraster.windows 0.3.1
 
+### Package
+
+- [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
+  now checks for a working Rtools toolchain up front
+  ([`pkgbuild::has_build_tools()`](https://pkgbuild.r-lib.org/reference/has_build_tools.html))
+  and aborts with installation guidance when none is found, instead of
+  failing mid-compile with a raw make/gcc error. Rtools is documented as
+  the one prerequisite the prebuilt runtime bundle cannot eliminate — in
+  the README, the Getting Started vignette, and the
+  [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
+  help page (which also gains an Upgrading section: rebuild gdalraster
+  after every runtime bundle upgrade).
+
 ### GDAL runtime bundle
 
 - Fixed the bundle-wide

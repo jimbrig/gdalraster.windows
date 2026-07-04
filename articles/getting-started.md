@@ -36,6 +36,23 @@ Everything is non-destructive by default: the runtime lives under a
 package-managed user data directory, and the source-built `gdalraster`
 goes into its own library path rather than replacing a CRAN install.
 
+## Prerequisites
+
+Two things must be on the machine before setup:
+
+- **R on Windows** — everything in this package is Windows-specific.
+- **[Rtools](https://cran.r-project.org/bin/windows/Rtools/) matching
+  your R version** —
+  [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
+  compiles gdalraster from source against the bundled GDAL headers. The
+  prebuilt runtime bundle removes every other toolchain requirement (no
+  MSYS2, no manual GDAL build), but the compile step itself needs
+  Rtools. The function checks for a toolchain up front and aborts with
+  guidance when none is found.
+
+No other GDAL, Python, or spatial system dependencies are required: the
+runtime bundle is self-contained.
+
 ## Quick start
 
 One-time setup (using [pak](https://pak.r-lib.org/)):
