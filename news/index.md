@@ -1,6 +1,6 @@
 # Changelog
 
-## gdalraster.windows (development version)
+## gdalraster.windows 0.3.1
 
 ### GDAL runtime bundle
 
