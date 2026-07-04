@@ -12,6 +12,13 @@
   ([93f31fb](https://github.com/jimbrig/gdalraster.windows/commit/93f31fbe0f0ab876481ef8b8e2a46d1e44632e29)) -
   (Jimmy Briggs)
 
+## Features
+
+- Preflight Rtools check in install_gdalraster() via pkgbuild; document
+  prerequisites in README, getting-started, and help pages
+  ([e7d08b7](https://github.com/jimbrig/gdalraster.windows/commit/e7d08b713734b7128e147b73f2dc7730c49798b9)) -
+  (Jimmy Briggs)
+
 ## [smoke-gdal-v3.13.1](https://github.com/jimbrig/gdalraster.windows/compare/v0.3.0...smoke-gdal-v3.13.1)- (2026-07-04)
 
 ## Bug Fixes

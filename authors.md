@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/jimbrig/gdalraster.windows/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/jimbrig/gdalraster.windows/blob/v0.3.1/DESCRIPTION)
 
 Briggs J (2026). *gdalraster.windows: Windows GDAL Runtime and
 gdalraster Bootstrap Tools*. R package version 0.3.1,
