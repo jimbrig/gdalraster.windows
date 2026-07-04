@@ -36,7 +36,9 @@ First actions:
 
 ### `LoadLibrary` failure on package load
 
-Most likely:
+Two distinct classes — read the error text carefully:
+
+**"The specified module could not be found" (error 126)**
 
 - missing transitive DLLs in runtime `bin`
 - profile/path setup points to mixed toolchain DLLs
@@ -51,6 +53,21 @@ Example:
 ```powershell
 Rscript -e "gdalraster.windows::activate_gdal_runtime(); library(gdalraster); print(length(gdalraster::gdal_global_reg_names()))"
 ```
+
+**"A dynamic link library (DLL) initialization routine failed" (error 1114)**
+
+- a dependency DLL is present and resolvable but its `DllMain`/static
+  initializers fail; closure checks (`ntldd`) cannot catch this
+- behavior can depend on which copy of a sub-dependency got loaded first
+  (e.g. libpodofo's OpenSSL init fails against MSYS2 libcrypto but succeeds
+  against Rtools45's — July 2026 incident)
+
+First actions:
+
+- sweep-load every bundle DLL individually (`dyn.load` loop or plain
+  `LoadLibrary`) to find the one that fails to initialize
+- see `08-windows-dll-abi-deep-dive.md` sections 3 and 7 for mechanics and
+  the bisect method
 
 ### embedded-python algorithm fails with `ModuleNotFoundError: No module named 'osgeo_utils'`
 

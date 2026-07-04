@@ -81,6 +81,16 @@ Current key flags and their intent:
 - `-DGDAL_HIDE_INTERNAL_SYMBOLS=ON`  
   reduces exported symbol surface and avoids export-table pressure on Windows.
 
+- `-DGDAL_ENABLE_DRIVER_PDF=OFF` (+ `GDAL_USE_POPPLER/PODOFO/PDFIUM=OFF`)  
+  excludes the PDF driver and all its backends. MSYS2's `libpodofo.dll`
+  fails `DllMain` (error 1114) against the MSYS2 `libcrypto`, which made
+  the whole `libgdal-*.dll` unloadable in bundles published before July
+  2026. See `08-windows-dll-abi-deep-dive.md` §3 for the full mechanics.
+
+- `-DGDAL_USE_MSSQL_ODBC=OFF`, `-DGDAL_USE_MSSQL_NCLI=OFF`  
+  prevents linking the proprietary SQL Server ODBC driver present on CI
+  runner images but absent on end-user machines (issue #13).
+
 - `-Wl,--kill-at`  
   adjusts MinGW stdcall export decoration behavior for cleaner export names.
 
