@@ -143,6 +143,45 @@ cleanup_stale_runtimes <- function(gdal_home) {
   invisible(stale)
 }
 
+#' Replace the installed gdalraster package's GDAL/PROJ data directories with
+#' the bundle's share data. Upstream Makevars.win populates inst/gdal and
+#' inst/proj from the Rtools static tree, so a source build compiled against
+#' the bundle GDAL otherwise ships data files from a different GDAL/PROJ
+#' version (upstream .onLoad activates them via GDAL_DATA and
+#' proj_search_paths())
+#' @keywords internal
+#' @noRd
+sync_gdalraster_share_data <- function(lib, gdal_home = default_gdal_home()) {
+  pkg_dir <- file.path(lib, "gdalraster")
+  sources <- c(
+    gdal = gdal_share_gdal_dir(gdal_home),
+    proj = gdal_share_proj_dir(gdal_home)
+  )
+
+  synced <- character()
+  for (name in names(sources)) {
+    src <- sources[[name]]
+    if (!dir.exists(src)) {
+      cli::cli_alert_warning(
+        "bundle data directory not found, keeping packaged {.path {name}} data: {.path {src}}"
+      )
+      next
+    }
+
+    dest <- file.path(pkg_dir, name)
+    unlink(dest, recursive = TRUE, force = TRUE)
+    dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+    file.copy(
+      from = list.files(src, full.names = TRUE),
+      to = dest,
+      recursive = TRUE
+    )
+    synced <- c(synced, name)
+  }
+
+  invisible(synced)
+}
+
 #' @keywords internal
 #' @noRd
 default_gdalraster_lib <- function() {

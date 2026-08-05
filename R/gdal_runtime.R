@@ -388,6 +388,14 @@ load_gdal_dll <- function(gdal_home = default_gdal_home(), quiet = FALSE) {
 #' previous gdalraster build is bound to the previous bundle's GDAL and must
 #' be recompiled against the new one.
 #'
+#' @section Bundled data files:
+#' Upstream gdalraster's `Makevars.win` copies GDAL and PROJ data directories
+#' into the package from the Rtools static libraries, which generally lag the
+#' bundle's GDAL. After the source install succeeds, this function replaces
+#' the installed package's `gdal/` and `proj/` data directories with the
+#' runtime bundle's `share/gdal` and `share/proj` so the data files match the
+#' GDAL version the package was compiled against.
+#'
 #' @param gdal_home GDAL home directory used for compile/link flags.
 #' @param lib Destination library path for installing gdalraster. Defaults to
 #'   an isolated package-managed library; pass `.libPaths()[1]` to install
@@ -539,6 +547,13 @@ install_gdalraster <- function(
         "i" = "Library path: {.path {lib}}"
       ),
       call = rlang::caller_env()
+    )
+  }
+
+  synced <- sync_gdalraster_share_data(lib = lib, gdal_home = gdal_home)
+  if (length(synced) > 0L) {
+    cli::cli_alert_info(
+      "replaced packaged {.field {synced}} data with the bundle's GDAL/PROJ data"
     )
   }
 

@@ -538,3 +538,51 @@ testthat::test_that("install_gdalraster calls install.packages with repos = NULL
     info = "install.packages() must be called with repos = NULL for local tarball installation"
   )
 })
+
+testthat::test_that("sync_gdalraster_share_data replaces packaged data with bundle share data", {
+  lib <- withr::local_tempdir()
+  pkg_gdal <- file.path(lib, "gdalraster", "gdal")
+  pkg_proj <- file.path(lib, "gdalraster", "proj")
+  dir.create(pkg_gdal, recursive = TRUE, showWarnings = FALSE)
+  dir.create(pkg_proj, recursive = TRUE, showWarnings = FALSE)
+  # rtools-era files that must not survive the sync
+  writeLines("rtools", file.path(pkg_gdal, "stale_datum.csv"))
+  writeLines("rtools", file.path(pkg_proj, "proj.db"))
+
+  gdal_home <- withr::local_tempdir()
+  share_gdal <- file.path(gdal_home, "share", "gdal")
+  share_proj <- file.path(gdal_home, "share", "proj")
+  dir.create(file.path(share_gdal, "nested"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(share_proj, recursive = TRUE, showWarnings = FALSE)
+  writeLines("bundle", file.path(share_gdal, "header.dxf"))
+  writeLines("bundle", file.path(share_gdal, "nested", "extra.csv"))
+  writeLines("bundle", file.path(share_proj, "proj.db"))
+
+  synced <- gdalraster.windows:::sync_gdalraster_share_data(
+    lib = lib,
+    gdal_home = gdal_home
+  )
+
+  testthat::expect_setequal(synced, c("gdal", "proj"))
+  testthat::expect_false(file.exists(file.path(pkg_gdal, "stale_datum.csv")))
+  testthat::expect_equal(readLines(file.path(pkg_gdal, "header.dxf")), "bundle")
+  testthat::expect_equal(readLines(file.path(pkg_gdal, "nested", "extra.csv")), "bundle")
+  testthat::expect_equal(readLines(file.path(pkg_proj, "proj.db")), "bundle")
+})
+
+testthat::test_that("sync_gdalraster_share_data keeps packaged data when bundle dirs are missing", {
+  lib <- withr::local_tempdir()
+  pkg_gdal <- file.path(lib, "gdalraster", "gdal")
+  dir.create(pkg_gdal, recursive = TRUE, showWarnings = FALSE)
+  writeLines("rtools", file.path(pkg_gdal, "gdal_datum.csv"))
+
+  gdal_home <- withr::local_tempdir()
+
+  synced <- gdalraster.windows:::sync_gdalraster_share_data(
+    lib = lib,
+    gdal_home = gdal_home
+  )
+
+  testthat::expect_length(synced, 0L)
+  testthat::expect_equal(readLines(file.path(pkg_gdal, "gdal_datum.csv")), "rtools")
+})

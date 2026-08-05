@@ -64,3 +64,13 @@ previous gdalraster build is bound to the previous bundle's GDAL and must
 be recompiled against the new one.
 }
 
+\section{Bundled data files}{
+
+Upstream gdalraster's \code{Makevars.win} copies GDAL and PROJ data directories
+into the package from the Rtools static libraries, which generally lag the
+bundle's GDAL. After the source install succeeds, this function replaces
+the installed package's \verb{gdal/} and \verb{proj/} data directories with the
+runtime bundle's \code{share/gdal} and \code{share/proj} so the data files match the
+GDAL version the package was compiled against.
+}
+
