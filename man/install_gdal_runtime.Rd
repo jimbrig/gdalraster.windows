@@ -75,11 +75,23 @@ provide a \code{fallback_zip} yourself.
 With \code{overwrite = TRUE}, the existing \code{gdal_home} is deleted before the new
 runtime is copied in. Runtime DLLs that were preloaded into the current
 session (the package auto-bootstrap does this at load time when a runtime
-is present) are unloaded first so the process does not block its own
-reinstall. This is not possible when \code{gdalraster} is loaded — its DLL pins
-the GDAL runtime in the process — so reinstalling then requires a fresh R
-session. Deletion is verified before copying: if another process holds
-locks on the runtime (another R session, a File Explorer preview pane), the
-install aborts cleanly instead of leaving a partially-replaced runtime.
+is present) are unloaded first, but the session usually cannot fully
+release its own locks anyway: runtime activation prepends \code{bin} to \code{PATH},
+so DLLs loaded later in the session (the release download itself loads the
+curl package, which maps the runtime's \code{zlib1.dll}) resolve dependencies
+from the runtime directory outside R's control. Mapped DLLs cannot be
+deleted but can be renamed, so such leftovers are moved into a stale
+sibling directory
+(\verb{<gdal_home>.stale-<pid>-<timestamp>}) and the install proceeds; stale
+directories are deleted opportunistically by later installs once their
+locks are gone. When this happens, restart R before building or loading
+\code{gdalraster} so the new runtime — not the still-mapped old DLLs — is used.
+
+Overwriting is refused outright while \code{gdalraster} is loaded (its DLL pins
+the whole runtime in the process); reinstalling then requires a fresh R
+session. If files are locked by \emph{other} processes (another R session, a
+File Explorer preview pane), neither deletion nor the move-aside is
+possible and the install aborts cleanly instead of leaving a
+partially-replaced runtime.
 }
 

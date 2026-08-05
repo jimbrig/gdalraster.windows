@@ -415,6 +415,86 @@ testthat::test_that("verify_gdalraster_runtime returns FALSE when gdalraster is 
   testthat::expect_false(ok)
 })
 
+testthat::test_that("stale_runtime_dir is a uniquely-named sibling of gdal_home", {
+  gdal_home <- file.path(withr::local_tempdir(), "gdal")
+
+  stale <- gdalraster.windows:::stale_runtime_dir(gdal_home)
+
+  testthat::expect_equal(dirname(stale), dirname(gdal_home))
+  testthat::expect_true(startsWith(basename(stale), "gdal.stale-"))
+  testthat::expect_false(identical(stale, gdal_home))
+})
+
+testthat::test_that("move_tree_aside moves all files and removes the source tree", {
+  root <- withr::local_tempdir()
+  from <- file.path(root, "gdal")
+  to <- file.path(root, "gdal.stale-test")
+
+  dir.create(file.path(from, "bin"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(from, "share", "proj"), recursive = TRUE, showWarnings = FALSE)
+  writeLines("dll", file.path(from, "bin", "libgdal-39.dll"))
+  writeLines("db", file.path(from, "share", "proj", "proj.db"))
+
+  ok <- gdalraster.windows:::move_tree_aside(from, to)
+
+  testthat::expect_true(ok)
+  testthat::expect_false(dir.exists(from))
+  testthat::expect_true(file.exists(file.path(to, "bin", "libgdal-39.dll")))
+  testthat::expect_true(file.exists(file.path(to, "share", "proj", "proj.db")))
+})
+
+testthat::test_that("cleanup_stale_runtimes deletes stale siblings and ignores others", {
+  root <- withr::local_tempdir()
+  gdal_home <- file.path(root, "gdal")
+  stale <- file.path(root, "gdal.stale-123-20260101")
+  unrelated <- file.path(root, "library")
+
+  dir.create(gdal_home, recursive = TRUE, showWarnings = FALSE)
+  dir.create(stale, recursive = TRUE, showWarnings = FALSE)
+  file.create(file.path(stale, "zlib1.dll"))
+  dir.create(unrelated, recursive = TRUE, showWarnings = FALSE)
+
+  gdalraster.windows:::cleanup_stale_runtimes(gdal_home)
+
+  testthat::expect_false(dir.exists(stale))
+  testthat::expect_true(dir.exists(gdal_home))
+  testthat::expect_true(dir.exists(unrelated))
+})
+
+testthat::test_that("remove_gdal_home fully deletes an unlocked runtime", {
+  root <- withr::local_tempdir()
+  gdal_home <- file.path(root, "gdal")
+  dir.create(file.path(gdal_home, "bin"), recursive = TRUE, showWarnings = FALSE)
+  file.create(file.path(gdal_home, "bin", "libgdal-39.dll"))
+
+  moved <- gdalraster.windows:::remove_gdal_home(gdal_home)
+
+  testthat::expect_false(moved)
+  testthat::expect_false(dir.exists(gdal_home))
+  # no stale sibling should be left behind for a clean delete
+  testthat::expect_length(list.files(root, pattern = "stale"), 0L)
+})
+
+testthat::test_that("remove_gdal_home aborts when files are locked without delete sharing", {
+  testthat::skip_if_not(.Platform$OS.type == "windows")
+
+  root <- withr::local_tempdir()
+  gdal_home <- file.path(root, "gdal")
+  dir.create(file.path(gdal_home, "bin"), recursive = TRUE, showWarnings = FALSE)
+  locked <- file.path(gdal_home, "bin", "libgdal-39.dll")
+  writeLines("dll", locked)
+
+  # an open connection holds the file without FILE_SHARE_DELETE, which blocks
+  # both deletion and the rename-based move-aside (the external-locker case)
+  con <- file(locked, open = "rb")
+  withr::defer(close(con))
+
+  testthat::expect_error(
+    gdalraster.windows:::remove_gdal_home(gdal_home),
+    "Could not fully delete or move aside"
+  )
+})
+
 testthat::test_that("install_gdalraster calls install.packages with repos = NULL", {
   testthat::skip_if_not(.Platform$OS.type == "windows")
 

@@ -34,6 +34,11 @@ startup_sitrep_enabled <- function() {
 startup_bootstrap <- function() {
   st <- runtime_sitrep()
 
+  # stale sibling dirs hold old runtime files a previous overwrite could not
+  # delete (they were mapped into that session); a fresh session no longer
+  # maps them, so this is the reliable point to reclaim the space
+  try(cleanup_stale_runtimes(st$gdal_home), silent = TRUE)
+
   if (st$gdal_home_exists && st$gdal_dll_exists) {
     try(activate_gdal_runtime(gdal_home = st$gdal_home, preload = TRUE, quiet = TRUE), silent = TRUE)
   }

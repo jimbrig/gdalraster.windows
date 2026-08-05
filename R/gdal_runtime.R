@@ -71,12 +71,24 @@ configure_gdal_home <- function(path, mode = c("option", "env")) {
 #' With `overwrite = TRUE`, the existing `gdal_home` is deleted before the new
 #' runtime is copied in. Runtime DLLs that were preloaded into the current
 #' session (the package auto-bootstrap does this at load time when a runtime
-#' is present) are unloaded first so the process does not block its own
-#' reinstall. This is not possible when `gdalraster` is loaded — its DLL pins
-#' the GDAL runtime in the process — so reinstalling then requires a fresh R
-#' session. Deletion is verified before copying: if another process holds
-#' locks on the runtime (another R session, a File Explorer preview pane), the
-#' install aborts cleanly instead of leaving a partially-replaced runtime.
+#' is present) are unloaded first, but the session usually cannot fully
+#' release its own locks anyway: runtime activation prepends `bin` to `PATH`,
+#' so DLLs loaded later in the session (the release download itself loads the
+#' curl package, which maps the runtime's `zlib1.dll`) resolve dependencies
+#' from the runtime directory outside R's control. Mapped DLLs cannot be
+#' deleted but can be renamed, so such leftovers are moved into a stale
+#' sibling directory
+#' (`<gdal_home>.stale-<pid>-<timestamp>`) and the install proceeds; stale
+#' directories are deleted opportunistically by later installs once their
+#' locks are gone. When this happens, restart R before building or loading
+#' `gdalraster` so the new runtime — not the still-mapped old DLLs — is used.
+#'
+#' Overwriting is refused outright while `gdalraster` is loaded (its DLL pins
+#' the whole runtime in the process); reinstalling then requires a fresh R
+#' session. If files are locked by *other* processes (another R session, a
+#' File Explorer preview pane), neither deletion nor the move-aside is
+#' possible and the install aborts cleanly instead of leaving a
+#' partially-replaced runtime.
 #'
 #' @param repo GitHub repo slug publishing the runtime bundle releases.
 #'   Defaults to `"jimbrig/gdalraster.windows"`.
@@ -205,14 +217,26 @@ install_gdal_runtime <- function(
   utils::unzip(zip_path, exdir = tmp_dir)
   gdal_root <- detect_gdal_root(tmp_dir)
 
+  moved_aside <- FALSE
   if (dir.exists(gdal_home)) {
-    remove_gdal_home(gdal_home)
+    moved_aside <- remove_gdal_home(gdal_home)
   }
 
   dir.create(gdal_home, recursive = TRUE, showWarnings = FALSE)
   copy_tree(gdal_root, gdal_home)
 
   cli::cli_alert_success("installed gdal runtime to {.path {gdal_home}}")
+  if (isTRUE(moved_aside)) {
+    cli::cli_alert_warning(
+      paste(
+        "this session still maps DLLs from the previous runtime",
+        "(they were moved aside and will be cleaned up by a later install)."
+      )
+    )
+    cli::cli_inform(
+      c("i" = "Restart R before building or loading {.pkg gdalraster} so the new runtime is used.")
+    )
+  }
   invisible(gdal_home)
 }
 
@@ -678,23 +702,45 @@ detect_gdal_root <- function(extract_dir) {
 #' the current R process itself typically holds the file locks that would make
 #' deletion fail. DLLs this session loaded from under `gdal_home` are unloaded
 #' first (safe while `gdalraster` is not loaded, which is validated before the
-#' download). Deletion is then verified: Windows silently skips locked files
-#' during recursive unlink, which would otherwise leave a corrupt half-deleted
-#' runtime behind.
+#' download), but that alone cannot release everything: activation prepends
+#' the runtime's `bin` to `PATH`, so any DLL the process loads afterwards can
+#' resolve its dependencies from there by module name (demonstrably, the
+#' release download itself loads the curl package, which maps the runtime's
+#' `zlib1.dll`). Such mappings live outside R's DLL registry and cannot be
+#' `dyn.unload()`ed, so the session cannot fully unlock its own runtime.
 #'
+#' Mapped DLLs cannot be deleted, but they *can* be renamed on the same
+#' volume, so any leftovers after `unlink()` are moved into a stale sibling
+#' directory (`<gdal_home>.stale-<pid>-<timestamp>`) which later installs
+#' delete opportunistically once the locks are gone. Only files locked by
+#' *other* processes without delete sharing (File Explorer preview panes,
+#' other R sessions) can still block the move, and that is the only case
+#' left that aborts.
+#'
+#' @return Invisibly, `TRUE` when leftovers were moved aside (the session
+#'   still maps old runtime DLLs), `FALSE` when the runtime was fully deleted.
 #' @keywords internal
 #' @noRd
 remove_gdal_home <- function(gdal_home, call = rlang::caller_env()) {
+  cleanup_stale_runtimes(gdal_home)
+
   for (dll in loaded_runtime_dlls(gdal_home)) {
     try(dyn.unload(dll), silent = TRUE)
   }
 
   unlink(gdal_home, recursive = TRUE, force = TRUE)
 
-  if (dir.exists(gdal_home)) {
+  if (!dir.exists(gdal_home)) {
+    return(invisible(FALSE))
+  }
+
+  stale_dir <- stale_runtime_dir(gdal_home)
+  moved <- move_tree_aside(gdal_home, stale_dir)
+
+  if (!moved) {
     cli::cli_abort(
       c(
-        "Could not fully delete the existing runtime at {.path {gdal_home}}.",
+        "Could not fully delete or move aside the existing runtime at {.path {gdal_home}}.",
         "x" = "One or more files are locked by another process.",
         "i" = paste(
           "Common culprits: other R sessions using the runtime, or",
@@ -706,7 +752,34 @@ remove_gdal_home <- function(gdal_home, call = rlang::caller_env()) {
     )
   }
 
-  invisible(gdal_home)
+  invisible(TRUE)
+}
+
+#' Move every file under `from` into `to` via same-volume rename, then remove
+#' the emptied tree. Returns TRUE only when `from` is fully gone.
+#' @keywords internal
+#' @noRd
+move_tree_aside <- function(from, to) {
+  entries <- list.files(
+    path = from,
+    all.files = TRUE,
+    no.. = TRUE,
+    recursive = TRUE,
+    include.dirs = FALSE
+  )
+
+  ok <- TRUE
+  for (entry in entries) {
+    src <- file.path(from, entry)
+    dst <- file.path(to, entry)
+    dir.create(dirname(dst), recursive = TRUE, showWarnings = FALSE)
+    if (!isTRUE(suppressWarnings(file.rename(src, dst)))) {
+      ok <- FALSE
+    }
+  }
+
+  unlink(from, recursive = TRUE, force = TRUE)
+  ok && !dir.exists(from)
 }
 
 #' @keywords internal

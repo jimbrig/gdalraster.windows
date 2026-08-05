@@ -103,6 +103,46 @@ loaded_runtime_dlls <- function(gdal_home = default_gdal_home()) {
   unname(paths[startsWith(tolower(paths), prefix)])
 }
 
+#' Unique sibling directory used to move aside runtime files that are still
+#' mapped into a process and therefore cannot be deleted (only renamed)
+#' @keywords internal
+#' @noRd
+stale_runtime_dir <- function(gdal_home) {
+  file.path(
+    dirname(gdal_home),
+    sprintf(
+      "%s%s%d-%s",
+      basename(gdal_home),
+      .stale_runtime_suffix,
+      Sys.getpid(),
+      format(Sys.time(), "%Y%m%d%H%M%OS3")
+    )
+  )
+}
+
+#' Best-effort deletion of stale runtime directories left by previous
+#' overwrites; directories still holding mapped DLLs survive (unlink skips
+#' locked files silently) and are retried on the next install
+#' @keywords internal
+#' @noRd
+cleanup_stale_runtimes <- function(gdal_home) {
+  parent <- dirname(gdal_home)
+  if (!dir.exists(parent)) {
+    return(invisible(character()))
+  }
+
+  entries <- list.files(parent, all.files = TRUE, no.. = TRUE)
+  stale <- entries[startsWith(entries, paste0(basename(gdal_home), .stale_runtime_suffix))]
+  stale <- file.path(parent, stale)
+  stale <- stale[dir.exists(stale)]
+
+  for (dir in stale) {
+    unlink(dir, recursive = TRUE, force = TRUE)
+  }
+
+  invisible(stale)
+}
+
 #' @keywords internal
 #' @noRd
 default_gdalraster_lib <- function() {

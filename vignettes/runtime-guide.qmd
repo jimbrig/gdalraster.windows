@@ -165,4 +165,4 @@ gdalraster.windows::install_gdalraster()
 gdalraster.windows::verify_gdalraster_runtime()
 ```
 
-Overwriting is refused while `gdalraster` is loaded, because its DLL pins the runtime files in the current process; restart R first. See the [Troubleshooting](troubleshooting.html) article if deletion still fails.
+Overwriting is refused while `gdalraster` is loaded, because its DLL pins the runtime files in the current process; restart R first. When the session has merely preloaded the runtime (the auto-bootstrap does this at package load), the overwrite still works: old DLLs the session cannot release are moved into a stale sibling directory that later installs clean up, and the installer then advises an R restart before rebuilding or loading `gdalraster`. See the [Troubleshooting](troubleshooting.html) article if the install aborts with a lock error.

@@ -87,7 +87,9 @@ Historical instance: bundles published before July 2026 shipped `libpodofo.dll` 
 
 ## `install_gdal_runtime(overwrite = TRUE)` cannot delete the old runtime
 
-Deleting `gdal_home` fails when its DLLs are mapped into a running process. The installer releases the current session's own preloaded runtime DLLs automatically, and refuses to run at all while `gdalraster` is loaded (its DLL pins the runtime — restart R first). If deletion still fails, another process holds locks: other R sessions using the runtime, or File Explorer windows/preview panes open on the runtime directory. Close them ([PowerToys File Locksmith](https://learn.microsoft.com/en-us/windows/powertoys/file-locksmith) or Resource Monitor identify the locker) and rerun.
+Deleting `gdal_home` fails when its DLLs are mapped into a running process — including the current session: the auto-bootstrap preloads the runtime at package load and prepends its `bin` to `PATH`, so DLLs loaded later in the session resolve dependencies from the runtime directory by module name (the release download itself loads the curl package, which maps the runtime's `zlib1.dll`). Those mappings live outside R's DLL registry, so unloading `libgdal` cannot release them. The installer handles this case itself: mapped DLLs cannot be deleted but can be renamed, so leftovers this session still maps are moved into a stale sibling directory (`<gdal_home>.stale-<pid>-<timestamp>`) and the install proceeds; later installs delete stale directories once their locks are gone. When the installer reports this, restart R before building or loading `gdalraster` so the new runtime is used.
+
+The installer refuses to run at all while `gdalraster` is loaded (its DLL pins the runtime — restart R first). If the install still aborts with a lock error, another process holds locks without delete sharing: other R sessions using the runtime, or File Explorer windows/preview panes open on the runtime directory. Close them ([PowerToys File Locksmith](https://learn.microsoft.com/en-us/windows/powertoys/file-locksmith) or Resource Monitor identify the locker) and rerun.
 
 ## `ModuleNotFoundError: No module named 'osgeo_utils'`
 

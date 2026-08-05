@@ -26,6 +26,14 @@
 #' @keywords internal
 .bundle_asset_pattern <- "gdal-(bundle|ucrt64)-.*\\.zip$"
 
+# stale runtime naming -------------------------------------------------------
+
+#' Suffix marking sibling directories that hold moved-aside runtime files
+#' still mapped into a process (deleted opportunistically by later installs)
+#' @noRd
+#' @keywords internal
+.stale_runtime_suffix <- ".stale-"
+
 # runtime dll naming --------------------------------------------------------
 
 #' Regex matching the top-level GDAL runtime DLL (SONAME discovered by glob,
