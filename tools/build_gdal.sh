@@ -56,6 +56,8 @@ set -euo pipefail
 : "${INSTALL_DIR:?INSTALL_DIR must be set}"
 : "${ARROW_INSTALL_DIR:?ARROW_INSTALL_DIR must be set}"
 
+ARROW_INSTALL_DIR="$(cygpath -u "${ARROW_INSTALL_DIR}")"
+
 if [[ ! -f "${ARROW_INSTALL_DIR}/lib/cmake/Arrow/ArrowConfig.cmake" ]]; then
     echo "FATAL: static Arrow prefix is incomplete: ${ARROW_INSTALL_DIR}"
     exit 1

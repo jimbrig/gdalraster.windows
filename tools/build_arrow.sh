@@ -17,6 +17,8 @@ set -euo pipefail
 : "${ARROW_VER:?ARROW_VER must be set}"
 : "${ARROW_INSTALL_DIR:?ARROW_INSTALL_DIR must be set}"
 
+ARROW_INSTALL_DIR="$(cygpath -u "${ARROW_INSTALL_DIR}")"
+
 echo "============================================"
 echo "  Building static Apache Arrow ${ARROW_VER}"
 echo "  Install prefix: ${ARROW_INSTALL_DIR}"
