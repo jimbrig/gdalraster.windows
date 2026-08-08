@@ -216,6 +216,7 @@ jobs:
           path-type: minimal
           install: >-
             git
+            make
             mingw-w64-ucrt-x86_64-toolchain
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
