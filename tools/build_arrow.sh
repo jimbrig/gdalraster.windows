@@ -59,6 +59,10 @@ cmake -S "${SRC_DIR}/cpp" -B "${SRC_DIR}/cpp/build" -G Ninja \
     -DARROW_DEPENDENCY_SOURCE=BUNDLED \
     -DARROW_DEPENDENCY_USE_SHARED=OFF \
     -DARROW_THRIFT_USE_SHARED=OFF \
+    -DZLIB_SOURCE=SYSTEM \
+    -DZLIB_USE_STATIC_LIBS=ON \
+    -DZLIB_LIBRARY=/ucrt64/lib/libz.a \
+    -DZLIB_INCLUDE_DIR=/ucrt64/include \
     \
     -DARROW_PARQUET=ON \
     -DARROW_DATASET=ON \
