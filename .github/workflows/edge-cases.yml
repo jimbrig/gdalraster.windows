@@ -1,0 +1,175 @@
+name: Dirty-Machine Edge Cases
+
+on:
+  workflow_dispatch:
+    inputs:
+      runtime_tag:
+        description: 'GDAL runtime release tag'
+        required: false
+        default: 'latest'
+
+permissions: read-all
+
+jobs:
+  scenarios:
+    name: "Edge: ${{ matrix.scenario }}"
+    runs-on: windows-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - adversarial-path
+          - legacy-profile
+          - self-lock-overwrite
+          - locked-package
+          - foreign-gdalraster
+          - no-python
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      RUNTIME_TAG: ${{ github.event.inputs.runtime_tag || 'latest' }}
+      SCENARIO: ${{ matrix.scenario }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pak, local::., any::gdalraster
+
+      - name: Install source-build dependencies
+        shell: Rscript {0}
+        run: |
+          archive <- file.path(tempdir(), "gdalraster-src.tar.gz")
+          utils::download.file(
+            "https://codeload.github.com/firelab/gdalraster/tar.gz/HEAD",
+            archive,
+            mode = "wb",
+            quiet = TRUE
+          )
+          source_dir <- file.path(tempdir(), "gdalraster-src")
+          utils::untar(archive, exdir = source_dir)
+          pak::local_install_deps(list.dirs(source_dir, recursive = FALSE)[[1]])
+
+      - name: Set up vendored package
+        shell: Rscript {0}
+        run: |
+          tag <- Sys.getenv("RUNTIME_TAG", unset = "latest")
+          scenario <- Sys.getenv("SCENARIO")
+          gdalraster.windows::gdal_setup(
+            user_lib = scenario != "foreign-gdalraster",
+            tag = tag,
+            verify = scenario != "foreign-gdalraster"
+          )
+
+      - name: Construct adversarial PATH
+        if: matrix.scenario == 'adversarial-path'
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP "older-gdal"
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          gh release download gdal-v3.13.1 `
+            --repo jimbrig/gdalraster.windows `
+            --pattern "*.zip" `
+            --dir $root
+          $zip = Get-ChildItem $root -Filter "*.zip" | Select-Object -First 1
+          Expand-Archive -Path $zip.FullName -DestinationPath $root -Force
+          $dll = Get-ChildItem $root -Recurse -Filter "libgdal-*.dll" |
+            Select-Object -First 1
+          "PATH=$($dll.DirectoryName);$env:PATH" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      - name: Assert scenario behavior
+        shell: Rscript {0}
+        run: |
+          scenario <- Sys.getenv("SCENARIO")
+
+          if (scenario == "adversarial-path") {
+            library(gdalraster)
+            manifest <- read.dcf(file.path(
+              find.package("gdalraster"),
+              "gdalraster.windows-build.dcf"
+            ))
+            version <- gdalraster::gdal_version()[[1]]
+            stopifnot(grepl(manifest[1, "GDAL-Version"], version, fixed = TRUE))
+          }
+
+          if (scenario == "legacy-profile") {
+            writeLines(
+              "# >>> gdalraster.windows hook >>>\nensure_gdal_runtime()",
+              path.expand("~/.Rprofile")
+            )
+            state <- gdalraster.windows::gdal_sitrep(
+              user_lib = TRUE,
+              network = FALSE,
+              quiet = TRUE
+            )
+            stopifnot(isTRUE(state$legacy_hook))
+            library(gdalraster)
+            stopifnot(length(gdalraster::gdal_global_reg_names()) > 0L)
+          }
+
+          if (scenario == "self-lock-overwrite") {
+            home <- gdalraster.windows::gdal_home()
+            dyn.load(
+              gdalraster.windows:::gdal_dll_path(home),
+              local = FALSE,
+              now = TRUE
+            )
+            httr2::request("https://api.github.com") |>
+              httr2::req_perform()
+            gdalraster.windows::gdal_install_runtime(
+              tag = Sys.getenv("RUNTIME_TAG", unset = "latest"),
+              force = TRUE
+            )
+            stopifnot(file.exists(file.path(home, "MANIFEST.dcf")))
+          }
+
+          if (scenario == "locked-package") {
+            package_dir <- find.package("gdalraster")
+            dll <- list.files(
+              file.path(package_dir, "libs", "x64"),
+              pattern = "^gdalraster\\.dll$",
+              full.names = TRUE
+            )[[1]]
+            connection <- file(dll, open = "rb")
+            on.exit(close(connection), add = TRUE)
+            staged <- file.path(tempdir(), "staged", "gdalraster")
+            dir.create(staged, recursive = TRUE)
+            writeLines("new", file.path(staged, "marker"))
+            error <- tryCatch(
+              gdalraster.windows:::replace_package_tree(staged, package_dir),
+              error = identity
+            )
+            stopifnot(inherits(error, "error"), dir.exists(package_dir))
+          }
+
+          if (scenario == "foreign-gdalraster") {
+            state <- gdalraster.windows::gdal_sitrep(
+              network = FALSE,
+              quiet = TRUE
+            )
+            stopifnot(
+              isTRUE(state$gdalraster_installed),
+              isTRUE(state$foreign_gdalraster)
+            )
+          }
+
+          if (scenario == "no-python") {
+            gdalraster.windows:::remove_managed_python_pth()
+            result <- gdalraster.windows::gdal_enable_python(
+              lib = .libPaths()[[1]],
+              python = "Z:/missing/python.exe",
+              quiet = TRUE
+            )
+            stopifnot(is.null(result))
+            stopifnot(gdalraster.windows::gdal_verify(
+              user_lib = TRUE,
+              python = FALSE,
+              quiet = TRUE
+            ))
+          }

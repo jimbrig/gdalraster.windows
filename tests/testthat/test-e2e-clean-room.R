@@ -33,19 +33,26 @@ testthat::test_that("opt-in full e2e succeeds in clean room", {
   root <- withr::local_tempdir()
   env <- clean_room_env(root)
 
-  code <- paste(
+  setup_code <- paste(
     ".libPaths(c(Sys.getenv('R_LIBS_USER'), .libPaths()))",
     "stopifnot(requireNamespace('gdalraster.windows', quietly = TRUE))",
-    "gdalraster.windows::install_gdal_runtime(gdal_home = Sys.getenv('GDALRASTER_WINDOWS_GDAL_HOME'), overwrite = TRUE)",
-    "gdalraster.windows::install_gdalraster(gdal_home = Sys.getenv('GDALRASTER_WINDOWS_GDAL_HOME'), lib = Sys.getenv('R_LIBS_USER'), upgrade = TRUE)",
-    "gdalraster.windows::load_gdalraster(lib = Sys.getenv('R_LIBS_USER'), gdal_home = Sys.getenv('GDALRASTER_WINDOWS_GDAL_HOME'), quiet = TRUE)",
+    "gdalraster.windows::gdal_setup(lib = Sys.getenv('R_LIBS_USER'), upgrade = TRUE)",
+    sep = "; "
+  )
+  setup <- run_clean_rscript(code = setup_code, env = env)
+  setup_txt <- paste(c(setup$stdout, setup$stderr), collapse = "\n")
+  testthat::expect_equal(setup$status, 0, info = setup_txt)
+
+  verify_code <- paste(
+    "library(gdalraster)",
     "algs <- gdalraster::gdal_global_reg_names()",
     "cat('algorithm_count=', length(algs), '\\n', sep = '')",
     "stopifnot(length(algs) > 0L)",
+    "fmts <- gdalraster::gdal_formats()$short_name",
+    "stopifnot(all(c('Arrow', 'Parquet', 'HDF5', 'netCDF') %in% fmts))",
     sep = "; "
   )
-
-  res <- run_clean_rscript(code = code, env = env)
+  res <- run_clean_rscript(code = verify_code, env = env)
   txt <- paste(c(res$stdout, res$stderr), collapse = "\n")
 
   testthat::expect_equal(res$status, 0, info = txt)

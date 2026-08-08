@@ -2,93 +2,83 @@
 
 ## primary outcome
 
-Provide a reliable Windows workflow for using `gdalraster` against a
-self-contained GDAL runtime built in CI.
+Provide a reliable Windows workflow for building a self-contained
+`gdalraster` package against the GDAL runtime produced by this repository.
 
 Primary user flow:
 
 ```r
 pak::pak("jimbrig/gdalraster.windows")
-gdalraster.windows::install_gdal_runtime()
-gdalraster.windows::install_gdalraster()
-gdalraster.windows::load_gdalraster()
-gdalraster::gdal_global_reg_names()
-```
+gdalraster.windows::gdal_setup(user_lib = TRUE)
 
-Auto-bootstrap flow (when runtime and source-built `gdalraster` are already
-installed):
-
-```r
-library(gdalraster.windows)
+# every later session
 library(gdalraster)
 gdalraster::gdal_global_reg_names()
 ```
 
-Also support explicit runtime activation:
-
-```r
-gdalraster.windows::load_gdal_dll()
-library(gdalraster)
-gdalraster::gdal_global_reg_names()
-```
+The non-destructive setup default uses an isolated package-managed library.
+Users opt into replacement in `.libPaths()[1]` with `user_lib = TRUE`.
 
 ## required system behavior
 
-1. Build modern GDAL (currently 3.13+) from source in Windows CI using MSYS2 UCRT64 / Rtools45-compatible MinGW toolchain.
-2. Build with required features for this project, including `muparser`, and keep runtime self-contained.
-3. Produce a standalone GDAL runtime bundle archive with:
-   - a top-level GDAL runtime DLL (`libgdal-*.dll`)
-   - all required non-Windows dependent DLLs
-   - required runtime data directories (`share/gdal`, `share/proj`)
-   - pure-python GDAL utilities (`python/osgeo_utils`) for embedded-python
-     algorithms (e.g. `gdal driver gpkg validate`)
-4. Build `gdalraster` from source against that bundled GDAL runtime.
-5. Ensure runtime loading is configured so `gdalraster` resolves bundled DLL
-   dependencies at runtime (without relying on a matching user-installed
-   Rtools environment), and so GDAL's embedded python can import bundled
-   `osgeo_utils` (session-scoped `PYTHONPATH`).
-6. Verify success with `gdalraster::gdal_global_reg_names()` returning non-empty output and the `driver gpkg validate` algorithm running end-to-end.
-7. Keep installs non-destructive by default:
-   - runtime installs under package-managed user data paths
-   - source builds target an isolated library path unless explicitly overridden
+1. Build modern GDAL from source in Windows CI using the MSYS2 UCRT64 /
+   Rtools-compatible MinGW toolchain.
+2. Build required features, including `muparser`, and keep the runtime
+   self-contained.
+3. Publish a standalone GDAL SDK bundle containing:
+   - a top-level GDAL runtime DLL;
+   - all required non-Windows dependency DLLs;
+   - headers and import libraries;
+   - `share/gdal` and `share/proj`; and
+   - `python/osgeo_utils`.
+4. Install and stamp the SDK idempotently.
+5. Build `gdalraster` from source against the SDK with scoped Makevars.
+6. Vendor the DLL closure, data, and Python utilities into the installed
+   `gdalraster` package.
+7. Use a managed system-CPython `.pth` for embedded-Python algorithms; never
+   persist or export `PYTHONPATH`.
+8. Verify in fresh processes that the Algorithm API, required drivers, first
+   Parquet open, CRS support, and GeoPackage validator work.
+9. Keep installs non-destructive by default.
 
 ## responsibility split
 
-- The build workflow's only responsibility is the GDAL runtime bundle: build,
-  verify the bundle contract, and publish durable artifacts (workflow artifact
-  + release asset). A scheduled job in the same workflow checks upstream OSGeo/gdal
-  releases and opens a tracking issue when a newer GDAL exists (never builds
-  or publishes on its own).
-- Building `gdalraster` against the bundle is package functionality
-  (`install_gdalraster()` with scoped Makevars via `withr`), exercised on user
-  machines and by package tests — never reimplemented inside CI.
-- The e2e workflow ([`.github/workflows/e2e.yml`](.github/workflows/e2e.yml))
-  proves the full user workflow on a clean Windows runner by consuming the
-  exported package functions (`install_gdal_runtime()`,
-  `install_gdalraster()`, `verify_gdalraster_runtime()`,
-  `add_gdal_rprofile_hook()`) exactly as a user machine would; it runs on
-  dispatch, weekly, and whenever a `gdal-v*` bundle release is published.
+- The build workflow and scripts own only the GDAL bundle:
+  `.github/workflows/build.yml`, `tools/build_gdal.sh`, and
+  `tools/collect_dlls.sh`.
+- The R package owns runtime installation, provenance, source compilation,
+  vendoring, Python provisioning, setup/update/status/uninstall, and
+  fresh-process verification.
+- `.github/workflows/e2e.yml` consumes exported package functions on a clean
+  Windows runner and proves plain `library(gdalraster)` in a new session.
+- `.github/workflows/edge-cases.yml` constructs adversarial machine states and
+  checks isolation and failure behavior.
 
-## source of truth
+## package architecture
 
-- CI workflow and scripts are authoritative for build/release behavior:
-  - [`.github/workflows/build.yml`](.github/workflows/build.yml)
-  - [`tools/build_gdal.sh`](tools/build_gdal.sh)
-  - [`tools/collect_dlls.sh`](tools/collect_dlls.sh)
+The managed GDAL runtime is a build-time SDK. Runtime files are copied into the
+installed `gdalraster` package:
 
-## R package implementation constraints
+- `libs/x64`: `gdalraster.dll`, `libgdal-*.dll`, and dependencies;
+- `gdal` and `proj`: matching runtime data;
+- `python`: pure-Python `osgeo_utils`; and
+- `gdalraster.windows-build.dcf`: build provenance.
 
-- use modern package-style R with explicit namespacing.
-- use `cli` for user-facing messaging and `cli::cli_abort()` for errors.
-- use `rlang::caller_env()` and `rlang::caller_arg()` in validators/errors.
-- use `withr` for scoped state (`with_makevars`, env vars, lib paths); avoid leaking persistent session/user config.
-- default source-install target for `gdalraster` must be non-destructive (isolated library path), not overwrite existing user/global installs unless explicitly requested.
-- keep docs implementation-anchored and general; avoid session-specific claims.
+There is no runtime activation API, auto-bootstrap, `.Rprofile` hook,
+`PATH` mutation, DLL preload, or GDAL/PROJ/Python environment export.
+
+## R implementation constraints
+
+- Use modern package-style R with explicit namespacing.
+- Use `cli` for user-facing messages and `cli::cli_abort()` for errors.
+- Use `rlang::caller_env()` and `rlang::caller_arg()` in validators.
+- Use `withr` for scoped state.
+- Stage complete package replacements before changing an installed package.
+- Preserve the isolated library as the default build destination.
+- Never add Parquet initialization or session-order workarounds; Arrow/TLS
+  correctness belongs to the bundle build.
 
 ## documentation hierarchy
 
-- canonical user-facing docs: `vignettes/` (published via pkgdown) and
-  roxygen help pages. Any user-facing behavior change MUST update these.
-- `dev/docs/` is non-normative maintainer/agent scratch context; it may lag
-  the implementation and must never be treated as a source of truth over
-  vignettes, roxygen, or code.
+Canonical user-facing behavior lives in `vignettes/`, roxygen help, and the
+README. `dev/docs/` is non-normative scratch context and may lag code.

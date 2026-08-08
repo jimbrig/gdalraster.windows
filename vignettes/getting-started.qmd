@@ -4,134 +4,115 @@ vignette: >
   %\VignetteIndexEntry{Getting Started}
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
-knitr:
-  opts_chunk:
-    collapse: true
-    comment: '#>'
 ---
 
-```{r}
-#| label: setup
-#| eval: false
-library(gdalraster.windows)
-```
+## What the package installs
 
-## What this package does
+`gdalraster.windows` downloads a verified GDAL build runtime, compiles
+[`gdalraster`](https://firelab.github.io/gdalraster/) against it, and vendors
+the complete native dependency closure into the installed `gdalraster`
+package. The result carries:
 
-`gdalraster.windows` provides a reliable Windows workflow for using [`gdalraster`](https://firelab.github.io/gdalraster/) against a modern, self-contained [GDAL](https://gdal.org/) runtime built in CI — including features the default [Rtools](https://cran.r-project.org/bin/windows/Rtools/) GDAL lacks (notably the [GDAL Algorithm API](https://gdal.org/en/stable/api/gdalalg_cpp.html) with [`muparser`](https://beltoforion.de/en/muparser/), plus [Arrow](https://arrow.apache.org/)/[Parquet](https://parquet.apache.org/), [HDF5](https://www.hdfgroup.org/solutions/hdf5/), [NetCDF](https://www.unidata.ucar.edu/software/netcdf/), and [SpatiaLite](https://www.gaia-gis.it/fossil/libspatialite/index) drivers).
+- GDAL and dependency DLLs under `libs/x64`;
+- matching GDAL and PROJ data under `gdal/` and `proj/`;
+- pure-Python `osgeo_utils` under `python/`; and
+- a provenance manifest recording the bundle used for the build.
 
-It does three things:
-
-1. **Installs a GDAL runtime bundle** — a prebuilt, verified-closed set of DLLs, runtime data, and pure-python utilities published as a [GitHub release asset](https://github.com/jimbrig/gdalraster.windows/releases).
-2. **Builds `gdalraster` from source** against that bundle, into an isolated library so nothing you already have installed is touched.
-3. **Activates the runtime per session** so the Windows loader, GDAL, and PROJ all resolve against the bundle.
-
-Everything is non-destructive by default: the runtime lives under a package-managed user data directory, and the source-built `gdalraster` goes into its own library path rather than replacing a CRAN install.
+No `.Rprofile` hook, `PATH` edit, DLL preload, or GDAL/PROJ environment
+variable is needed in later sessions.
 
 ## Prerequisites
 
-Two things must be on the machine before setup:
+- Windows and R.
+- The matching [Rtools](https://cran.r-project.org/bin/windows/Rtools/)
+  release. Compilation is the only step the prebuilt GDAL bundle cannot
+  remove.
 
-- **R on Windows** — everything in this package is Windows-specific.
-- **[Rtools](https://cran.r-project.org/bin/windows/Rtools/) matching your R version** — `install_gdalraster()` compiles gdalraster from source against the bundled GDAL headers. The prebuilt runtime bundle removes every other toolchain requirement (no MSYS2, no manual GDAL build), but the compile step itself needs Rtools. The function checks for a toolchain up front and aborts with guidance when none is found.
+## One-time setup
 
-No other GDAL, Python, or spatial system dependencies are required: the runtime bundle is self-contained.
-
-## Quick start
-
-One-time setup (using [pak](https://pak.r-lib.org/)):
+Install the package, then build into your regular user library when you want
+plain `library(gdalraster)` in every later session:
 
 ```{r}
 #| eval: false
 pak::pak("jimbrig/gdalraster.windows")
-
-# download and install the GDAL runtime bundle (latest release asset)
-gdalraster.windows::install_gdal_runtime()
-
-# build gdalraster from source against that runtime
-gdalraster.windows::install_gdalraster()
+gdalraster.windows::gdal_setup(user_lib = TRUE)
 ```
 
-Then load and verify:
+`gdal_setup()` prints one plan, installs or skips the runtime idempotently,
+builds and vendors `gdalraster`, provisions embedded Python when a system
+CPython is available, and verifies the result in fresh processes.
+
+The package's non-destructive default is an isolated managed library:
 
 ```{r}
 #| eval: false
-gdalraster.windows::load_gdalraster()
-
-gdalraster::gdal_global_reg_names()
-#> [1] "raster" "vector" "convert" "info" ... (non-empty)
+result <- gdalraster.windows::gdal_setup()
+result$lib
 ```
 
-A non-empty algorithm registry is the key success signal — on a broken toolchain/runtime combination it comes back as `character(0)`.
+Use `user_lib = TRUE` explicitly to replace a package in `.libPaths()[1]`.
+Interactive sessions ask before replacement; non-interactive replacement
+requires explicit arguments.
 
 ## Everyday use
 
-After setup, attaching the package is enough. Its load hook automatically activates the installed runtime and prepends the isolated `gdalraster` library to `.libPaths()`:
+After a user-library setup, `gdalraster.windows` does not need to be attached:
 
 ```{r}
 #| eval: false
-library(gdalraster.windows)
-library(gdalraster)
-
-gdalraster::gdal_global_reg_names()
-```
-
-If you prefer explicit control over the load order:
-
-```{r}
-#| eval: false
-gdalraster.windows::load_gdal_dll()
-
 library(gdalraster)
 gdalraster::gdal_global_reg_names()
 ```
 
-To make sessions bootstrap without attaching this package at all, install a managed `.Rprofile` hook (optional, and clearly delimited in the file):
+For an isolated install, provide its library location:
 
 ```{r}
 #| eval: false
-gdalraster.windows::add_gdal_rprofile_hook()
-```
-
-## Verifying the setup
-
-`verify_gdalraster_runtime()` runs the full chain — activate runtime, load `gdalraster`, check the algorithm registry — and reports what it finds:
-
-```{r}
-#| eval: false
-gdalraster.windows::verify_gdalraster_runtime()
-#> v gdalraster is ready ("3.13.1")
-```
-
-## Offline / air-gapped machines
-
-`install_gdal_runtime()` downloads from GitHub Releases by default. Without network access, download the release asset from <https://github.com/jimbrig/gdalraster.windows/releases> on a connected machine, transfer it, and install directly:
-
-```{r}
-#| eval: false
-gdalraster.windows::install_gdal_runtime(
-  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"
+library(
+  gdalraster,
+  lib.loc = file.path(
+    tools::R_user_dir("gdalraster.windows", "data"),
+    "library"
+  )
 )
 ```
 
-## Where things are installed
-
-| Component | Default location | Override |
-|-----------|------------------|----------|
-| GDAL runtime | `tools::R_user_dir("gdalraster.windows", "data")` | `configure_gdal_home()`, `options(gdalraster.windows.gdal_home = ...)`, or the `GDALRASTER_WINDOWS_GDAL_HOME` environment variable |
-| Source-built `gdalraster` | isolated `library/` folder under the same user data directory | `install_gdalraster(lib = ...)` |
-
-To install the source build into your regular user library instead — so plain `library(gdalraster)` resolves it without this package's helpers — pass the library explicitly:
+## Status and verification
 
 ```{r}
 #| eval: false
-gdalraster.windows::install_gdalraster(lib = .libPaths()[1])
+gdalraster.windows::gdal_sitrep(user_lib = TRUE)
+gdalraster.windows::gdal_verify(user_lib = TRUE)
 ```
 
-This replaces any existing `gdalraster` (e.g. the CRAN binary) in that library, and the bundled runtime must still be activated before the package loads in each session.
+`gdal_verify()` uses fresh `Rscript --vanilla` processes. It checks the
+Algorithm API, GEOS and CRS support, Arrow, Parquet, HDF5, and netCDF driver
+registration, a first Parquet open, and the GeoPackage Python validator when
+Python provisioning is ready.
 
-## Next steps
+## Updating
 
-- The [Runtime Guide](runtime-guide.html) covers session activation, configuration options, the startup hook, and embedded-python algorithms in depth.
-- [Architecture](architecture.html) explains why this package exists and how the runtime bundle is built.
-- [Troubleshooting](troubleshooting.html) walks through the common failure modes and their fixes.
+```{r}
+#| eval: false
+gdalraster.windows::gdal_update(user_lib = TRUE)
+```
+
+The runtime and built package manifests let this operation distinguish a
+current build from one that must be rebuilt.
+
+## Offline setup
+
+Download a bundle release asset on a connected machine, transfer it, then use:
+
+```{r}
+#| eval: false
+gdalraster.windows::gdal_setup(
+  user_lib = TRUE,
+  local_zip = "C:/Downloads/gdal-bundle-v3.13.2-windows-x64.zip"
+)
+```
+
+See the [Runtime Guide](runtime-guide.html) for layout and provenance details,
+[Architecture](architecture.html) for the loading model, and
+[Troubleshooting](troubleshooting.html) for diagnosis.

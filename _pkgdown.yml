@@ -11,7 +11,7 @@ template:
 
 home:
   title: gdalraster.windows
-  description: Installs and activates a self-contained GDAL runtime & gdalraster package on Windows.
+  description: Builds and verifies a self-contained vendored gdalraster package on Windows.
 
 navbar:
   bg: "#2b4a2b"
@@ -34,22 +34,18 @@ navbar:
         href: articles/troubleshooting.html
 
 reference:
-  - title: Runtime Setup
-    desc: Setup the necessary runtime environment for gdalraster on Windows.
+  - title: Setup and Maintenance
+    desc: Install, update, inspect, verify, and remove managed resources.
+    contents:
+      - gdal_setup
+      - gdal_update
+      - gdal_sitrep
+      - gdal_verify
+      - gdal_uninstall
+  - title: Plumbing
+    desc: Install the build SDK, compile the vendored package, and provision Python.
     contents:
       - gdal_home
-      - configure_gdal_home
-      - install_gdal_runtime
-      - activate_gdal_runtime
-      - load_gdal_dll
-  - title: gdalraster Integration
-    desc: Integrate gdalraster with the GDAL runtime on Windows.
-    contents:
-      - install_gdalraster
-      - load_gdalraster
-      - verify_gdalraster_runtime
-  - title: Startup Hooks
-    desc: Configure R to automatically load the GDAL runtime and gdalraster package on startup.
-    contents:
-      - gdal_rprofile_snippet
-      - add_gdal_rprofile_hook
+      - gdal_install_runtime
+      - gdal_build_gdalraster
+      - gdal_enable_python

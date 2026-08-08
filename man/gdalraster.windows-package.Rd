@@ -4,11 +4,11 @@
 \name{gdalraster.windows-package}
 \alias{gdalraster.windows}
 \alias{gdalraster.windows-package}
-\title{gdalraster.windows: Windows GDAL Runtime and gdalraster Bootstrap Tools}
+\title{gdalraster.windows: Self-Contained gdalraster Builds for Windows}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Installs and activates a self-contained GDAL runtime on Windows and provides helpers to install gdalraster from source against that GDAL instead of the default Rtools GDAL.
+Installs a self-contained GDAL build runtime on Windows and builds a vendored gdalraster package against it. The resulting package carries its native dependency closure and runtime data, so it loads in fresh R sessions without activation hooks or environment changes.
 }
 \seealso{
 Useful links:

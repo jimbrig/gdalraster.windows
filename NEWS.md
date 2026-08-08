@@ -1,3 +1,48 @@
+# gdalraster.windows 0.4.0
+
+## Breaking redesign
+
+- `gdal_build_gdalraster()` now stages and installs a fully self-contained
+  `gdalraster` package. GDAL and dependency DLLs are vendored beside
+  `gdalraster.dll`; matching GDAL/PROJ data and pure-Python `osgeo_utils` are
+  vendored into the package.
+- Added provenance manifests for installed GDAL SDKs and built `gdalraster`
+  packages. Runtime installation is idempotent, and setup detects stale builds
+  after a bundle update.
+- Added the porcelain API: `gdal_setup()`, `gdal_update()`, `gdal_sitrep()`,
+  `gdal_verify()`, and `gdal_uninstall()`.
+- Added `gdal_enable_python()`, which provisions a managed system-CPython
+  `.pth` file without setting `PYTHONPATH`.
+- Removed `activate_gdal_runtime()`, `load_gdal_dll()`, `load_gdalraster()`,
+  `configure_gdal_home()`, `gdal_rprofile_snippet()`,
+  `add_gdal_rprofile_hook()`, `install_gdal_runtime()`,
+  `install_gdalraster()`, and `verify_gdalraster_runtime()`. There are no old
+  aliases.
+- Removed load-time bootstrap, `PATH` mutation, DLL preloading, GDAL/PROJ
+  environment exports, and profile-hook machinery.
+
+## Verification and CI
+
+- `gdal_verify()` runs in fresh processes and checks the Algorithm API, GEOS,
+  CRS resolution, Arrow/Parquet/HDF5/netCDF registration, a first Parquet open,
+  and the GeoPackage Python validator when Python is ready.
+- The e2e workflow now proves plain `library(gdalraster)` in a separate session.
+  A dirty-machine scenario workflow covers competing GDALs, legacy hooks,
+  self-lock overwrite, locked package replacement, foreign installs, and
+  no-Python operation.
+- There is no Parquet initialization workaround in the package. The Arrow/TLS
+  correction is owned by the GDAL bundle build and is enforced through
+  first-open verification.
+
+## Migration
+
+1. Remove legacy managed blocks from `~/.Rprofile` and personal calls to the
+   removed activation helpers.
+2. Remove persistent GDAL-related `PATH`, `GDAL_DATA`, `PROJ_DATA`, `PROJ_LIB`,
+   and `PYTHONPATH` workarounds.
+3. Run `gdal_setup(user_lib = TRUE)` once for plain
+   `library(gdalraster)` discovery, or omit `user_lib` for an isolated install.
+
 # gdalraster.windows 0.3.1
 
 ## Package
