@@ -6,6 +6,7 @@
 #   GDAL_VER    : git tag to check out, e.g. "v3.13.0"
 #   BUNDLE_DIR  : absolute path where the final bundle should land
 #   INSTALL_DIR : cmake install prefix (intermediate, collected by collect_dlls.sh)
+#   ARROW_INSTALL_DIR : static Arrow prefix produced by build_arrow.sh
 #
 # Key build decisions:
 #   - Static GCC/stdc++/winpthread runtime — the DLLs carry their own C++
@@ -16,6 +17,9 @@
 #     DLLs used from R (GDAL's Windows exports use __stdcall).
 #   - GDAL_USE_MUPARSER=ON — enables the Algorithmic Processing API
 #     (gdal_global_reg_names() returns non-empty on Windows).
+#   - ARROW_USE_STATIC_LIBRARIES=ON — folds Arrow, Parquet, Dataset, Compute,
+#     and bundled third-party dependencies into libgdal. This removes the
+#     shared libarrow.dll MinGW emulated-TLS failure from the import graph.
 #   - BUILD_TESTING=OFF, BUILD_APPS=OFF — reduces build time by ~30%.
 #   - GDAL_HIDE_INTERNAL_SYMBOLS=ON — cleaner export table.
 #   - GDAL_USE_MSSQL_ODBC/NCLI=OFF — GitHub runner images ship the proprietary
@@ -50,10 +54,17 @@ set -euo pipefail
 # ── Validate env ──────────────────────────────────────────────────────────────
 : "${GDAL_VER:?GDAL_VER must be set}"
 : "${INSTALL_DIR:?INSTALL_DIR must be set}"
+: "${ARROW_INSTALL_DIR:?ARROW_INSTALL_DIR must be set}"
+
+if [[ ! -f "${ARROW_INSTALL_DIR}/lib/cmake/Arrow/ArrowConfig.cmake" ]]; then
+    echo "FATAL: static Arrow prefix is incomplete: ${ARROW_INSTALL_DIR}"
+    exit 1
+fi
 
 echo "============================================"
 echo "  Building GDAL ${GDAL_VER}"
 echo "  Install prefix: ${INSTALL_DIR}"
+echo "  Static Arrow prefix: ${ARROW_INSTALL_DIR}"
 echo "============================================"
 
 # ── Clone ─────────────────────────────────────────────────────────────────────
@@ -90,11 +101,14 @@ echo ">>> cmake configure"
 cmake -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
-    -DCMAKE_PREFIX_PATH=/ucrt64 \
+    "-DCMAKE_PREFIX_PATH=${ARROW_INSTALL_DIR};/ucrt64" \
     \
     -DGDAL_USE_MUPARSER=ON \
     -DGDAL_USE_ARROW=ON \
     -DGDAL_USE_PARQUET=ON \
+    -DGDAL_USE_ARROWDATASET=ON \
+    -DGDAL_USE_ARROWCOMPUTE=ON \
+    -DARROW_USE_STATIC_LIBRARIES=ON \
     -DGDAL_USE_GEOS=ON \
     -DGDAL_USE_SPATIALITE=ON \
     -DGDAL_USE_HDF5=ON \

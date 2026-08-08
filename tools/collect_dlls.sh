@@ -97,10 +97,12 @@ fi
 # Guard: the PDF driver must stay disabled (GDAL_ENABLE_DRIVER_PDF=OFF in
 # build_gdal.sh). The MSYS2 libpodofo.dll fails DllMain with
 # ERROR_DLL_INIT_FAILED (1114) in any process, which makes a libgdal that
-# imports it unloadable. Poppler's NSS/NSPR chain is banned alongside it so a
-# config regression re-enabling the driver via either backend fails the build
-# here instead of shipping a broken bundle.
-banned_dep_regex='^(libpodofo[^ ]*\.dll|libpoppler[^ ]*\.dll|nss3\.dll|nssutil3\.dll|smime3\.dll|libnspr4\.dll|nspr4\.dll|libplc4\.dll|libplds4\.dll)$'
+# imports it unloadable. Poppler's NSS/NSPR chain is banned alongside it.
+#
+# Arrow, Parquet, and Thrift must be statically folded into libgdal. Shared
+# versions reintroduce the MinGW emulated-TLS crash this bundle build fixes.
+# Any config regression to either dependency subtree fails here.
+banned_dep_regex='^(libpodofo[^ ]*\.dll|libpoppler[^ ]*\.dll|nss3\.dll|nssutil3\.dll|smime3\.dll|libnspr4\.dll|nspr4\.dll|libplc4\.dll|libplds4\.dll|libarrow[^ ]*\.dll|libparquet[^ ]*\.dll|libthrift[^ ]*\.dll)$'
 banned_found="$(
     ntldd -R "${GDAL_DLL}" \
         | awk '{ if ($2 != "=>") next; print tolower($1) }' \
@@ -112,7 +114,7 @@ if [[ -n "${banned_found}" ]]; then
     echo "FATAL: libgdal links banned dependency DLLs (broken/unnecessary at runtime):"
     printf '  %s\n' ${banned_found}
     echo ""
-    echo "Re-check the PDF driver flags in tools/build_gdal.sh and rebuild."
+    echo "Re-check the PDF and static Arrow flags in tools/build_gdal.sh and rebuild."
     exit 1
 fi
 
@@ -243,6 +245,25 @@ else
     echo ""
     echo "✓ PASS — Bundle is fully self-contained (no external non-Windows deps)"
 fi
+
+# The import-graph check above is authoritative, but also reject stray banned
+# DLL files copied into the bundle so the published contract is unambiguous.
+banned_bundle_files=()
+while IFS= read -r dll_path; do
+    [[ -z "${dll_path}" ]] && continue
+    dll_name="$(basename "${dll_path}" | tr '[:upper:]' '[:lower:]')"
+    if [[ "${dll_name}" =~ ${banned_dep_regex} ]]; then
+        banned_bundle_files+=("${dll_path}")
+    fi
+done < <(printf '%s\n' "${BUNDLE_DIR}"/bin/*.dll)
+
+if (( ${#banned_bundle_files[@]} > 0 )); then
+    echo ""
+    echo "FATAL: bundle contains banned dependency DLLs:"
+    printf '  %s\n' "${banned_bundle_files[@]}"
+    exit 1
+fi
+echo "✓ PASS — No shared Arrow, Parquet, Thrift, or PDF dependency DLLs"
 
 # ── Final inventory ───────────────────────────────────────────────────────────
 echo ""
