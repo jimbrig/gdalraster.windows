@@ -262,7 +262,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: gdal-bundle
-          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-arrow-${{ env.ARROW_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_arrow.sh', 'tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
+          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-arrow-${{ env.ARROW_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_arrow.sh', 'tools/build_gdal.sh', 'tools/collect_dlls.sh', 'tools/patches/gdal-static-target-cycles.patch') }}
 
       - name: Restore static Arrow build cache
         id: arrow-cache-restore
@@ -315,7 +315,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: gdal-bundle
-          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-arrow-${{ env.ARROW_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_arrow.sh', 'tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
+          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-arrow-${{ env.ARROW_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_arrow.sh', 'tools/build_gdal.sh', 'tools/collect_dlls.sh', 'tools/patches/gdal-static-target-cycles.patch') }}
 
       # ── 7. Verify bundle integrity ────────────────────────────────────────
       # Asserts all bundle contract pieces consumed by gdalraster.windows:

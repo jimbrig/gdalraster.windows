@@ -1,0 +1,33 @@
+diff --git a/cmake/helpers/GdalGenerateConfig.cmake b/cmake/helpers/GdalGenerateConfig.cmake
+index e084779..0a25fb5 100644
+--- a/cmake/helpers/GdalGenerateConfig.cmake
++++ b/cmake/helpers/GdalGenerateConfig.cmake
+@@ -35,11 +35,20 @@ function(gdal_flatten_link_libraries _result _is_debug_build)
+             continue()
+         else()
+             # new target
++            get_property(_active GLOBAL PROPERTY GDAL_FLATTEN_ACTIVE_TARGETS)
++            if(_lib IN_LIST _active)
++                continue()
++            endif()
++            list(APPEND _active "${_lib}")
++            set_property(GLOBAL PROPERTY GDAL_FLATTEN_ACTIVE_TARGETS "${_active}")
+             get_target_property(_link_libraries ${_lib} INTERFACE_LINK_LIBRARIES)
+             get_target_property(_type ${_lib} TYPE)
+             if(_link_libraries AND NOT TYPE STREQUAL "SHARED_LIBRARY")
+                 gdal_flatten_link_libraries(_libs "${_is_debug_build}" ${_link_libraries})
+             endif()
++            get_property(_active GLOBAL PROPERTY GDAL_FLATTEN_ACTIVE_TARGETS)
++            list(REMOVE_ITEM _active "${_lib}")
++            set_property(GLOBAL PROPERTY GDAL_FLATTEN_ACTIVE_TARGETS "${_active}")
+             list(PREPEND _libs "${_lib}")
+         endif()
+     endwhile()
+@@ -232,6 +241,7 @@ function(gdal_get_lflags _result)
+     endif()
+ 
+     set(_libs_in "")
++    set_property(GLOBAL PROPERTY GDAL_FLATTEN_ACTIVE_TARGETS "")
+     gdal_flatten_link_libraries(_libs_in "${is_debug_build}" ${ARGN})
+ 
+     set(_libs_out "")

@@ -51,6 +51,8 @@
 # =============================================================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # ── Validate env ──────────────────────────────────────────────────────────────
 : "${GDAL_VER:?GDAL_VER must be set}"
 : "${INSTALL_DIR:?INSTALL_DIR must be set}"
@@ -86,6 +88,20 @@ else
 fi
 
 cd "${SRC_DIR}"
+
+# GDAL 3.13.2's exported-link flattener marks targets only after recursively
+# visiting their dependencies. Arrow 25's static abseil graph contains cycles,
+# so configuration otherwise exceeds CMake's recursion limit. Apply the focused
+# cycle guard while preserving the existing dependency ordering.
+GDAL_CYCLE_PATCH="${SCRIPT_DIR}/patches/gdal-static-target-cycles.patch"
+if git apply --check "${GDAL_CYCLE_PATCH}"; then
+    git apply "${GDAL_CYCLE_PATCH}"
+elif git apply --reverse --check "${GDAL_CYCLE_PATCH}"; then
+    echo ">>> Static-target cycle guard already applied"
+else
+    echo "FATAL: GDAL static-target cycle guard does not apply to ${GDAL_VER}"
+    exit 1
+fi
 
 # Clean any previous build tree
 rm -rf build
