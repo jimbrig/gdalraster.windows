@@ -111,7 +111,8 @@ rm -rf build
 # -Wl,-Bstatic,--whole-archive \
 #   -lwinpthread                      : embed pthreads-win32 statically
 # -Wl,-Bdynamic,--no-whole-archive   : revert to dynamic for everything after
-STATIC_RT="-static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,-Bdynamic,--no-whole-archive"
+# -lws2_32 : Apache Thrift (static, folded via Arrow) needs htons/ntohl on Windows
+STATIC_RT="-static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,-Bdynamic,--no-whole-archive -lws2_32"
 
 # ── Configure ─────────────────────────────────────────────────────────────────
 echo ""
@@ -150,7 +151,8 @@ cmake -B build -G Ninja \
     -DOGR_BUILD_OPTIONAL_DRIVERS=ON \
     \
     "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--kill-at ${STATIC_RT}" \
-    "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--kill-at ${STATIC_RT}"
+    "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--kill-at ${STATIC_RT}" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-lws2_32"
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 NCPUS=$(nproc)

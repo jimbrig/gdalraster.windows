@@ -230,6 +230,8 @@ jobs:
             mingw-w64-ucrt-x86_64-sqlite3
             mingw-w64-ucrt-x86_64-curl
             mingw-w64-ucrt-x86_64-zlib
+            mingw-w64-ucrt-x86_64-lz4
+            mingw-w64-ucrt-x86_64-zstd
             mingw-w64-ucrt-x86_64-muparser
             mingw-w64-ucrt-x86_64-hdf5
             mingw-w64-ucrt-x86_64-netcdf

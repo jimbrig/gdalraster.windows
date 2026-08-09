@@ -43,10 +43,19 @@ fi
 
 rm -rf "${SRC_DIR}/cpp/build" "${ARROW_INSTALL_DIR}"
 
-# Arrow's bundled dependency mode produces libarrow_bundled_dependencies.a and
-# keeps compression libraries and Thrift out of the runtime DLL closure. The
-# system allocator avoids the mimalloc/jemalloc TLS state implicated by the
-# original first-Parquet-open crash.
+# Arrow's bundled dependency mode produces libarrow_bundled_dependencies.a for
+# Thrift/snappy/brotli/etc. zlib/lz4/zstd deliberately use MSYS2 static
+# archives instead: GDAL already links those system codecs, and a second copy
+# inside libarrow_bundled_dependencies.a fails the final libgdal link with
+# multiple-definition errors. The system allocator avoids the mimalloc/
+# jemalloc TLS state implicated by the original first-Parquet-open crash.
+for codec_lib in /ucrt64/lib/libz.a /ucrt64/lib/liblz4.a /ucrt64/lib/libzstd.a; do
+    if [[ ! -f "${codec_lib}" ]]; then
+        echo "FATAL: required static codec archive missing: ${codec_lib}"
+        exit 1
+    fi
+done
+
 echo ""
 echo ">>> cmake configure"
 cmake -S "${SRC_DIR}/cpp" -B "${SRC_DIR}/cpp/build" -G Ninja \
@@ -65,6 +74,14 @@ cmake -S "${SRC_DIR}/cpp" -B "${SRC_DIR}/cpp/build" -G Ninja \
     -DZLIB_USE_STATIC_LIBS=ON \
     -DZLIB_LIBRARY=/ucrt64/lib/libz.a \
     -DZLIB_INCLUDE_DIR=/ucrt64/include \
+    -Dlz4_SOURCE=SYSTEM \
+    -DLZ4_USE_STATIC_LIBS=ON \
+    -DLZ4_LIBRARY=/ucrt64/lib/liblz4.a \
+    -DLZ4_INCLUDE_DIR=/ucrt64/include \
+    -Dzstd_SOURCE=SYSTEM \
+    -Dzstd_USE_STATIC_LIBS=ON \
+    -Dzstd_LIBRARY=/ucrt64/lib/libzstd.a \
+    -Dzstd_INCLUDE_DIR=/ucrt64/include \
     \
     -DARROW_PARQUET=ON \
     -DARROW_DATASET=ON \
