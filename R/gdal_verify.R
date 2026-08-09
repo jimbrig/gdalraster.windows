@@ -40,32 +40,18 @@ gdal_verify <- function(
   parquet <- file.path(work, "first-open.parquet")
   run_python <- isTRUE(python) && python_is_ready(package_dir)
 
-  # Create a minimal Parquet dataset by translating GeoJSON. Direct
-  # ogr_ds_create(..., format = "Parquet") currently aborts inside GDAL/Arrow
-  # on this stack; vectortranslate exercises the Parquet driver write path
-  # without that create API.
-  generator <- c(
-    sprintf("library(gdalraster, lib.loc = %s)", deparse(lib)),
-    sprintf("path <- %s", deparse(parquet)),
-    "gj <- tempfile(fileext = '.geojson')",
-    paste0(
-      "writeLines(",
-      "'{\"type\":\"FeatureCollection\",\"features\":[{",
-      "\"type\":\"Feature\",\"properties\":{\"id\":1},",
-      "\"geometry\":{\"type\":\"Point\",\"coordinates\":[0,0]}}]}', gj)"
-    ),
-    paste0(
-      "ok <- gdalraster::gdal_utils(",
-      "'vectortranslate', source = gj, destination = path, ",
-      "cl_arg = c('-f', 'Parquet', '-nlt', 'POINT'))"
-    ),
-    "stopifnot(isTRUE(ok), file.exists(path))"
-  )
-  generated <- run_fresh_rscript(generator)
-  if (generated$status != 0L) {
+  fixture <- pkg_sys("extdata", "smoke.parquet")
+  if (!nzchar(fixture) || !file.exists(fixture)) {
     if (!isTRUE(quiet)) {
-      cli::cli_alert_danger("Parquet fixture creation failed in a fresh process.")
-      cli::cli_inform(c("x" = "{paste(generated$output, collapse = '\n')}"))
+      cli::cli_alert_danger(
+        "Bundled Parquet smoke fixture is missing from {.pkg gdalraster.windows}."
+      )
+    }
+    return(FALSE)
+  }
+  if (!file.copy(fixture, parquet, overwrite = TRUE)) {
+    if (!isTRUE(quiet)) {
+      cli::cli_alert_danger("Failed to stage the Parquet smoke fixture.")
     }
     return(FALSE)
   }
