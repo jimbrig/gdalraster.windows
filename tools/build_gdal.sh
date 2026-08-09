@@ -120,6 +120,10 @@ cmake -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
     "-DCMAKE_PREFIX_PATH=${ARROW_INSTALL_DIR};/ucrt64" \
+    -DArrow_DIR="${ARROW_INSTALL_DIR}/lib/cmake/Arrow" \
+    -DArrowCompute_DIR="${ARROW_INSTALL_DIR}/lib/cmake/ArrowCompute" \
+    -DArrowDataset_DIR="${ARROW_INSTALL_DIR}/lib/cmake/ArrowDataset" \
+    -DParquet_DIR="${ARROW_INSTALL_DIR}/lib/cmake/Parquet" \
     \
     -DGDAL_USE_MUPARSER=ON \
     -DGDAL_USE_ARROW=ON \
