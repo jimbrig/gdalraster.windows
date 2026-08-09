@@ -106,6 +106,27 @@ fi
 # Clean any previous build tree
 rm -rf build
 
+# GDAL's FindLZ4 / FindZSTD discover both the shared import library and a
+# "lz4Alt"/"zstdAlt" static archive, then link BOTH into libgdal. Combined with
+# Arrow's shared codec deps that produces multiple-definition failures on the
+# final link. Hide the static archives for configure+link only.
+ASIDE_DIR="${INSTALL_DIR}/.aside-static-codecs"
+mkdir -p "${ASIDE_DIR}"
+restore_static_codecs() {
+    for lib in liblz4.a libzstd.a; do
+        if [[ -f "${ASIDE_DIR}/${lib}" ]]; then
+            mv -f "${ASIDE_DIR}/${lib}" "/ucrt64/lib/${lib}" || true
+        fi
+    done
+}
+trap restore_static_codecs EXIT
+for lib in liblz4.a libzstd.a; do
+    if [[ -f "/ucrt64/lib/${lib}" ]]; then
+        mv -f "/ucrt64/lib/${lib}" "${ASIDE_DIR}/${lib}"
+        echo ">>> Moved /ucrt64/lib/${lib} aside for GDAL configure/link"
+    fi
+done
+
 # ── Static runtime flags ──────────────────────────────────────────────────────
 # -static-libgcc -static-libstdc++   : embed GCC/stdc++ runtime into the DLL
 # -Wl,-Bstatic,--whole-archive \
