@@ -21,11 +21,25 @@
 - Removed load-time bootstrap, `PATH` mutation, DLL preloading, GDAL/PROJ
   environment exports, and profile-hook machinery.
 
+## GDAL runtime bundle
+
+- Baseline runtime is now GDAL **v3.13.2** (`gdal-v3.13.2`).
+- Apache Arrow / Parquet / Thrift are built statically and folded into
+  `libgdal-*.dll`. Shared `libarrow*.dll`, `libparquet*.dll`, and
+  `libthrift*.dll` are banned from the published closure. Arrow's
+  mimalloc/jemalloc allocators are disabled. This removes the MinGW
+  emulated-TLS first-Parquet-open crash class from the import graph (#38).
+- Bundle CI gates now include LoadLibrary smoke testing, the shared-Arrow ban,
+  `gdal_verify()`, and a TLS-noisy first Parquet open (httpuv/later + a Rust
+  cdylib) before release publication.
+- Published bundles embed `MANIFEST.dcf` for provenance-aware installs.
+
 ## Verification and CI
 
 - `gdal_verify()` runs in fresh processes and checks the Algorithm API, GEOS,
-  CRS resolution, Arrow/Parquet/HDF5/netCDF registration, a first Parquet open,
-  and the GeoPackage Python validator when Python is ready.
+  CRS resolution, Arrow/Parquet/HDF5/netCDF registration, a first Parquet open
+  against a bundled smoke fixture, and the GeoPackage Python validator when
+  Python is ready.
 - The e2e workflow now proves plain `library(gdalraster)` in a separate session.
   A dirty-machine scenario workflow covers competing GDALs, legacy hooks,
   self-lock overwrite, locked package replacement, foreign installs, and
