@@ -4,7 +4,7 @@
 #
 # Scope: this workflow's only responsibility is producing the GDAL runtime
 # bundle. Building gdalraster against it is package functionality
-# (gdalraster.windows::install_gdalraster() with scoped Makevars via withr)
+# (gdalraster.windows::gdal_setup() / gdal_build_gdalraster() with scoped Makevars)
 # and is exercised by the package's own tests, not by CI here.
 #
 # Triggers:
@@ -23,10 +23,10 @@
 #
 # Cache strategy:
 #   MSYS2 packages : handled automatically by msys2/setup-msys2@v2 (cache: true)
-#   GDAL build     : actions/cache@v4 keyed on GDAL version + runner OS +
-#                    build-script hash. A re-dispatch with an unchanged version
-#                    and scripts restores the bundle and republishes in minutes
-#                    instead of rebuilding for ~25-40 min.
+#   Arrow build    : actions/cache@v4 keyed on Arrow version + script hash.
+#   GDAL build     : actions/cache@v4 keyed on GDAL/Arrow versions + runner OS
+#                    + build-script hashes. A re-dispatch with unchanged inputs
+#                    restores the bundle instead of rebuilding both projects.
 # ============================================================================
 
 name: Build GDAL (Windows)
@@ -39,7 +39,7 @@ on:
         required: true
         # current bundle baseline — keep in sync with env.GDAL_VERSION below
         # and the "Latest GDAL runtime release" line in README.md
-        default: 'v3.13.1'
+        default: 'v3.13.2'
       force_rebuild_gdal:
         description: 'Force full GDAL rebuild, ignoring cache'
         required: false
@@ -69,7 +69,8 @@ permissions:
 # Centralise defaults for manual runs.
 # keep the fallback in sync with the gdal_version input default above
 env:
-  GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.1' }}
+  GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.2' }}
+  ARROW_VERSION: '25.0.0'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # JOB 0 — Scheduled upstream release check (schedule trigger only)
@@ -215,6 +216,7 @@ jobs:
           path-type: minimal
           install: >-
             git
+            make
             mingw-w64-ucrt-x86_64-toolchain
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
@@ -228,10 +230,11 @@ jobs:
             mingw-w64-ucrt-x86_64-sqlite3
             mingw-w64-ucrt-x86_64-curl
             mingw-w64-ucrt-x86_64-zlib
+            mingw-w64-ucrt-x86_64-lz4
+            mingw-w64-ucrt-x86_64-zstd
             mingw-w64-ucrt-x86_64-muparser
             mingw-w64-ucrt-x86_64-hdf5
             mingw-w64-ucrt-x86_64-netcdf
-            mingw-w64-ucrt-x86_64-arrow
             mingw-w64-ucrt-x86_64-geos
             mingw-w64-ucrt-x86_64-libspatialite
             mingw-w64-ucrt-x86_64-openjpeg2
@@ -255,18 +258,39 @@ jobs:
             mingw-w64-ucrt-x86_64-ntldd \
             | sed -n '1,260p'
 
-      # ── 3. GDAL build cache (keyed on version + script hash) ─────────────
-      # This lets the R package job re-run without rebuilding GDAL.
-      # Key includes a hash of the build script so any script change
-      # invalidates the cache and triggers a fresh build.
+      # ── 3. GDAL and static Arrow build caches ────────────────────────────
       - name: Restore GDAL build cache
         id: gdal-cache-restore
         uses: actions/cache/restore@v4
         with:
           path: gdal-bundle
-          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-${{ runner.os }}-${{ hashFiles('tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
+          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-arrow-${{ env.ARROW_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_arrow.sh', 'tools/build_gdal.sh', 'tools/collect_dlls.sh', 'tools/patches/gdal-static-target-cycles.patch') }}
 
-      # ── 4. Build GDAL from source (skipped on cache hit) ─────────────────
+      - name: Restore static Arrow build cache
+        id: arrow-cache-restore
+        if: steps.gdal-cache-restore.outputs.cache-hit != 'true' || github.event.inputs.force_rebuild_gdal == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: arrow-install
+          key: arrow-static-${{ env.ARROW_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_arrow.sh') }}
+
+      # ── 4. Build static Arrow and GDAL from source ────────────────────────
+      - name: Build static Apache Arrow
+        id: build-arrow
+        if: (steps.gdal-cache-restore.outputs.cache-hit != 'true' || github.event.inputs.force_rebuild_gdal == 'true') && steps.arrow-cache-restore.outputs.cache-hit != 'true'
+        shell: msys2 {0}
+        env:
+          ARROW_VER:         ${{ env.ARROW_VERSION }}
+          ARROW_INSTALL_DIR: ${{ github.workspace }}/arrow-install
+        run: bash tools/build_arrow.sh
+
+      - name: Save static Arrow build cache
+        if: steps.build-arrow.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: arrow-install
+          key: arrow-static-${{ env.ARROW_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_arrow.sh') }}
+
       - name: Build GDAL from source
         id: build-gdal
         if: steps.gdal-cache-restore.outputs.cache-hit != 'true' || github.event.inputs.force_rebuild_gdal == 'true'
@@ -275,6 +299,7 @@ jobs:
           GDAL_VER:    ${{ steps.names.outputs.gdal_ver }}
           BUNDLE_DIR:  ${{ github.workspace }}/gdal-bundle
           INSTALL_DIR: ${{ github.workspace }}/gdal-install
+          ARROW_INSTALL_DIR: ${{ github.workspace }}/arrow-install
         run: bash tools/build_gdal.sh
 
       # ── 5. Collect DLLs into self-contained bundle (skipped on cache hit) ─
@@ -284,6 +309,8 @@ jobs:
         env:
           BUNDLE_DIR:  ${{ github.workspace }}/gdal-bundle
           INSTALL_DIR: ${{ github.workspace }}/gdal-install
+          GDAL_VER:    ${{ steps.names.outputs.gdal_ver }}
+          RELEASE_TAG: ${{ steps.names.outputs.release_tag }}
         run: bash tools/collect_dlls.sh
 
       # ── 6. Save GDAL bundle to cache (only when freshly built) ───────────
@@ -292,7 +319,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: gdal-bundle
-          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-${{ runner.os }}-${{ hashFiles('tools/build_gdal.sh', 'tools/collect_dlls.sh') }}
+          key: gdal-bundle-${{ steps.names.outputs.gdal_ver }}-arrow-${{ env.ARROW_VERSION }}-${{ runner.os }}-${{ hashFiles('tools/build_arrow.sh', 'tools/build_gdal.sh', 'tools/collect_dlls.sh', 'tools/patches/gdal-static-target-cycles.patch') }}
 
       # ── 7. Verify bundle integrity ────────────────────────────────────────
       # Asserts all bundle contract pieces consumed by gdalraster.windows:
@@ -363,6 +390,17 @@ jobs:
           }
           Write-Host "✓ All $((Get-ChildItem "$bin\*.dll").Count) bundled DLLs load cleanly (no DllMain failures)"
 
+      - name: Verify shared Arrow dependency ban
+        shell: pwsh
+        run: |
+          $banned = Get-ChildItem "gdal-bundle\bin\*.dll" |
+            Where-Object Name -Match '^(libarrow|libparquet|libthrift)'
+          if ($banned) {
+            Write-Error ("FATAL: shared Arrow dependency DLLs found:`n  " + (($banned.Name) -join "`n  "))
+            exit 1
+          }
+          Write-Host "✓ No shared Arrow, Parquet, or Thrift DLLs in bundle"
+
       # ── 8. Upload bundle as workflow artifact (always) ────────────────────
       # compression-level: 0 — DLLs are already-compressed PE binaries.
       #                        Re-compressing wastes 30-60s and gains <5%.
@@ -392,8 +430,61 @@ jobs:
           $mb = [math]::Round((Get-Item $zip).Length / 1MB, 1)
           Write-Host "Release asset: ${zip} (${mb} MB)"
           echo "zip_name=${zip}" >> $env:GITHUB_OUTPUT
+          echo "zip_path=$((Get-Item $zip).FullName)" >> $env:GITHUB_OUTPUT
           echo "zip_mb=${mb}"    >> $env:GITHUB_OUTPUT
 
+      # ── 10. TLS regression gate ───────────────────────────────────────────
+      # This must run before release publication. It builds gdalraster against
+      # the candidate bundle, loads TLS-heavy native modules in a fresh R
+      # process, and only then performs the process's first GDAL Parquet open.
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: >-
+            any::pak
+            any::httpuv
+            any::later
+            any::gifski
+            any::nanoparquet
+            local::.
+
+      - name: Install candidate runtime and build vendored gdalraster
+        shell: Rscript {0}
+        env:
+          BUNDLE_ZIP: ${{ steps.make-zip.outputs.zip_path }}
+          GDAL_TLS_HOME: ${{ runner.temp }}/gdal-tls-runtime
+          GDALRASTER_TLS_LIB: ${{ runner.temp }}/gdalraster-tls-lib
+          GDAL_BUNDLE_TAG: ${{ steps.names.outputs.release_tag }}
+        run: |
+          gdalraster.windows::gdal_install_runtime(
+            tag = Sys.getenv("GDAL_BUNDLE_TAG"),
+            local_zip = Sys.getenv("BUNDLE_ZIP"),
+            gdal_home = Sys.getenv("GDAL_TLS_HOME"),
+            force = TRUE
+          )
+          gdalraster.windows::gdal_build_gdalraster(
+            gdal_home = Sys.getenv("GDAL_TLS_HOME"),
+            lib = Sys.getenv("GDALRASTER_TLS_LIB"),
+            force = TRUE,
+            enable_python = TRUE
+          )
+          stopifnot(isTRUE(gdalraster.windows::gdal_verify(
+            lib = Sys.getenv("GDALRASTER_TLS_LIB"),
+            python = TRUE
+          )))
+
+      - name: Test first Parquet open in TLS-noisy process
+        shell: Rscript --vanilla {0}
+        env:
+          GDALRASTER_TLS_LIB: ${{ runner.temp }}/gdalraster-tls-lib
+        run: |
+          source("tools/test_arrow_tls.R", echo = TRUE)
+
+      # ── 11. Publish only after every gate passes ───────────────────────────
       - name: Publish GDAL bundle to GitHub Release
         if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.publish_release == 'true'
         uses: softprops/action-gh-release@v2
@@ -415,8 +506,10 @@ jobs:
             | `GDAL_HIDE_INTERNAL_SYMBOLS` | `ON` | Cleaner export table |
             | `--kill-at` | (linker) | Correct stdcall symbol decoration for MinGW DLLs |
             | Static GCC/stdc++/winpthread | (linker) | No Rtools or MSYS2 required at runtime |
+            | Static Apache Arrow ${{ env.ARROW_VERSION }} | (linker) | Arrow/Parquet/Thrift folded into libgdal; mimalloc/jemalloc disabled |
             | `GDAL_ENABLE_DRIVER_PDF` | `OFF` | MSYS2 libpodofo.dll fails DllMain (ERROR_DLL_INIT_FAILED 1114) in any process, making libgdal unloadable; poppler/podofo/pdfium backends all disabled |
             | Loadability gate | (CI) | Every bundled DLL is LoadLibrary-tested in CI before publishing |
+            | TLS regression gate | (CI) | First Parquet open succeeds after loading httpuv/later and a Rust cdylib |
 
             ### Runtime bundle asset
             Download:
@@ -430,13 +523,15 @@ jobs:
 
             ### R package usage (local machine)
             ```r
-            gdalraster.windows::install_gdal_runtime(
-              repo = "${{ github.repository }}",
+            pak::pak("${{ github.repository }}")
+            gdalraster.windows::gdal_setup(
+              user_lib = TRUE,
               tag = "${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.names.outputs.release_tag }}"
             )
+            library(gdalraster)
             ```
 
-      # ── 10. Build transparency summary ────────────────────────────────────
+      # ── 12. Build transparency summary ────────────────────────────────────
       # Rendered on the run's summary page so the outcome (cache vs fresh
       # build, bundle composition, where the output landed) is visible at a
       # glance without digging through step logs.

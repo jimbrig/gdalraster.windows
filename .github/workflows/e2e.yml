@@ -1,28 +1,4 @@
-# =============================================================================
-# e2e.yml — End-to-end verification of the full user workflow on a clean
-#           Windows machine (#20).
-#
-# Proves the documented workflow exactly as a user machine would run it:
-#   1. install the package (local checkout)
-#   2. install_gdal_runtime()      — published GDAL runtime bundle
-#   3. install_gdalraster()        — source build against the bundle
-#   4. verify_gdalraster_runtime() — Algorithm API registry is populated
-#   5. add_gdal_rprofile_hook()    — startup hook, verified in a fresh
-#                                    R session via plain library(gdalraster)
-#
-# This workflow only consumes exported package functionality — build, link,
-# and activation logic are never reimplemented in CI (see AGENTS.md
-# responsibility split). gdalraster's own R dependencies are installed as
-# CRAN binaries so the only from-source compile is gdalraster itself.
-#
-# Triggers:
-#   - workflow_dispatch : manually, optionally pinning a runtime release tag
-#   - schedule          : weekly (Mondays 08:00 UTC, after the upstream check)
-#   - release published : gdal-v* bundle releases, so every new bundle is
-#                         proven against gdalraster automatically
-# =============================================================================
-
-name: E2E Runtime Verification
+name: E2E Self-Contained Verification
 
 on:
   workflow_dispatch:
@@ -40,15 +16,14 @@ permissions: read-all
 
 jobs:
   e2e:
-    name: "E2E: runtime + gdalraster + hook"
-    # release trigger fires for package releases (v*) too; only bundle
-    # releases are relevant here
+    name: "E2E: setup and fresh-session load"
     if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'gdal-v')
     runs-on: windows-latest
     timeout-minutes: 90
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       RUNTIME_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.runtime_tag || 'latest' }}
+
     steps:
       - uses: actions/checkout@v6
 
@@ -57,75 +32,92 @@ jobs:
           r-version: 'release'
           use-public-rspm: true
 
-      # installs gdalraster.windows (local checkout) plus its dependencies
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::pak, local::.
 
-      - name: Install GDAL runtime bundle
+      - name: Install gdalraster R dependencies
+        shell: Rscript {0}
+        run: |
+          archive <- file.path(tempdir(), "gdalraster-src.tar.gz")
+          utils::download.file(
+            "https://codeload.github.com/firelab/gdalraster/tar.gz/HEAD",
+            archive,
+            mode = "wb",
+            quiet = TRUE
+          )
+          source_dir <- file.path(tempdir(), "gdalraster-src")
+          utils::untar(archive, exdir = source_dir)
+          pak::local_install_deps(list.dirs(source_dir, recursive = FALSE)[[1]])
+
+      - name: Run package setup
         shell: Rscript {0}
         run: |
           tag <- Sys.getenv("RUNTIME_TAG", unset = "latest")
           if (!nzchar(tag)) tag <- "latest"
-          gdalraster.windows::install_gdal_runtime(tag = tag)
-
-      - name: Install gdalraster R dependencies (CRAN binaries)
-        shell: Rscript {0}
-        run: |
-          src <- file.path(tempdir(), "gdalraster-src.tar.gz")
-          utils::download.file(
-            "https://codeload.github.com/firelab/gdalraster/tar.gz/HEAD",
-            destfile = src, mode = "wb", quiet = TRUE
-          )
-          exdir <- file.path(tempdir(), "gdalraster-src")
-          utils::untar(src, exdir = exdir)
-          pkg_dir <- list.dirs(exdir, recursive = FALSE)[[1]]
-          pak::local_install_deps(pkg_dir)
-
-      - name: Build gdalraster from source against the bundle
-        shell: Rscript {0}
-        run: |
-          gdalraster.windows::install_gdalraster()
-
-      - name: Verify algorithm API (explicit load)
-        shell: Rscript {0}
-        run: |
-          ok <- gdalraster.windows::verify_gdalraster_runtime()
-          stopifnot(isTRUE(ok))
-
-      - name: Verify algorithm API (startup hook, fresh session)
-        shell: Rscript {0}
-        run: |
-          rprofile <- file.path(getwd(), "e2e-hook.Rprofile")
-          gdalraster.windows::add_gdal_rprofile_hook(rprofile = rprofile)
-
-          script <- file.path(getwd(), "e2e-hook-check.R")
-          writeLines(
-            c(
-              "library(gdalraster)",
-              "n <- length(gdalraster::gdal_global_reg_names())",
-              "cat('algorithm registry entries:', n, '\n')",
-              "stopifnot(n > 0L)"
-            ),
-            con = script
+          gdalraster.windows::gdal_setup(
+            user_lib = TRUE,
+            tag = tag,
+            verify = TRUE
           )
 
-          status <- withr::with_envvar(
-            c(R_PROFILE_USER = rprofile),
-            system2(file.path(R.home("bin"), "Rscript.exe"), args = script)
+      - name: Verify plain fresh-session self-containment
+        shell: Rscript {0}
+        env:
+          GDAL_DATA: ''
+          PROJ_DATA: ''
+          PROJ_LIB: ''
+          PYTHONPATH: ''
+          GDALRASTER_WINDOWS_GDAL_HOME: ''
+        run: |
+          library(gdalraster)
+
+          algorithms <- gdalraster::gdal_global_reg_names()
+          stopifnot(length(algorithms) > 0L)
+
+          formats <- gdalraster::gdal_formats()$short_name
+          required <- c("Arrow", "Parquet", "HDF5", "netCDF")
+          stopifnot(all(vapply(
+            required,
+            function(driver) any(grepl(driver, formats, ignore.case = TRUE)),
+            logical(1)
+          )))
+          stopifnot(isTRUE(gdalraster::has_geos()))
+          stopifnot(nzchar(gdalraster::srs_to_wkt("EPSG:4326")))
+
+          cat("GDAL:", gdalraster::gdal_version()[[1]], "\n")
+          cat("algorithm registry entries:", length(algorithms), "\n")
+
+      - name: Verify embedded-Python GeoPackage validator
+        shell: Rscript {0}
+        env:
+          PYTHONPATH: ''
+        run: |
+          library(gdalraster)
+          gpkg <- file.path(tempdir(), "verify.gpkg")
+          gdalraster::ogr_ds_create(
+            format = "GPKG",
+            dsn = gpkg,
+            layer = "points",
+            geom_type = "Point",
+            fld_name = "id",
+            fld_type = "OFTInteger",
+            return_obj = FALSE
           )
-          stopifnot(identical(status, 0L))
+          validator <- gdalraster::gdal_alg(cmd = "driver gpkg validate")
+          validator$setArg("dataset", gpkg)
+          validator$setArg("full-check", TRUE)
+          stopifnot(isTRUE(validator$run()))
+          validator$output()
 
       - name: Write summary
         if: always()
         shell: pwsh
         run: |
           @"
-          ## E2E runtime verification
+          ## E2E self-contained verification
 
-          | Item | Value |
-          |------|-------|
-          | Runtime tag | ``$env:RUNTIME_TAG`` |
-          | Trigger | ``${{ github.event_name }}`` |
-          | Result | ${{ job.status }} |
+          - Runtime tag: ``$env:RUNTIME_TAG``
+          - Trigger: ``${{ github.event_name }}``
+          - Result: ${{ job.status }}
           "@ | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY

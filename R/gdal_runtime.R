@@ -1,221 +1,166 @@
-#' Resolve active GDAL home path
+#' Resolve the managed GDAL runtime directory
 #'
-#' Returns the currently configured GDAL runtime home used by this package.
+#' Resolution order is the `gdalraster.windows.gdal_home` option, the
+#' `GDALRASTER_WINDOWS_GDAL_HOME` environment variable, then the package-managed
+#' user data directory.
 #'
-#' Resolution order:
-#' 1) `options(gdalraster.windows.gdal_home = "...")`
-#' 2) `GDALRASTER_WINDOWS_GDAL_HOME` environment variable
-#' 3) package-managed user data directory (`tools::R_user_dir()`)
-#'
-#' @return A single string path.
+#' @return A single path.
 #' @export
 gdal_home <- function() {
   default_gdal_home()
 }
 
-#' Configure GDAL home for current session
+#' Install a self-contained GDAL build runtime
 #'
-#' Sets GDAL home for this session using either an R option or environment
-#' variable. This does not write to user profile files.
+#' Installs a release bundle used to compile [gdal_build_gdalraster()]. The
+#' installed runtime is a build-time SDK; packages produced by
+#' [gdal_build_gdalraster()] vendor everything needed at run time.
 #'
-#' @param path GDAL home directory path.
-#' @param mode Either `"option"` or `"env"`.
+#' The installer is idempotent. When the requested bundle tag is already
+#' recorded in `MANIFEST.dcf`, installation is skipped unless `force = TRUE`.
 #'
-#' @return Invisibly returns the normalized GDAL home path.
+#' @param repo GitHub repository that publishes bundle releases.
+#' @param tag Bundle release tag or `"latest"`.
+#' @param asset_pattern Regular expression selecting a bundle zip asset.
+#' @param gdal_home Destination runtime directory.
+#' @param force Reinstall an existing runtime.
+#' @param local_zip Optional local bundle zip. This takes precedence over a
+#'   release download.
+#' @param fallback_zip Optional local zip used if release resolution or download
+#'   fails.
+#'
+#' @return Invisibly, the installed runtime directory.
 #' @export
-configure_gdal_home <- function(path, mode = c("option", "env")) {
-  abort_if_not_windows()
-
-  mode <- match.arg(mode)
-  if (!is.character(path) || length(path) != 1L || !nzchar(path)) {
-    cli::cli_abort("{.arg path} must be a single non-empty string.")
-  }
-
-  path <- normalizePath(path, winslash = "/", mustWork = FALSE)
-
-  if (identical(mode, "option")) {
-    options(gdalraster.windows.gdal_home = path)
-  } else {
-    Sys.setenv(GDALRASTER_WINDOWS_GDAL_HOME = path)
-  }
-
-  invisible(path)
-}
-
-#' Install precompiled GDAL runtime
-#'
-#' Installs the GDAL runtime into `gdal_home` from one of:
-#'
-#' - `local_zip` (highest precedence),
-#' - GitHub release asset lookup/download,
-#' - `fallback_zip` when release lookup/download fails.
-#'
-#' The selected zip must contain a GDAL root with `bin/libgdal-*.dll`.
-#'
-#' @section Offline / air-gapped installation:
-#' On machines without network access, download the release asset manually
-#' from <https://github.com/jimbrig/gdalraster.windows/releases>, transfer it
-#' to the target machine, and install directly:
-#'
-#' ```r
-#' gdalraster.windows::install_gdal_runtime(
-#'   local_zip = "C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"
-#' )
-#' ```
-#'
-#' Note that no fallback zip is shipped with the package (a full runtime
-#' bundle is too large to vendor), so the fallback path only applies when you
-#' provide a `fallback_zip` yourself.
-#'
-#' @section Overwriting an installed runtime:
-#' With `overwrite = TRUE`, the existing `gdal_home` is deleted before the new
-#' runtime is copied in. Runtime DLLs that were preloaded into the current
-#' session (the package auto-bootstrap does this at load time when a runtime
-#' is present) are unloaded first, but the session usually cannot fully
-#' release its own locks anyway: runtime activation prepends `bin` to `PATH`,
-#' so DLLs loaded later in the session (the release download itself loads the
-#' curl package, which maps the runtime's `zlib1.dll`) resolve dependencies
-#' from the runtime directory outside R's control. Mapped DLLs cannot be
-#' deleted but can be renamed, so such leftovers are moved into a stale
-#' sibling directory
-#' (`<gdal_home>.stale-<pid>-<timestamp>`) and the install proceeds; stale
-#' directories are deleted opportunistically by later installs once their
-#' locks are gone. When this happens, restart R before building or loading
-#' `gdalraster` so the new runtime — not the still-mapped old DLLs — is used.
-#'
-#' Overwriting is refused outright while `gdalraster` is loaded (its DLL pins
-#' the whole runtime in the process); reinstalling then requires a fresh R
-#' session. If files are locked by *other* processes (another R session, a
-#' File Explorer preview pane), neither deletion nor the move-aside is
-#' possible and the install aborts cleanly instead of leaving a
-#' partially-replaced runtime.
-#'
-#' @param repo GitHub repo slug publishing the runtime bundle releases.
-#'   Defaults to `"jimbrig/gdalraster.windows"`.
-#' @param tag Release tag or `"latest"`. With `"latest"`, the newest release
-#'   that publishes a runtime bundle asset (matching `asset_pattern`) is
-#'   selected; releases without a bundle asset — such as R package releases
-#'   (`v*`) — are skipped, so GitHub's "latest release" pointer does not need
-#'   to be a GDAL bundle release.
-#' @param asset_pattern Regex used to select the release asset. Defaults to
-#'   the runtime bundle zip naming convention
-#'   (`gdal-(bundle|ucrt64)-.*\.zip$`).
-#' @param gdal_home Destination GDAL home directory.
-#' @param overwrite Whether to replace existing `gdal_home`.
-#' @param local_zip Optional local GDAL runtime zip to install directly.
-#' @param fallback_zip Optional fallback zip path used when release download
-#'   fails. When `NULL` (default), a vendored zip at
-#'   `inst/extdata/gdal-ucrt64-fallback.zip` is used if present; none ships
-#'   with the package, so by default no fallback is attempted.
-#'
-#' @return Invisibly returns installed GDAL home path.
-#' @export
-#'
-#' @importFrom httr2 request req_user_agent req_error req_perform resp_body_raw resp_status
-install_gdal_runtime <- function(
+gdal_install_runtime <- function(
   repo = .bundle_repo,
   tag = "latest",
   asset_pattern = .bundle_asset_pattern,
   gdal_home = default_gdal_home(),
-  overwrite = FALSE,
+  force = FALSE,
   local_zip = NULL,
   fallback_zip = NULL
 ) {
   abort_if_not_windows()
-
-  if (!is.character(asset_pattern) || length(asset_pattern) != 1L || !nzchar(asset_pattern)) {
-    cli::cli_abort("{.arg asset_pattern} must be a single non-empty regex string.")
-  }
-
-  if (!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) {
-    cli::cli_abort("{.arg overwrite} must be TRUE or FALSE.")
-  }
-
-  if (is.null(fallback_zip)) {
-    fallback_zip <- packaged_fallback_zip()
-  }
-
-  if (!is.null(local_zip) && (!is.character(local_zip) || length(local_zip) != 1L || !nzchar(local_zip))) {
-    cli::cli_abort("{.arg local_zip} must be NULL or a single non-empty path.")
-  }
-
-  if (!is.null(fallback_zip) && (!is.character(fallback_zip) || length(fallback_zip) != 1L || !nzchar(fallback_zip))) {
-    cli::cli_abort("{.arg fallback_zip} must be NULL or a single non-empty path.")
-  }
+  check_string(repo)
+  check_string(tag)
+  check_string(asset_pattern)
+  check_flag(force)
+  check_optional_string(local_zip)
+  check_optional_string(fallback_zip)
 
   gdal_home <- normalizePath(gdal_home, winslash = "/", mustWork = FALSE)
+  cleanup_stale_runtimes(gdal_home)
+  installed <- installed_bundle_manifest(gdal_home)
+  asset <- NULL
 
-  # fail fast on the destination before any download work
-  if (dir.exists(gdal_home)) {
-    if (!isTRUE(overwrite)) {
-      cli::cli_abort(
-        c(
-          "{.arg gdal_home} already exists and {.arg overwrite} is FALSE: {.path {gdal_home}}",
-          "i" = "Rerun with {.code overwrite = TRUE} to replace the installed runtime."
-        )
-      )
-    }
-    if ("gdalraster" %in% loadedNamespaces()) {
-      cli::cli_abort(
-        c(
-          "Cannot overwrite {.arg gdal_home} while {.pkg gdalraster} is loaded.",
-          "x" = "{.pkg gdalraster} pins the runtime DLLs in this R process, so they cannot be deleted.",
-          "i" = "Restart R and run {.fn gdalraster.windows::install_gdal_runtime} before loading {.pkg gdalraster}."
-        )
-      )
-    }
-  }
-
-  tmp_zip <- tempfile(pattern = "gdal-runtime-", fileext = ".zip")
-  tmp_dir <- tempfile(pattern = "gdal-runtime-extract-")
-  dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
-
-  zip_path <- NULL
-  if (!is.null(local_zip)) {
-    local_zip <- normalizePath(local_zip, winslash = "/", mustWork = FALSE)
-    abort_if_missing_file(local_zip, "local_zip", call = rlang::caller_env())
-    cli::cli_alert_info("using local runtime zip {.path {local_zip}}")
-    zip_path <- local_zip
-  } else {
-    zip_path <- rlang::try_fetch(
-      {
-        asset <- resolve_release_asset(repo = repo, tag = tag, asset_pattern = asset_pattern)
-        cli::cli_alert_info(
-          "downloading gdal runtime asset {.val {asset$name}} from {.val {repo}} ({.val {asset$tag}})"
-        )
-
-        req <- httr2::request(asset$url)
-        req <- httr2::req_user_agent(req, paste0(pkg_name(), "/", pkg_version()))
-        req <- httr2::req_error(req, is_error = function(resp) httr2::resp_status(resp) >= 400L)
-        resp <- httr2::req_perform(req)
-        writeBin(httr2::resp_body_raw(resp), con = tmp_zip)
-        tmp_zip
-      },
+  if (is.null(local_zip)) {
+    asset <- rlang::try_fetch(
+      resolve_release_asset(repo = repo, tag = tag, asset_pattern = asset_pattern),
       error = function(cnd) {
-        fallback_exists <- !is.null(fallback_zip) && file.exists(fallback_zip)
-        if (!fallback_exists) {
+        fallback <- if (is.null(fallback_zip)) packaged_fallback_zip() else fallback_zip
+        if (is.null(fallback) || !file.exists(fallback)) {
           cli::cli_abort(
             c(
-              "Failed to download GDAL runtime from GitHub release and no local fallback is available.",
+              "Failed to resolve the GDAL runtime release and no fallback is available.",
               "x" = "{conditionMessage(cnd)}",
-              "i" = "To install offline, download the release asset from {.url https://github.com/{repo}/releases}",
-              "i" = "then install it directly: {.code install_gdal_runtime(local_zip = \"path/to/asset.zip\")}"
+              "i" = "Download a bundle from {.url https://github.com/{repo}/releases} and pass it with {.arg local_zip}."
             ),
             parent = cnd,
             call = rlang::caller_env()
           )
         }
-
-        cli::cli_alert_warning(
-          "release download failed; using fallback runtime zip {.path {fallback_zip}}"
+        list(
+          name = basename(fallback),
+          tag = "fallback",
+          local_path = normalizePath(fallback, winslash = "/", mustWork = TRUE)
         )
-        normalizePath(fallback_zip, winslash = "/", mustWork = TRUE)
       }
+    )
+
+    if (
+      !isTRUE(force) &&
+        dir.exists(gdal_home) &&
+        identical(manifest_value(installed, "Bundle-Tag"), asset$tag)
+    ) {
+      cli::cli_alert_success("GDAL runtime {.val {asset$tag}} is already installed.")
+      return(invisible(gdal_home))
+    }
+  }
+
+  if (
+    dir.exists(gdal_home) &&
+      !isTRUE(force) &&
+      is.null(local_zip) &&
+      identical(tag, "latest")
+  ) {
+    cli::cli_alert_warning(
+      paste0(
+        "GDAL runtime ", manifest_value(installed, "Bundle-Tag", "unknown"),
+        " is installed; ", asset$tag, " is available. Run gdal_update() to upgrade."
+      )
+    )
+    return(invisible(gdal_home))
+  }
+
+  if (dir.exists(gdal_home) && !isTRUE(force) && is.null(local_zip)) {
+    cli::cli_abort(
+      c(
+        "A different or untracked GDAL runtime is installed at {.path {gdal_home}}.",
+        "i" = "Run {.fn gdal_update} or set {.code force = TRUE} to replace it."
+      ),
+      call = rlang::caller_env()
     )
   }
 
-  utils::unzip(zip_path, exdir = tmp_dir)
-  gdal_root <- detect_gdal_root(tmp_dir)
+  zip_path <- if (!is.null(local_zip)) {
+    abort_if_missing_file(local_zip, "local_zip")
+    normalizePath(local_zip, winslash = "/", mustWork = TRUE)
+  } else if (!is.null(asset[["local_path"]])) {
+    cli::cli_alert_warning("Release lookup failed; using {.file {asset$name}}.")
+    asset$local_path
+  } else {
+    download_release_asset(asset, repo = repo)
+  }
+
+  extract_dir <- tempfile("gdal-runtime-extract-")
+  dir.create(extract_dir, recursive = TRUE, showWarnings = FALSE)
+  withr::defer(unlink(extract_dir, recursive = TRUE, force = TRUE))
+  utils::unzip(zip_path, exdir = extract_dir)
+  source_root <- detect_gdal_root(extract_dir)
+  embedded <- read_manifest(file.path(source_root, "MANIFEST.dcf"))
+
+  selected_tag <- manifest_value(
+    embedded,
+    "Bundle-Tag",
+    default = if (!is.null(asset[["tag"]])) {
+      asset$tag
+    } else if (identical(tag, "latest")) {
+      "local"
+    } else {
+      tag
+    }
+  )
+  selected_asset <- if (is.null(asset[["name"]])) basename(zip_path) else asset$name
+
+  if (
+    !isTRUE(force) &&
+      dir.exists(gdal_home) &&
+      identical(manifest_value(installed, "Bundle-Tag"), selected_tag)
+  ) {
+    cli::cli_alert_success("GDAL runtime {.val {selected_tag}} is already installed.")
+    return(invisible(gdal_home))
+  }
+
+  if (dir.exists(gdal_home) && !isTRUE(force)) {
+    cli::cli_abort(
+      c(
+        "GDAL runtime {.val {manifest_value(installed, 'Bundle-Tag', 'unknown')}} is already installed.",
+        "i" = "Requested bundle: {.val {selected_tag}}.",
+        "i" = "Set {.code force = TRUE} to replace it."
+      ),
+      call = rlang::caller_env()
+    )
+  }
 
   moved_aside <- FALSE
   if (dir.exists(gdal_home)) {
@@ -223,576 +168,107 @@ install_gdal_runtime <- function(
   }
 
   dir.create(gdal_home, recursive = TRUE, showWarnings = FALSE)
-  copy_tree(gdal_root, gdal_home)
+  copy_tree(source_root, gdal_home)
 
-  cli::cli_alert_success("installed gdal runtime to {.path {gdal_home}}")
+  manifest <- if (is.null(embedded)) {
+    bundle_manifest(
+      tag = selected_tag,
+      gdal_version = gdal_version_from_tag(selected_tag),
+      asset_name = selected_asset
+    )
+  } else {
+    embedded
+  }
+  manifest[["Bundle-Tag"]] <- selected_tag
+  manifest[["Asset-Name"]] <- selected_asset
+  manifest[["Installed-At"]] <- format(Sys.time(), tz = "UTC", usetz = TRUE)
+  manifest[["Installer-Version"]] <- pkg_version()
+  write_manifest(manifest, bundle_manifest_path(gdal_home))
+
+  cli::cli_alert_success("Installed GDAL runtime {.val {selected_tag}}.")
   if (isTRUE(moved_aside)) {
     cli::cli_alert_warning(
-      paste(
-        "this session still maps DLLs from the previous runtime",
-        "(they were moved aside and will be cleaned up by a later install)."
-      )
-    )
-    cli::cli_inform(
-      c("i" = "Restart R before building or loading {.pkg gdalraster} so the new runtime is used.")
+      "Mapped files from the previous runtime were moved aside; restart R before building."
     )
   }
   invisible(gdal_home)
 }
 
-#' Activate GDAL runtime for current R session
-#'
-#' Prepends runtime paths, sets GDAL/PROJ env vars, and preloads GDAL DLL.
-#'
-#' When the runtime bundle contains a `python/` directory (pure-python
-#' `osgeo_utils` package from GDAL's `gdal-utils` distribution), it is
-#' prepended to `PYTHONPATH` so GDAL algorithms that embed Python at runtime
-#' (e.g. `gdal driver gpkg validate`) can import it. This is session-scoped
-#' and does not modify machine or user environment variables.
-#'
-#' When `preload = TRUE` and the GDAL DLL cannot be loaded (most commonly
-#' because a dependency DLL is missing), activation fails with an error
-#' rather than deferring the failure to `library(gdalraster)`, where the
-#' Windows loader reports only a generic "module could not be found".
-#'
-#' @param gdal_home GDAL home directory.
-#' @param preload Whether to preload `libgdal-*.dll`.
-#' @param quiet Suppress informational CLI output.
-#'
-#' @return Invisibly returns a list with configured paths.
-#' @export
-activate_gdal_runtime <- function(
-  gdal_home = default_gdal_home(),
-  preload = TRUE,
-  quiet = FALSE
-) {
-  abort_if_not_windows()
-
-  gdal_home <- normalizePath(gdal_home, winslash = "/", mustWork = FALSE)
-  abort_if_missing_dir(gdal_home, "gdal_home")
-
-  bin_dir <- gdal_bin_dir(gdal_home)
-  abort_if_missing_dir(bin_dir, "gdal_home/bin")
-
-  dll_path <- gdal_dll_path(gdal_home)
-  abort_if_missing_file(dll_path, "gdal_home/bin/libgdal-*.dll")
-
-  path_sep <- .Platform$path.sep
-  current_path <- Sys.getenv("PATH", unset = "")
-  path_parts <- strsplit(current_path, split = path_sep, fixed = TRUE)[[1]]
-  path_parts <- path_parts[nzchar(path_parts)]
-
-  if (!bin_dir %in% path_parts) {
-    Sys.setenv(PATH = paste(c(bin_dir, path_parts), collapse = path_sep))
-  }
-
-  gdal_data <- gdal_share_gdal_dir(gdal_home)
-  proj_data <- gdal_share_proj_dir(gdal_home)
-  python_dir <- gdal_python_dir(gdal_home)
-
-  if (dir.exists(gdal_data)) {
-    Sys.setenv(GDAL_DATA = gdal_data)
-  }
-  if (dir.exists(proj_data)) {
-    Sys.setenv(PROJ_LIB = proj_data)
-    Sys.setenv(PROJ_DATA = proj_data)
-  }
-
-  # expose bundled pure-python osgeo_utils to GDAL's embedded python.
-  # PYTHONPATH is read at Py_Initialize(), which libgdal triggers lazily on
-  # first use of an embedded-python algorithm, so setting it here is early
-  # enough. session-scoped only; never persisted to user/machine env.
-  if (dir.exists(python_dir)) {
-    py_parts <- strsplit(Sys.getenv("PYTHONPATH", unset = ""), path_sep, fixed = TRUE)[[1]]
-    py_parts <- py_parts[nzchar(py_parts)]
-    if (!python_dir %in% py_parts) {
-      Sys.setenv(PYTHONPATH = paste(c(python_dir, py_parts), collapse = path_sep))
-    }
-  }
-
-  # preload failures must be loud: a swallowed failure here surfaces later as
-  # an uninformative LoadLibrary error when gdalraster.dll is loaded, hiding
-  # the actual cause (typically a missing dependency DLL of libgdal).
-  if (isTRUE(preload)) {
-    rlang::try_fetch(
-      dyn.load(dll_path, local = FALSE, now = TRUE),
-      error = function(cnd) {
-        cli::cli_abort(
-          c(
-            "Failed to preload the GDAL runtime DLL.",
-            "x" = "{conditionMessage(cnd)}",
-            "i" = "DLL: {.path {dll_path}}",
-            "i" = paste(
-              "On Windows this usually means a dependency DLL of",
-              "{.file {basename(dll_path)}} could not be found."
-            ),
-            "i" = "See {.code vignette(\"troubleshooting\", package = \"gdalraster.windows\")}."
-          ),
-          parent = cnd
-        )
-      }
-    )
-  }
-
-  if (!isTRUE(quiet)) {
-    cli::cli_alert_success("gdal runtime activated from {.path {gdal_home}}")
-  }
-
-  invisible(
-    list(
-      gdal_home = gdal_home,
-      gdal_bin = bin_dir,
-      gdal_dll = dll_path,
-      gdal_data = if (dir.exists(gdal_data)) gdal_data else NA_character_,
-      proj_data = if (dir.exists(proj_data)) proj_data else NA_character_,
-      gdal_python = if (dir.exists(python_dir)) python_dir else NA_character_
-    )
-  )
-}
-
-#' Load GDAL DLL from runtime bundle
-#'
-#' Convenience wrapper over [activate_gdal_runtime()] that ensures the GDAL
-#' runtime is activated and the main GDAL DLL is preloaded in the current
-#' session.
-#'
-#' @param gdal_home GDAL home directory.
-#' @param quiet Suppress informational CLI output.
-#'
-#' @return Invisibly returns activation metadata.
-#' @export
-load_gdal_dll <- function(gdal_home = default_gdal_home(), quiet = FALSE) {
-  activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = quiet)
-}
-
-#' Install gdalraster from source against bundled GDAL
-#'
-#' Downloads or uses a local gdalraster source tarball and installs it from
-#' source into a dedicated library path (default) so existing user libraries
-#' are not overwritten. To install into your regular user library instead
-#' (so plain `library(gdalraster)` resolves the source build without this
-#' package's load helpers), pass it explicitly, e.g.
-#' `install_gdalraster(lib = .libPaths()[1])`.
-#'
-#' @section Prerequisites:
-#' This is a source compilation, so
-#' [Rtools](https://cran.r-project.org/bin/windows/Rtools/) matching your R
-#' version must be installed (the one thing the prebuilt runtime bundle cannot
-#' eliminate). The function checks for a toolchain up front and aborts with
-#' guidance when none is found. The GDAL runtime bundle itself must already be
-#' installed via [install_gdal_runtime()].
-#'
-#' @section Upgrading:
-#' After installing a new runtime bundle version
-#' (`install_gdal_runtime(overwrite = TRUE)`), rerun this function — the
-#' previous gdalraster build is bound to the previous bundle's GDAL and must
-#' be recompiled against the new one.
-#'
-#' @section Bundled data files:
-#' Upstream gdalraster's `Makevars.win` copies GDAL and PROJ data directories
-#' into the package from the Rtools static libraries, which generally lag the
-#' bundle's GDAL. After the source install succeeds, this function replaces
-#' the installed package's `gdal/` and `proj/` data directories with the
-#' runtime bundle's `share/gdal` and `share/proj` so the data files match the
-#' GDAL version the package was compiled against.
-#'
-#' @param gdal_home GDAL home directory used for compile/link flags.
-#' @param lib Destination library path for installing gdalraster. Defaults to
-#'   an isolated package-managed library; pass `.libPaths()[1]` to install
-#'   into your default user library.
-#' @param source_tarball Optional local path to `gdalraster_*.tar.gz`.
-#' @param repo Source GitHub repo slug for gdalraster. Defaults to
-#'   `"firelab/gdalraster"`.
-#' @param ref Git ref (branch, tag, commit) used when downloading from GitHub.
-#' @param upgrade When `TRUE`, missing R package dependencies of gdalraster are
-#'   installed from `repos` before the source build. Has no effect on the
-#'   compile/link flags used to build gdalraster itself.
-#' @param repos CRAN-like repositories used to satisfy R package dependencies
-#'   when `upgrade = TRUE`. Ignored when `upgrade = FALSE`.
-#'
-#' @return Invisibly returns installed library path.
-#' @export
-#'
-#' @importFrom httr2 request req_user_agent req_error req_perform resp_body_raw resp_status
-#' @importFrom withr with_makevars with_envvar
-install_gdalraster <- function(
-  gdal_home = default_gdal_home(),
-  lib = default_gdalraster_lib(),
-  source_tarball = NULL,
-  repo = .gdalraster_repo,
-  ref = "HEAD",
-  upgrade = FALSE,
-  repos = getOption("repos")
-) {
-  abort_if_not_windows()
-  abort_if_no_build_tools()
-  activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = TRUE)
-
-  if (!is.character(lib) || length(lib) != 1L || !nzchar(lib)) {
-    cli::cli_abort(
-      "{.arg lib} must be a single non-empty path.",
-      call = rlang::caller_env()
-    )
-  }
-
-  if (!is.null(source_tarball)) {
-    if (!is.character(source_tarball) || length(source_tarball) != 1L || !nzchar(source_tarball)) {
-      cli::cli_abort(
-        "{.arg source_tarball} must be NULL or a single file path.",
-        call = rlang::caller_env()
-      )
-    }
-    abort_if_missing_file(source_tarball, "source_tarball", call = rlang::caller_env())
-    tarball <- normalizePath(source_tarball, winslash = "/", mustWork = TRUE)
-  } else {
-    if (!is.character(repo) || length(repo) != 1L || !nzchar(repo)) {
-      cli::cli_abort(
-        "{.arg repo} must be a single non-empty string like {.val 'owner/name'}.",
-        call = rlang::caller_env()
-      )
-    }
-    if (!is.character(ref) || length(ref) != 1L || !nzchar(ref)) {
-      cli::cli_abort(
-        "{.arg ref} must be a single non-empty git ref.",
-        call = rlang::caller_env()
-      )
-    }
-
-    tarball <- tempfile(pattern = "gdalraster-", fileext = ".tar.gz")
-    src_url <- paste0("https://codeload.github.com/", repo, "/tar.gz/", ref)
-    req <- httr2::request(src_url)
-    req <- httr2::req_user_agent(req, paste0(pkg_name(), "/", pkg_version()))
-    req <- httr2::req_error(req, is_error = function(resp) httr2::resp_status(resp) >= 400L)
-    resp <- httr2::req_perform(req)
-    writeBin(httr2::resp_body_raw(resp), con = tarball)
-  }
-
-  lib <- normalizePath(lib, winslash = "/", mustWork = FALSE)
-  dir.create(lib, recursive = TRUE, showWarnings = FALSE)
-
-  gdal_home <- normalizePath(gdal_home, winslash = "/", mustWork = FALSE)
-  makevars <- c(
-    GDAL_HOME = gdal_home,
-    PKG_CPPFLAGS = paste0("-I\"", file.path(gdal_home, "include"), "\""),
-    PKG_LIBS = paste0("-L\"", file.path(gdal_home, "lib"), "\" -lgdal -Wl,--allow-multiple-definition")
-  )
-
-  path_sep <- .Platform$path.sep
-  old_path <- Sys.getenv("PATH", unset = "")
-  runtime_path <- paste(c(gdal_bin_dir(gdal_home), old_path), collapse = path_sep)
-  env_vars <- c(
-    PATH = runtime_path,
-    GDAL_DATA = gdal_share_gdal_dir(gdal_home),
-    PROJ_LIB = gdal_share_proj_dir(gdal_home),
-    PROJ_DATA = gdal_share_proj_dir(gdal_home)
-  )
-
-  cli::cli_alert_info("installing {.pkg gdalraster} from source into {.path {lib}}")
-
-  # When upgrade = TRUE, install gdalraster's R package dependencies from CRAN
-  # first so they are available for the source build.  This must be a separate
-  # step because install.packages() must be called with repos = NULL below
-  # (required for local-file installation; with repos != NULL R treats the
-  # tarball path as a package name to look up and never installs from the file).
-  if (isTRUE(upgrade)) {
-    rlang::try_fetch(
-      utils::install.packages(
-        pkgs = "gdalraster",
-        repos = repos,
-        type = "source",
-        lib = lib,
-        dependencies = TRUE,
-        INSTALL_opts = c("--no-test-load")
-      ),
-      error = function(cnd) {
-        cli::cli_alert_warning(
-          "Could not pre-install {.pkg gdalraster} dependencies: {conditionMessage(cnd)}"
-        )
-      }
-    )
-  }
-
-  rlang::try_fetch(
-    withr::with_makevars(new = makevars, assignment = "=", {
-      withr::with_envvar(env_vars, {
-        # repos = NULL is required here: when repos is non-NULL, install.packages()
-        # treats the tarball path as a package name to look up in the repository
-        # rather than as a local file, producing a "not available for this version
-        # of R" warning and silently skipping the install.
-        utils::install.packages(
-          pkgs = tarball,
-          repos = NULL,
-          type = "source",
-          lib = lib,
-          INSTALL_opts = c("--no-test-load")
-        )
-      })
-    }),
-    error = function(cnd) {
-      cli::cli_abort(
-        c(
-          "Failed to install {.pkg gdalraster} from source.",
-          "x" = "{conditionMessage(cnd)}"
-        ),
-        parent = cnd,
-        call = rlang::caller_env()
-      )
-    }
-  )
-
-  if (!dir.exists(file.path(lib, "gdalraster"))) {
-    cli::cli_abort(
-      c(
-        "gdalraster source install did not produce an installed package.",
-        "i" = "Library path: {.path {lib}}"
-      ),
-      call = rlang::caller_env()
-    )
-  }
-
-  synced <- sync_gdalraster_share_data(lib = lib, gdal_home = gdal_home)
-  if (length(synced) > 0L) {
-    cli::cli_alert_info(
-      "replaced packaged {.field {synced}} data with the bundle's GDAL/PROJ data"
-    )
-  }
-
-  cli::cli_alert_success("installed {.pkg gdalraster} to {.path {lib}}")
-  invisible(lib)
-}
-
-#' Load gdalraster using bundled GDAL runtime
-#'
-#' Activates bundled GDAL runtime, prepends `lib` to `.libPaths()`, and attaches
-#' gdalraster for use in the current R session.
-#'
-#' @param lib Library path containing the gdalraster source install.
-#' @param gdal_home GDAL home directory.
-#' @param quiet Suppress informational CLI output.
-#'
-#' @return Invisibly returns TRUE if gdalraster was attached.
-#' @export
-load_gdalraster <- function(
-  lib = default_gdalraster_lib(),
-  gdal_home = default_gdal_home(),
-  quiet = FALSE
-) {
-  abort_if_not_windows()
-
-  lib <- normalizePath(lib, winslash = "/", mustWork = FALSE)
-  abort_if_missing_dir(lib, "lib", call = rlang::caller_env())
-
-  if (!dir.exists(file.path(lib, "gdalraster"))) {
-    cli::cli_abort(
-      c(
-        "No {.pkg gdalraster} install found in {.arg lib}.",
-        "i" = "Run {.fn gdalraster.windows::install_gdalraster} first."
-      ),
-      call = rlang::caller_env()
-    )
-  }
-
-  activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = quiet)
-
-  .libPaths(c(lib, .libPaths()))
-  base::library("gdalraster", character.only = TRUE, lib.loc = lib)
-  invisible(TRUE)
-}
-
-#' Verify gdalraster algorithm API availability
-#'
-#' Attempts to load `gdalraster` and checks the global algorithm registry.
-#'
-#' @param lib.loc Optional library location used for loading `gdalraster`.
-#' @param activate_runtime Whether to run [activate_gdal_runtime()] first.
-#' @param gdal_home GDAL home used when `activate_runtime = TRUE`.
-#' @param quiet If `TRUE`, suppress sitrep CLI output.
-#'
-#' @return `TRUE` when algorithm API is available, otherwise `FALSE`
-#'   (including when runtime activation itself fails).
-#' @export
-verify_gdalraster_runtime <- function(
-  lib.loc = NULL,
-  activate_runtime = TRUE,
-  gdal_home = default_gdal_home(),
-  quiet = FALSE
-) {
-  abort_if_not_windows()
-
-  if (isTRUE(activate_runtime)) {
-    activated <- rlang::try_fetch(
-      {
-        activate_gdal_runtime(gdal_home = gdal_home, preload = TRUE, quiet = TRUE)
-        TRUE
-      },
-      error = function(cnd) {
-        if (!isTRUE(quiet)) {
-          cli::cli_alert_danger(
-            "gdal runtime activation failed: {conditionMessage(cnd)}"
-          )
-        }
-        FALSE
-      }
-    )
-    if (!activated) {
-      return(FALSE)
-    }
-  }
-
-  if (!has_gdalraster_namespace()) {
-    if (!isTRUE(quiet)) {
-      cli::cli_alert_warning("{.pkg gdalraster} is not installed.")
-      cli::cli_inform("Run {.fn gdalraster.windows::install_gdalraster} first.")
-    }
-    return(FALSE)
-  }
-
-  ok <- rlang::try_fetch(
-    {
-      suppressMessages(base::library("gdalraster", character.only = TRUE, lib.loc = lib.loc))
-      alg_names <- gdalraster::gdal_global_reg_names()
-      version <- gdalraster::gdal_version()[[1]]
-      list(ok = length(alg_names) > 0L, version = version, count = length(alg_names))
-    },
-    error = function(cnd) {
-      if (!isTRUE(quiet)) {
-        cli::cli_alert_danger("gdalraster verification failed: {conditionMessage(cnd)}")
-      }
-      list(ok = FALSE, version = NA_character_, count = 0L)
-    }
-  )
-
-  if (!isTRUE(quiet)) {
-    if (isTRUE(ok$ok)) {
-      cli::cli_alert_success("gdalraster is ready ({.val {ok$version}})")
-      cli::cli_inform(
-        c(
-          "i" = "algorithm registry entries: {.val {ok$count}}",
-          "i" = "runtime home: {.path {normalizePath(gdal_home, winslash = '/', mustWork = FALSE)}}"
-        )
-      )
-    } else {
-      cli::cli_alert_warning("gdalraster loaded, but algorithm API is not available.")
-      cli::cli_inform(
-        c(
-          "i" = "gdal version: {.val {ok$version}}",
-          "i" = "algorithm registry entries: {.val {ok$count}}"
-        )
-      )
-    }
-  }
-
-  isTRUE(ok$ok)
-}
-
 #' @keywords internal
 #' @noRd
-has_gdalraster_namespace <- function() {
-  requireNamespace("gdalraster", quietly = TRUE)
+download_release_asset <- function(asset, repo) {
+  destination <- tempfile("gdal-runtime-", fileext = ".zip")
+  cli::cli_alert_info(
+    "Downloading {.file {asset$name}} from {.val {repo}} ({.val {asset$tag}})."
+  )
+  request <- httr2::request(asset$url)
+  request <- httr2::req_user_agent(request, paste0(pkg_name(), "/", pkg_version()))
+  request <- httr2::req_error(
+    request,
+    is_error = function(response) httr2::resp_status(response) >= 400L
+  )
+  response <- httr2::req_perform(request)
+  writeBin(httr2::resp_body_raw(response), destination)
+  destination
 }
 
 #' @keywords internal
 #' @noRd
 detect_gdal_root <- function(extract_dir) {
-  dll_candidates <- list.files(
-    path = extract_dir,
-    pattern = "^libgdal-[0-9]+\\.dll$",
-    all.files = TRUE,
+  dlls <- list.files(
+    extract_dir,
+    pattern = .gdal_dll_pattern,
     recursive = TRUE,
     full.names = TRUE
   )
-
-  if (length(dll_candidates) < 1L) {
-    cli::cli_abort(
-      "Could not find {.file libgdal-*.dll} in extracted release asset."
-    )
+  if (length(dlls) < 1L) {
+    cli::cli_abort("Could not find {.file libgdal-*.dll} in the bundle.")
   }
-
-  normalizePath(dirname(dirname(dll_candidates[[1]])), winslash = "/", mustWork = TRUE)
+  normalizePath(dirname(dirname(dlls[[1L]])), winslash = "/", mustWork = TRUE)
 }
 
-#' Remove an existing GDAL home directory, releasing this session's own locks
-#'
-#' The `.onLoad` auto-bootstrap preloads `libgdal-*.dll` from `gdal_home`, so
-#' the current R process itself typically holds the file locks that would make
-#' deletion fail. DLLs this session loaded from under `gdal_home` are unloaded
-#' first (safe while `gdalraster` is not loaded, which is validated before the
-#' download), but that alone cannot release everything: activation prepends
-#' the runtime's `bin` to `PATH`, so any DLL the process loads afterwards can
-#' resolve its dependencies from there by module name (demonstrably, the
-#' release download itself loads the curl package, which maps the runtime's
-#' `zlib1.dll`). Such mappings live outside R's DLL registry and cannot be
-#' `dyn.unload()`ed, so the session cannot fully unlock its own runtime.
-#'
-#' Mapped DLLs cannot be deleted, but they *can* be renamed on the same
-#' volume, so any leftovers after `unlink()` are moved into a stale sibling
-#' directory (`<gdal_home>.stale-<pid>-<timestamp>`) which later installs
-#' delete opportunistically once the locks are gone. Only files locked by
-#' *other* processes without delete sharing (File Explorer preview panes,
-#' other R sessions) can still block the move, and that is the only case
-#' left that aborts.
-#'
-#' @return Invisibly, `TRUE` when leftovers were moved aside (the session
-#'   still maps old runtime DLLs), `FALSE` when the runtime was fully deleted.
 #' @keywords internal
 #' @noRd
 remove_gdal_home <- function(gdal_home, call = rlang::caller_env()) {
   cleanup_stale_runtimes(gdal_home)
-
-  for (dll in loaded_runtime_dlls(gdal_home)) {
-    try(dyn.unload(dll), silent = TRUE)
-  }
-
   unlink(gdal_home, recursive = TRUE, force = TRUE)
-
   if (!dir.exists(gdal_home)) {
     return(invisible(FALSE))
   }
 
   stale_dir <- stale_runtime_dir(gdal_home)
-  moved <- move_tree_aside(gdal_home, stale_dir)
-
-  if (!moved) {
+  if (!move_tree_aside(gdal_home, stale_dir)) {
     cli::cli_abort(
       c(
-        "Could not fully delete or move aside the existing runtime at {.path {gdal_home}}.",
+        "Could not fully delete or move aside the runtime at {.path {gdal_home}}.",
         "x" = "One or more files are locked by another process.",
-        "i" = paste(
-          "Common culprits: other R sessions using the runtime, or",
-          "File Explorer windows/preview panes open on the directory."
-        ),
-        "i" = "Close them (or identify lockers with PowerToys File Locksmith / Resource Monitor) and rerun."
+        "i" = "Close other R sessions and File Explorer windows using this directory, then retry."
       ),
       call = call
     )
   }
-
   invisible(TRUE)
 }
 
-#' Move every file under `from` into `to` via same-volume rename, then remove
-#' the emptied tree. Returns TRUE only when `from` is fully gone.
 #' @keywords internal
 #' @noRd
 move_tree_aside <- function(from, to) {
   entries <- list.files(
-    path = from,
+    from,
     all.files = TRUE,
     no.. = TRUE,
     recursive = TRUE,
     include.dirs = FALSE
   )
-
   ok <- TRUE
   for (entry in entries) {
-    src <- file.path(from, entry)
-    dst <- file.path(to, entry)
-    dir.create(dirname(dst), recursive = TRUE, showWarnings = FALSE)
-    if (!isTRUE(suppressWarnings(file.rename(src, dst)))) {
+    source <- file.path(from, entry)
+    destination <- file.path(to, entry)
+    dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
+    if (!isTRUE(suppressWarnings(file.rename(source, destination)))) {
       ok <- FALSE
     }
   }
-
   unlink(from, recursive = TRUE, force = TRUE)
   ok && !dir.exists(from)
 }
@@ -801,24 +277,23 @@ move_tree_aside <- function(from, to) {
 #' @noRd
 copy_tree <- function(from, to) {
   entries <- list.files(
-    path = from,
+    from,
     all.files = TRUE,
     no.. = TRUE,
     recursive = TRUE,
     include.dirs = TRUE
   )
-
   for (entry in entries) {
-    src <- file.path(from, entry)
-    dst <- file.path(to, entry)
-    if (dir.exists(src)) {
-      dir.create(dst, recursive = TRUE, showWarnings = FALSE)
+    source <- file.path(from, entry)
+    destination <- file.path(to, entry)
+    if (dir.exists(source)) {
+      dir.create(destination, recursive = TRUE, showWarnings = FALSE)
     } else {
-      dir.create(dirname(dst), recursive = TRUE, showWarnings = FALSE)
-      ok <- file.copy(from = src, to = dst, overwrite = TRUE, copy.mode = TRUE)
-      if (!isTRUE(ok)) {
-        cli::cli_abort("Failed to copy {.path {src}} to {.path {dst}}.")
+      dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
+      if (!isTRUE(file.copy(source, destination, overwrite = TRUE, copy.mode = TRUE))) {
+        cli::cli_abort("Failed to copy {.path {source}} to {.path {destination}}.")
       }
     }
   }
+  invisible(to)
 }

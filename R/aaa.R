@@ -47,3 +47,18 @@
 #' @noRd
 #' @keywords internal
 .gdal_dll_fallback <- "libgdal-39.dll"
+
+#' Managed embedded-Python path file
+#' @noRd
+#' @keywords internal
+.python_pth_name <- "gdalraster-windows-osgeo-utils.pth"
+
+#' Marker identifying a path file owned by this package
+#' @noRd
+#' @keywords internal
+.python_pth_marker <- "# managed by gdalraster.windows"
+
+#' Required GDAL format drivers checked by gdal_verify()
+#' @noRd
+#' @keywords internal
+.required_gdal_drivers <- c("Arrow", "Parquet", "HDF5", "netCDF")

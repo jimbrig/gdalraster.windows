@@ -6,6 +6,7 @@
 #   GDAL_VER    : git tag to check out, e.g. "v3.13.0"
 #   BUNDLE_DIR  : absolute path where the final bundle should land
 #   INSTALL_DIR : cmake install prefix (intermediate, collected by collect_dlls.sh)
+#   ARROW_INSTALL_DIR : static Arrow prefix produced by build_arrow.sh
 #
 # Key build decisions:
 #   - Static GCC/stdc++/winpthread runtime — the DLLs carry their own C++
@@ -16,6 +17,9 @@
 #     DLLs used from R (GDAL's Windows exports use __stdcall).
 #   - GDAL_USE_MUPARSER=ON — enables the Algorithmic Processing API
 #     (gdal_global_reg_names() returns non-empty on Windows).
+#   - ARROW_USE_STATIC_LIBRARIES=ON — folds Arrow, Parquet, Dataset, Compute,
+#     and bundled third-party dependencies into libgdal. This removes the
+#     shared libarrow.dll MinGW emulated-TLS failure from the import graph.
 #   - BUILD_TESTING=OFF, BUILD_APPS=OFF — reduces build time by ~30%.
 #   - GDAL_HIDE_INTERNAL_SYMBOLS=ON — cleaner export table.
 #   - GDAL_USE_MSSQL_ODBC/NCLI=OFF — GitHub runner images ship the proprietary
@@ -47,13 +51,24 @@
 # =============================================================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # ── Validate env ──────────────────────────────────────────────────────────────
 : "${GDAL_VER:?GDAL_VER must be set}"
 : "${INSTALL_DIR:?INSTALL_DIR must be set}"
+: "${ARROW_INSTALL_DIR:?ARROW_INSTALL_DIR must be set}"
+
+ARROW_INSTALL_DIR="$(cygpath -u "${ARROW_INSTALL_DIR}")"
+
+if [[ ! -f "${ARROW_INSTALL_DIR}/lib/cmake/Arrow/ArrowConfig.cmake" ]]; then
+    echo "FATAL: static Arrow prefix is incomplete: ${ARROW_INSTALL_DIR}"
+    exit 1
+fi
 
 echo "============================================"
 echo "  Building GDAL ${GDAL_VER}"
 echo "  Install prefix: ${INSTALL_DIR}"
+echo "  Static Arrow prefix: ${ARROW_INSTALL_DIR}"
 echo "============================================"
 
 # ── Clone ─────────────────────────────────────────────────────────────────────
@@ -74,6 +89,20 @@ fi
 
 cd "${SRC_DIR}"
 
+# GDAL 3.13.2's exported-link flattener marks targets only after recursively
+# visiting their dependencies. Arrow 25's static abseil graph contains cycles,
+# so configuration otherwise exceeds CMake's recursion limit. Apply the focused
+# cycle guard while preserving the existing dependency ordering.
+GDAL_CYCLE_PATCH="${SCRIPT_DIR}/patches/gdal-static-target-cycles.patch"
+if git apply --check "${GDAL_CYCLE_PATCH}"; then
+    git apply "${GDAL_CYCLE_PATCH}"
+elif git apply --reverse --check "${GDAL_CYCLE_PATCH}"; then
+    echo ">>> Static-target cycle guard already applied"
+else
+    echo "FATAL: GDAL static-target cycle guard does not apply to ${GDAL_VER}"
+    exit 1
+fi
+
 # Clean any previous build tree
 rm -rf build
 
@@ -82,7 +111,14 @@ rm -rf build
 # -Wl,-Bstatic,--whole-archive \
 #   -lwinpthread                      : embed pthreads-win32 statically
 # -Wl,-Bdynamic,--no-whole-archive   : revert to dynamic for everything after
-STATIC_RT="-static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,-Bdynamic,--no-whole-archive"
+# --allow-multiple-definition        : GDAL's FindLZ4/FindZSTD pull both the
+#   shared import lib and an Alt static archive; Arrow also contributes the
+#   shared codecs. Identical LZ4_*/ZSTD_* symbols then collide at final link.
+#   Scoped to the libgdal link only (not R PKG_LIBS — see #3).
+# ws2_32 must appear *after* static Arrow/Thrift archives in the final link
+# line (Thrift references __imp_htonl/ntohl). CMAKE_CXX_STANDARD_LIBRARIES is
+# appended late by the MinGW/Ninja generators; linker FLAGS alone are too early.
+STATIC_RT="-static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,-Bdynamic,--no-whole-archive -Wl,--allow-multiple-definition"
 
 # ── Configure ─────────────────────────────────────────────────────────────────
 echo ""
@@ -90,11 +126,18 @@ echo ">>> cmake configure"
 cmake -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
-    -DCMAKE_PREFIX_PATH=/ucrt64 \
+    "-DCMAKE_PREFIX_PATH=${ARROW_INSTALL_DIR};/ucrt64" \
+    -DArrow_DIR="${ARROW_INSTALL_DIR}/lib/cmake/Arrow" \
+    -DArrowCompute_DIR="${ARROW_INSTALL_DIR}/lib/cmake/ArrowCompute" \
+    -DArrowDataset_DIR="${ARROW_INSTALL_DIR}/lib/cmake/ArrowDataset" \
+    -DParquet_DIR="${ARROW_INSTALL_DIR}/lib/cmake/Parquet" \
     \
     -DGDAL_USE_MUPARSER=ON \
     -DGDAL_USE_ARROW=ON \
     -DGDAL_USE_PARQUET=ON \
+    -DGDAL_USE_ARROWDATASET=ON \
+    -DGDAL_USE_ARROWCOMPUTE=ON \
+    -DARROW_USE_STATIC_LIBRARIES=ON \
     -DGDAL_USE_GEOS=ON \
     -DGDAL_USE_SPATIALITE=ON \
     -DGDAL_USE_HDF5=ON \
@@ -114,7 +157,18 @@ cmake -B build -G Ninja \
     -DOGR_BUILD_OPTIONAL_DRIVERS=ON \
     \
     "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--kill-at ${STATIC_RT}" \
-    "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--kill-at ${STATIC_RT}"
+    "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--kill-at ${STATIC_RT}" \
+    "-DCMAKE_CXX_STANDARD_LIBRARIES=-lws2_32 -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32"
+
+# Ensure ws2_32 follows static Arrow/Thrift objects on the final link line.
+# CMAKE_CXX_STANDARD_LIBRARIES usually does this; also append to the Ninja
+# response file when present so a generator quirk cannot leave Thrift unresolved.
+if [[ -f build/CMakeFiles/GDAL.rsp ]]; then
+    if ! grep -q -- '-lws2_32' build/CMakeFiles/GDAL.rsp; then
+        echo '-lws2_32' >> build/CMakeFiles/GDAL.rsp
+        echo ">>> Appended -lws2_32 to GDAL.rsp"
+    fi
+fi
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 NCPUS=$(nproc)

@@ -2,21 +2,15 @@
 % Please edit documentation in R/gdal_runtime.R
 \name{gdal_home}
 \alias{gdal_home}
-\title{Resolve active GDAL home path}
+\title{Resolve the managed GDAL runtime directory}
 \usage{
 gdal_home()
 }
 \value{
-A single string path.
+A single path.
 }
 \description{
-Returns the currently configured GDAL runtime home used by this package.
-}
-\details{
-Resolution order:
-\enumerate{
-\item \code{options(gdalraster.windows.gdal_home = "...")}
-\item \code{GDALRASTER_WINDOWS_GDAL_HOME} environment variable
-\item package-managed user data directory (\code{tools::R_user_dir()})
-}
+Resolution order is the \code{gdalraster.windows.gdal_home} option, the
+\code{GDALRASTER_WINDOWS_GDAL_HOME} environment variable, then the package-managed
+user data directory.
 }

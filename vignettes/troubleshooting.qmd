@@ -4,145 +4,127 @@ vignette: >
   %\VignetteIndexEntry{Troubleshooting}
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
-knitr:
-  opts_chunk:
-    collapse: true
-    comment: '#>'
 ---
 
+## Start with the sitrep
+
 ```{r}
-#| label: setup
 #| eval: false
-library(gdalraster.windows)
+gdalraster.windows::gdal_sitrep(user_lib = TRUE)
+gdalraster.windows::gdal_verify(user_lib = TRUE)
 ```
 
-## Baseline triage
+Omit `user_lib = TRUE` for the default isolated installation. The sitrep
+reports runtime and build manifests, staleness, Python readiness, competing
+GDAL DLLs, already loaded modules, legacy profile hooks, and foreign
+`gdalraster` packages.
 
-Run these in order; most problems surface at one of these steps.
+## `library(gdalraster)` cannot find the package
+
+The non-destructive default installs into a package-managed isolated library.
+Either load from that location or rebuild into the regular user library:
 
 ```{r}
 #| eval: false
-# 1) where is the active runtime, and is the DLL there?
-gdalraster.windows::gdal_home()
-list.files(
-  file.path(gdalraster.windows::gdal_home(), "bin"),
-  pattern = "^libgdal-.*\\.dll$"
+gdalraster.windows::gdal_setup(user_lib = TRUE)
+library(gdalraster)
+```
+
+## `LoadLibrary` reports a missing module
+
+A self-contained build must contain `gdalraster.dll`, `libgdal-*.dll`, and the
+full dependency closure in the same `libs/x64` directory:
+
+```{r}
+#| eval: false
+package_dir <- find.package("gdalraster")
+list.files(file.path(package_dir, "libs", "x64"), pattern = "\\.dll$")
+```
+
+Run `gdal_update()` to rebuild and re-vendor from a complete bundle. Do not add
+Rtools or another GDAL to `PATH` as a repair; that defeats package isolation.
+
+## Empty Algorithm API or missing drivers
+
+`gdal_verify()` requires:
+
+- a non-empty `gdal_global_reg_names()` result;
+- Arrow, Parquet, HDF5, and netCDF drivers;
+- GEOS and EPSG:4326 resolution; and
+- a successful first Parquet open in a fresh process.
+
+If it fails, compare the runtime and build tags in `gdal_sitrep()`. A mismatch
+requires `gdal_update()`. A matching build with missing drivers indicates a
+bundle regression and should be reported with the verification output.
+
+## Another GDAL is installed
+
+GDAL executables from pixi, conda, OSGeo4W, Rtools, or MSYS2 may remain on the
+machine. The package's `libs/x64` directory controls dependency resolution
+while `gdalraster.dll` loads.
+
+An identically named `libgdal` already loaded in the process is different:
+Windows can reuse it by module name. Restart R, load `gdalraster` first, and
+inspect `gdal_sitrep()` for the loaded module path.
+
+## Legacy `.Rprofile` hooks
+
+Version 0.4.0 removes activation and profile-hook APIs. Delete blocks marked:
+
+```text
+# >>> gdalraster.windows hook >>>
+...
+# <<< gdalraster.windows hook <<<
+```
+
+Also remove personal code that calls `load_gdal_dll()`,
+`activate_gdal_runtime()`, or edits GDAL-related environment variables.
+Rebuild once with `gdal_setup()` after cleanup.
+
+## Locked runtime directory
+
+Windows cannot delete mapped DLLs. `gdal_install_runtime(force = TRUE)` first
+tries normal deletion, then moves remaining files into a sibling directory
+named `<gdal_home>.stale-<pid>-<timestamp>`. Later installs remove stale
+directories after locks disappear.
+
+If move-aside also fails, another process holds the file without delete
+sharing. Close other R sessions and File Explorer previews. PowerToys File
+Locksmith or Resource Monitor can identify the holder.
+
+## Locked `gdalraster` package
+
+The builder stages the complete replacement before touching the installed
+package. If the destination DLL is locked, replacement aborts and leaves the
+old package unchanged. Restart R, ensure `gdalraster` is not loaded in another
+session, then rerun the build.
+
+## Embedded Python is unavailable
+
+`gdal_sitrep()` reports whether the managed
+`gdalraster-windows-osgeo-utils.pth` points at the current vendored
+`gdalraster/python` directory.
+
+For a regular user-library build use:
+
+```{r}
+#| eval: false
+gdalraster.windows::gdal_enable_python(lib = .libPaths()[1])
+```
+
+When no system CPython is available, core GDAL functionality remains ready,
+but Python-backed algorithms such as `driver gpkg validate` cannot run.
+
+## Offline and proxy-restricted installation
+
+Transfer a published bundle zip and pass it directly:
+
+```{r}
+#| eval: false
+gdalraster.windows::gdal_setup(
+  local_zip = "C:/Downloads/gdal-bundle-v3.13.2-windows-x64.zip"
 )
-
-# 2) activate runtime (PATH, data vars, PYTHONPATH, DLL preload)
-gdalraster.windows::activate_gdal_runtime()
-
-# 3) end-to-end verification
-gdalraster.windows::verify_gdalraster_runtime()
 ```
 
-If all three pass, the runtime contract is intact and the problem is elsewhere.
-
-## `gdal_global_reg_names()` returns `character(0)`
-
-Most likely the wrong GDAL DLL was resolved first, or activation never ran in this session.
-
-- Run `gdalraster.windows::activate_gdal_runtime()` in a **fresh** R session, then load `gdalraster`.
-- Inspect `Sys.getenv("PATH")` for competing GDAL installations (Rtools, conda/pixi, OSGeo4W) appearing before the bundle's `bin/`.
-- Confirm `gdalraster` was built by `install_gdalraster()` against the bundle, not installed as the CRAN binary (which statically links Rtools' GDAL).
-
-## `LoadLibrary failure` when loading gdalraster
-
-The Windows loader could not resolve `libgdal-*.dll` or one of its transitive dependencies. `activate_gdal_runtime()` fails loudly when the preload of `libgdal-*.dll` itself fails, so a `LoadLibrary failure` surfacing only at `library(gdalraster)` usually means the runtime was never activated in this session.
-
-- Activate the runtime before `library(gdalraster)` — or use `gdalraster.windows::load_gdalraster()`, which does both.
-- Isolate profile effects with a clean subprocess:
-
-```powershell
-Rscript -e "gdalraster.windows::activate_gdal_runtime(); library(gdalraster); print(length(gdalraster::gdal_global_reg_names()))"
-```
-
-- Inspect the dependency tree from an [MSYS2](https://www.msys2.org/)/[Rtools](https://cran.r-project.org/bin/windows/Rtools/) shell with [ntldd](https://github.com/LRN/ntldd): `ntldd -R <gdal_home>/bin/libgdal-*.dll` — any entry that resolves outside the bundle and outside Windows system paths indicates a missing bundled DLL. Or list direct imports with `objdump -x <gdal_home>/bin/libgdal-*.dll | findstr "DLL Name"`.
-
-A DLL can be "missing" even when CI verified the bundle: GitHub runner images ship products that install DLLs into `System32` (e.g. the Microsoft ODBC Driver for SQL Server, `msodbcsql17.dll`), so a dependency on them resolves in CI but not on end-user machines. The build disables such linkage (`GDAL_USE_MSSQL_ODBC=OFF`) and bundle verification rejects known non-OS `System32` DLLs, but any import in the `objdump` output that is neither in the bundle's `bin/` nor a Windows system DLL is the culprit.
-
-## `LoadLibrary failure: A dynamic link library (DLL) initialization routine failed`
-
-This is a different failure class from "module could not be found" (Windows error 1114 vs 126). Every dependency was *found* and mapped into the process, but one of them failed its own initialization (`DllMain` / C++ static constructors), which makes the whole `libgdal-*.dll` load fail. Two properties make it confusing:
-
-- **Dependency-closure checks cannot detect it.** The bundle can be verified complete (`ntldd` reports every import resolved) and still fail this way — the broken DLL is present, it just cannot initialize. This is why bundle builds are also *load-tested* in CI (every DLL is passed through `LoadLibrary` in a plain process before an asset is published).
-- **The same DLL bytes can load in one process and fail in another**, because its initializer's behavior depends on which copies of *its* dependencies the loader resolved (first-loaded-wins by base name).
-
-To isolate the culprit, sweep-load the bundle's DLLs individually in a fresh session — the failing one is rarely `libgdal` itself:
-
-```{r}
-#| eval: false
-bin <- file.path(gdalraster.windows::gdal_home(), "bin")
-withr::local_envvar(PATH = paste(bin, Sys.getenv("PATH"), sep = ";"))
-for (dll in list.files(bin, pattern = "\\.dll$", full.names = TRUE)) {
-  ok <- tryCatch(
-    { dyn.load(dll, local = FALSE, now = TRUE); TRUE },
-    error = function(e) FALSE
-  )
-  if (!ok) cat("FAILS TO INITIALIZE:", basename(dll), "\n")
-}
-```
-
-Historical instance: bundles published before July 2026 shipped `libpodofo.dll` (a PDF-driver backend), whose static initializers run OpenSSL setup during `DllMain` and fail against the MSYS2-built `libcrypto-3-x64.dll` — in any process, R or not. Current bundles exclude the PDF driver entirely (`GDAL_ENABLE_DRIVER_PDF=OFF`) and CI refuses to publish a bundle containing any DLL that fails to load. If you see this error with a current bundle, reinstall the runtime first (`install_gdal_runtime(overwrite = TRUE)`), then run the sweep above and report the failing DLL in an issue.
-
-## `install_gdal_runtime(overwrite = TRUE)` cannot delete the old runtime
-
-Deleting `gdal_home` fails when its DLLs are mapped into a running process — including the current session: the auto-bootstrap preloads the runtime at package load and prepends its `bin` to `PATH`, so DLLs loaded later in the session resolve dependencies from the runtime directory by module name (the release download itself loads the curl package, which maps the runtime's `zlib1.dll`). Those mappings live outside R's DLL registry, so unloading `libgdal` cannot release them. The installer handles this case itself: mapped DLLs cannot be deleted but can be renamed, so leftovers this session still maps are moved into a stale sibling directory (`<gdal_home>.stale-<pid>-<timestamp>`) and the install proceeds; later installs delete stale directories once their locks are gone. When the installer reports this, restart R before building or loading `gdalraster` so the new runtime is used.
-
-The installer refuses to run at all while `gdalraster` is loaded (its DLL pins the runtime — restart R first). If the install still aborts with a lock error, another process holds locks without delete sharing: other R sessions using the runtime, or File Explorer windows/preview panes open on the runtime directory. Close them ([PowerToys File Locksmith](https://learn.microsoft.com/en-us/windows/powertoys/file-locksmith) or Resource Monitor identify the locker) and rerun.
-
-## `ModuleNotFoundError: No module named 'osgeo_utils'`
-
-Raised by embedded-python algorithms such as [`gdal driver gpkg validate`](https://gdal.org/en/stable/programs/gdal_driver_gpkg_validate.html). See the [Runtime Guide](runtime-guide.html) for how the embedded-python layer works.
-
-- Check the bundle has the python layer:
-
-```{r}
-#| eval: false
-dir.exists(file.path(gdalraster.windows::gdal_home(), "python", "osgeo_utils"))
-```
-
-- If missing, the installed runtime predates python support — reinstall:
-
-```{r}
-#| eval: false
-gdalraster.windows::install_gdal_runtime(overwrite = TRUE)
-```
-
-- Re-activate and confirm `Sys.getenv("PYTHONPATH")` contains `<gdal_home>/python`.
-- A `python.exe` must be discoverable on `PATH` for GDAL to embed an interpreter at all (the GDAL debug stream shows which python/libpython it loads).
-
-Note: `validate_gpkg` treats the compiled `osgeo` bindings as optional; the bundle intentionally omits them, which skips only tiled gridded coverage content checks.
-
-## CRS / projection errors despite GDAL loading
-
-`GDAL_DATA` / `PROJ_DATA` are not pointing at the bundle's `share/` tree. `activate_gdal_runtime()` sets all three (`GDAL_DATA`, `PROJ_LIB`, `PROJ_DATA`); check whether something later in your startup overwrites them.
-
-## Download failures during `install_gdal_runtime()`
-
-On machines without network access (or behind strict proxies), install from a manually transferred release asset:
-
-```{r}
-#| eval: false
-gdalraster.windows::install_gdal_runtime(
-  local_zip = "C:/Downloads/gdal-ucrt64-v3.13.1-windows-x64.zip"
-)
-```
-
-Assets are published at <https://github.com/jimbrig/gdalraster.windows/releases>.
-
-## `install_gdalraster()` reports "source install did not produce an installed package"
-
-If `install_gdalraster()` fails with this error and R also printed a warning like `package '…tar.gz' is not available for this version of R`, the underlying cause was that `install.packages()` received `repos` set to a CRAN mirror together with a local file path. In that combination R looks the path up as a *package name* in the repository rather than installing from the file, so the install silently does nothing.
-
-This was fixed in `gdalraster.windows` ≥ 0.2.1 by always calling `install.packages()` with `repos = NULL` for local-file installation. If you encounter this with an older version, upgrade the package:
-
-```{r}
-#| eval: false
-pak::pak("jimbrig/gdalraster.windows")
-```
-
-## After a GDAL version upgrade
-
-- Reinstall the runtime (`install_gdal_runtime(overwrite = TRUE)`), then rebuild `gdalraster` against it (`install_gdalraster()`) — the previous `gdalraster.dll` is bound to the previous GDAL's ABI/import names.
-- Never assume the GDAL SONAME is stable across versions; everything in this package discovers `libgdal-*.dll` by glob, and your own scripts should too.
+The installer preserves an embedded manifest when present and otherwise
+stamps provenance from the requested release information.

@@ -88,21 +88,6 @@ gdal_dll_path <- function(gdal_home = default_gdal_home()) {
   dlls[[1]]
 }
 
-#' @keywords internal
-#' @noRd
-loaded_runtime_dlls <- function(gdal_home = default_gdal_home()) {
-  prefix <- paste0(
-    tolower(normalizePath(gdal_home, winslash = "/", mustWork = FALSE)),
-    "/"
-  )
-  paths <- vapply(
-    getLoadedDLLs(),
-    function(dll) normalizePath(dll[["path"]], winslash = "/", mustWork = FALSE),
-    character(1)
-  )
-  unname(paths[startsWith(tolower(paths), prefix)])
-}
-
 #' Unique sibling directory used to move aside runtime files that are still
 #' mapped into a process and therefore cannot be deleted (only renamed)
 #' @keywords internal
@@ -141,45 +126,6 @@ cleanup_stale_runtimes <- function(gdal_home) {
   }
 
   invisible(stale)
-}
-
-#' Replace the installed gdalraster package's GDAL/PROJ data directories with
-#' the bundle's share data. Upstream Makevars.win populates inst/gdal and
-#' inst/proj from the Rtools static tree, so a source build compiled against
-#' the bundle GDAL otherwise ships data files from a different GDAL/PROJ
-#' version (upstream .onLoad activates them via GDAL_DATA and
-#' proj_search_paths())
-#' @keywords internal
-#' @noRd
-sync_gdalraster_share_data <- function(lib, gdal_home = default_gdal_home()) {
-  pkg_dir <- file.path(lib, "gdalraster")
-  sources <- c(
-    gdal = gdal_share_gdal_dir(gdal_home),
-    proj = gdal_share_proj_dir(gdal_home)
-  )
-
-  synced <- character()
-  for (name in names(sources)) {
-    src <- sources[[name]]
-    if (!dir.exists(src)) {
-      cli::cli_alert_warning(
-        "bundle data directory not found, keeping packaged {.path {name}} data: {.path {src}}"
-      )
-      next
-    }
-
-    dest <- file.path(pkg_dir, name)
-    unlink(dest, recursive = TRUE, force = TRUE)
-    dir.create(dest, recursive = TRUE, showWarnings = FALSE)
-    file.copy(
-      from = list.files(src, full.names = TRUE),
-      to = dest,
-      recursive = TRUE
-    )
-    synced <- c(synced, name)
-  }
-
-  invisible(synced)
 }
 
 #' @keywords internal
@@ -226,12 +172,43 @@ abort_if_no_build_tools <- function(call = rlang::caller_env()) {
   cli::cli_abort(
     c(
       "No working Windows build toolchain (Rtools) was found.",
-      "x" = "{.fn install_gdalraster} compiles gdalraster from source, which requires Rtools.",
+      "x" = "{.fn gdal_build_gdalraster} compiles gdalraster from source, which requires Rtools.",
       "i" = "Install the Rtools version matching your R ({.val {as.character(getRversion())}}) from {.url https://cran.r-project.org/bin/windows/Rtools/} and restart R.",
       "i" = "Run {.code pkgbuild::check_build_tools(debug = TRUE)} for detection diagnostics."
     ),
     call = call
   )
+}
+
+#' @keywords internal
+#' @noRd
+check_string <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x)) {
+    cli::cli_abort("{.arg {arg}} must be a single non-empty string.", call = call)
+  }
+  invisible(x)
+}
+
+#' @keywords internal
+#' @noRd
+check_optional_string <- function(
+  x,
+  arg = rlang::caller_arg(x),
+  call = rlang::caller_env()
+) {
+  if (!is.null(x)) {
+    check_string(x, arg = arg, call = call)
+  }
+  invisible(x)
+}
+
+#' @keywords internal
+#' @noRd
+check_flag <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (!is.logical(x) || length(x) != 1L || is.na(x)) {
+    cli::cli_abort("{.arg {arg}} must be {.val TRUE} or {.val FALSE}.", call = call)
+  }
+  invisible(x)
 }
 
 #' @keywords internal
@@ -290,7 +267,7 @@ gitcreds_pat <- function() {
   rlang::try_fetch(
     {
       creds <- gitcreds::gitcreds_get(url = "https://github.com")
-      creds$password %||% ""
+      if (is.null(creds$password)) "" else creds$password
     },
     error = function(cnd) ""
   )
