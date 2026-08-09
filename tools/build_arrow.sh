@@ -81,8 +81,12 @@ cmake -S "${SRC_DIR}/cpp" -B "${SRC_DIR}/cpp/build" -G Ninja \
     -DZLIB_INCLUDE_DIR=/ucrt64/include \
     -Dlz4_SOURCE=SYSTEM \
     -DLZ4_USE_STATIC_LIBS=OFF \
+    -DLZ4_LIBRARY=/ucrt64/lib/liblz4.dll.a \
+    -DLZ4_INCLUDE_DIR=/ucrt64/include \
     -Dzstd_SOURCE=SYSTEM \
     -Dzstd_USE_STATIC_LIBS=OFF \
+    -Dzstd_LIBRARY=/ucrt64/lib/libzstd.dll.a \
+    -Dzstd_INCLUDE_DIR=/ucrt64/include \
     \
     -DARROW_PARQUET=ON \
     -DARROW_DATASET=ON \
@@ -150,6 +154,17 @@ fi
 if compgen -G "${ARROW_INSTALL_DIR}/bin/*.dll" >/dev/null; then
     echo "FATAL: static Arrow prefix unexpectedly contains DLLs:"
     printf '  %s\n' "${ARROW_INSTALL_DIR}"/bin/*.dll
+    exit 1
+fi
+
+# ArrowTargets must not propagate absolute paths to liblz4.a / libzstd.a into
+# the GDAL link; those collide with GDAL's liblz4.dll.a / libzstd.dll.a.
+echo ""
+echo ">>> Checking Arrow CMake targets do not pin static lz4/zstd archives"
+if grep -R --include='*.cmake' -E '/ucrt64/lib/lib(lz4|zstd)\.a' \
+    "${ARROW_INSTALL_DIR}/lib/cmake" >/tmp/arrow-static-codec-refs.txt 2>/dev/null; then
+    echo "FATAL: Arrow CMake package still references static lz4/zstd archives:"
+    cat /tmp/arrow-static-codec-refs.txt
     exit 1
 fi
 
