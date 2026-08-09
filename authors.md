@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/jimbrig/gdalraster.windows/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/DESCRIPTION)
 
 Briggs J (2026). *gdalraster.windows: Self-Contained gdalraster Builds
 for Windows*. R package version 0.4.0,
