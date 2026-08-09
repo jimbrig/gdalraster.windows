@@ -44,14 +44,19 @@ fi
 rm -rf "${SRC_DIR}/cpp/build" "${ARROW_INSTALL_DIR}"
 
 # Arrow's bundled dependency mode produces libarrow_bundled_dependencies.a for
-# Thrift/snappy/brotli/etc. zlib/lz4/zstd deliberately use MSYS2 static
-# archives instead: GDAL already links those system codecs, and a second copy
-# inside libarrow_bundled_dependencies.a fails the final libgdal link with
-# multiple-definition errors. The system allocator avoids the mimalloc/
-# jemalloc TLS state implicated by the original first-Parquet-open crash.
-for codec_lib in /ucrt64/lib/libz.a /ucrt64/lib/liblz4.a /ucrt64/lib/libzstd.a; do
+# Thrift/snappy/brotli/etc. zlib stays a MSYS2 static archive (avoids Arrow's
+# MinGW bundled-zlib naming bug). lz4/zstd use the same MSYS2 *shared* import
+# libraries GDAL already links — mixing Arrow-static + GDAL-shared copies of
+# those codecs fails the final libgdal link with multiple-definition errors.
+# The system allocator avoids the mimalloc/jemalloc TLS state implicated by
+# the original first-Parquet-open crash.
+if [[ ! -f /ucrt64/lib/libz.a ]]; then
+    echo "FATAL: required static zlib archive missing: /ucrt64/lib/libz.a"
+    exit 1
+fi
+for codec_lib in /ucrt64/lib/liblz4.dll.a /ucrt64/lib/libzstd.dll.a; do
     if [[ ! -f "${codec_lib}" ]]; then
-        echo "FATAL: required static codec archive missing: ${codec_lib}"
+        echo "FATAL: required shared codec import library missing: ${codec_lib}"
         exit 1
     fi
 done
@@ -75,13 +80,9 @@ cmake -S "${SRC_DIR}/cpp" -B "${SRC_DIR}/cpp/build" -G Ninja \
     -DZLIB_LIBRARY=/ucrt64/lib/libz.a \
     -DZLIB_INCLUDE_DIR=/ucrt64/include \
     -Dlz4_SOURCE=SYSTEM \
-    -DLZ4_USE_STATIC_LIBS=ON \
-    -DLZ4_LIBRARY=/ucrt64/lib/liblz4.a \
-    -DLZ4_INCLUDE_DIR=/ucrt64/include \
+    -DLZ4_USE_STATIC_LIBS=OFF \
     -Dzstd_SOURCE=SYSTEM \
-    -Dzstd_USE_STATIC_LIBS=ON \
-    -Dzstd_LIBRARY=/ucrt64/lib/libzstd.a \
-    -Dzstd_INCLUDE_DIR=/ucrt64/include \
+    -Dzstd_USE_STATIC_LIBS=OFF \
     \
     -DARROW_PARQUET=ON \
     -DARROW_DATASET=ON \

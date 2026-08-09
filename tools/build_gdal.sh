@@ -111,8 +111,10 @@ rm -rf build
 # -Wl,-Bstatic,--whole-archive \
 #   -lwinpthread                      : embed pthreads-win32 statically
 # -Wl,-Bdynamic,--no-whole-archive   : revert to dynamic for everything after
-# -lws2_32 : Apache Thrift (static, folded via Arrow) needs htons/ntohl on Windows
-STATIC_RT="-static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,-Bdynamic,--no-whole-archive -lws2_32"
+# ws2_32 must appear *after* static Arrow/Thrift archives in the final link
+# line (Thrift references __imp_htonl/ntohl). CMAKE_CXX_STANDARD_LIBRARIES is
+# appended late by the MinGW/Ninja generators; linker FLAGS alone are too early.
+STATIC_RT="-static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,-Bdynamic,--no-whole-archive"
 
 # ── Configure ─────────────────────────────────────────────────────────────────
 echo ""
@@ -152,7 +154,17 @@ cmake -B build -G Ninja \
     \
     "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--kill-at ${STATIC_RT}" \
     "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--kill-at ${STATIC_RT}" \
-    "-DCMAKE_EXE_LINKER_FLAGS=-lws2_32"
+    "-DCMAKE_CXX_STANDARD_LIBRARIES=-lws2_32 -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32"
+
+# Ensure ws2_32 follows static Arrow/Thrift objects on the final link line.
+# CMAKE_CXX_STANDARD_LIBRARIES usually does this; also append to the Ninja
+# response file when present so a generator quirk cannot leave Thrift unresolved.
+if [[ -f build/CMakeFiles/GDAL.rsp ]]; then
+    if ! grep -q -- '-lws2_32' build/CMakeFiles/GDAL.rsp; then
+        echo '-lws2_32' >> build/CMakeFiles/GDAL.rsp
+        echo ">>> Appended -lws2_32 to GDAL.rsp"
+    fi
+fi
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 NCPUS=$(nproc)
