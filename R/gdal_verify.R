@@ -40,19 +40,26 @@ gdal_verify <- function(
   parquet <- file.path(work, "first-open.parquet")
   run_python <- isTRUE(python) && python_is_ready(package_dir)
 
-  # Create a minimal Parquet dataset via GDAL. Field types must use OGR
-  # descriptors (e.g. OFTInteger); bare "Integer" fails with
-  # "unrecognized OGR field type descriptor" on current gdalraster.
+  # Create a minimal Parquet dataset by translating GeoJSON. Direct
+  # ogr_ds_create(..., format = "Parquet") currently aborts inside GDAL/Arrow
+  # on this stack; vectortranslate exercises the Parquet driver write path
+  # without that create API.
   generator <- c(
     sprintf("library(gdalraster, lib.loc = %s)", deparse(lib)),
     sprintf("path <- %s", deparse(parquet)),
+    "gj <- tempfile(fileext = '.geojson')",
     paste0(
-      "gdalraster::ogr_ds_create(",
-      "format = 'Parquet', dsn = path, layer = 'verify', ",
-      "geom_type = 'Point', fld_name = 'id', fld_type = 'OFTInteger', ",
-      "return_obj = FALSE)"
+      "writeLines(",
+      "'{\"type\":\"FeatureCollection\",\"features\":[{",
+      "\"type\":\"Feature\",\"properties\":{\"id\":1},",
+      "\"geometry\":{\"type\":\"Point\",\"coordinates\":[0,0]}}]}', gj)"
     ),
-    "stopifnot(file.exists(path))"
+    paste0(
+      "ok <- gdalraster::gdal_utils(",
+      "'vectortranslate', source = gj, destination = path, ",
+      "cl_arg = c('-f', 'Parquet', '-nlt', 'POINT'))"
+    ),
+    "stopifnot(isTRUE(ok), file.exists(path))"
   )
   generated <- run_fresh_rscript(generator)
   if (generated$status != 0L) {
