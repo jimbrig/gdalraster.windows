@@ -11,17 +11,16 @@
 <url><loc>https://docs.jimbrig.com/gdalraster.windows/authors.html</loc></url>
 <url><loc>https://docs.jimbrig.com/gdalraster.windows/index.html</loc></url>
 <url><loc>https://docs.jimbrig.com/gdalraster.windows/news/index.html</loc></url>
-<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.html</loc></url>
-<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/add_gdal_rprofile_hook.html</loc></url>
-<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/configure_gdal_home.html</loc></url>
+<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_build_gdalraster.html</loc></url>
+<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_enable_python.html</loc></url>
 <url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_home.html</loc></url>
-<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_rprofile_snippet.html</loc></url>
+<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_install_runtime.html</loc></url>
+<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_setup.html</loc></url>
+<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_sitrep.html</loc></url>
+<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_uninstall.html</loc></url>
+<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_update.html</loc></url>
+<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdal_verify.html</loc></url>
 <url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/gdalraster.windows-package.html</loc></url>
 <url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/index.html</loc></url>
-<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.html</loc></url>
-<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.html</loc></url>
-<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/load_gdal_dll.html</loc></url>
-<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/load_gdalraster.html</loc></url>
-<url><loc>https://docs.jimbrig.com/gdalraster.windows/reference/verify_gdalraster_runtime.html</loc></url>
 </urlset>
 

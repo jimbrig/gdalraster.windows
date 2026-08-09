@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,7 @@
 
 
 
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.3.1/vignettes/architecture.qmd" class="external-link"><code>vignettes/architecture.qmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/architecture.qmd" class="external-link"><code>vignettes/architecture.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
     </div>
 
@@ -76,160 +76,56 @@
 
 
 
-    <p>This article explains the systems-level design behind <code>gdalraster.windows</code>: why the package exists, how the <a href="https://gdal.org/" class="external-link">GDAL</a> runtime bundle is built, and why runtime activation works the way it does.</p>
-<section class="level2"><h2 id="the-root-problem">The root problem<a class="anchor" aria-label="anchor" href="#the-root-problem"></a>
+    <section class="level2"><h2 id="why-this-package-exists">Why this package exists<a class="anchor" aria-label="anchor" href="#why-this-package-exists"></a>
 </h2>
-<p>GDAL’s <a href="https://gdal.org/en/stable/api/gdalalg_cpp.html" class="external-link">Algorithm API</a> registers algorithms through static C++ constructors, file-scope objects whose constructors insert entries into a global registry when <code>libgdal</code> is loaded. Under some Windows toolchain states (notably Rtools/<a href="https://mxe.cc/" class="external-link">MXE</a> builds where dependencies are static archives), the linker’s dead-code elimination discarded those self-registration translation units, leaving the registry empty (see <a href="https://github.com/firelab/gdalraster/issues/826" class="external-link">firelab/gdalraster#826</a>).</p>
-<p>The visible symptom:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; character(0)</span></span></code></pre></div>
-</div>
-<p>The upstream fix landed in GDAL 3.12.2 (<a href="https://github.com/OSGeo/gdal/pull/13592" class="external-link">OSGeo/gdal#13592</a>), and <a href="https://beltoforion.de/en/muparser/" class="external-link"><code>muparser</code></a> (required by parts of the Algorithm API) was added to the Rtools GDAL build in <a href="https://cran.r-project.org/bin/windows/Rtools/rtools45/news.html" class="external-link">release 6768</a> (see <a href="https://github.com/firelab/gdalraster/issues/858" class="external-link">firelab/gdalraster#858</a>). Until a fixed GDAL ships in the default toolchain, and for anyone needing a pinned, feature-rich GDAL, this package provides a known good runtime: a custom GDAL build plus the activation logic to load it reliably.</p>
-</section><section class="level2"><h2 id="toolchain-stack">Toolchain stack<a class="anchor" aria-label="anchor" href="#toolchain-stack"></a>
+<p><a href="https://firelab.github.io/gdalraster/" class="external-link"><code>gdalraster</code></a> binds to GDAL’s C++ API. On Windows, <code>gdalraster.dll</code> and <code>libgdal-*.dll</code> therefore must be built in a compatible MinGW/UCRT ABI environment. The default Rtools GDAL has also historically lacked the Algorithm API registration and driver profile this project needs.</p>
+<p>The repository builds a modern shared GDAL in MSYS2 UCRT64, publishes a verified runtime bundle, and compiles <code>gdalraster</code> from source against that bundle.</p>
+</section><section class="level2"><h2 id="install-time-vendoring">Install-time vendoring<a class="anchor" aria-label="anchor" href="#install-time-vendoring"></a>
 </h2>
-<table class="table caption-top">
-<thead><tr class="header">
-<th>Term</th>
-<th>What it is</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><a href="https://www.mingw-w64.org/" class="external-link">MinGW-w64</a></td>
-<td>GCC-based toolchain producing native Win32 <code>.exe</code>/<code>.dll</code> (no POSIX emulation layer)</td>
-</tr>
-<tr class="even">
-<td><a href="https://www.msys2.org/" class="external-link">MSYS2</a></td>
-<td>Distribution + <code>pacman</code> package manager shipping several MinGW-w64 toolchain variants; the <em>build environment</em>, not the runtime target</td>
-</tr>
-<tr class="odd">
-<td><a href="https://learn.microsoft.com/en-us/cpp/porting/upgrade-your-code-to-the-universal-crt" class="external-link">UCRT</a></td>
-<td>Microsoft’s Universal C Runtime (default since VS2015); mixing binaries linked against different C runtimes is unsafe (incompatible heap allocators, <code>FILE*</code>, etc.)</td>
-</tr>
-<tr class="even">
-<td><a href="https://www.msys2.org/docs/environments/" class="external-link">UCRT64</a></td>
-<td>The MSYS2 environment targeting UCRT — the variant compatible with Rtools</td>
-</tr>
-<tr class="odd">
-<td><a href="https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html" class="external-link">Rtools45</a></td>
-<td>CRAN’s Windows toolchain for R 4.5 and later; UCRT64/MinGW-based, so C++ ABI-compatible with MSYS2 UCRT64 builds of the same GCC line</td>
-</tr>
-</tbody>
-</table>
-<p>The invariant this package maintains: GDAL and <code>gdalraster</code> are both compiled with compatible MinGW/UCRT toolchains.</p>
-</section><section class="level2"><h2 id="why-gdalraster-must-be-rebuilt-from-source">Why <code>gdalraster</code> must be rebuilt from source<a class="anchor" aria-label="anchor" href="#why-gdalraster-must-be-rebuilt-from-source"></a>
+<p>Version 0.4.0 moves all runtime selection to install time:</p>
+<pre class="text"><code>bundle SDK -&gt; source build -&gt; staged gdalraster package
+                                |
+                                +-- libs/x64: native dependency closure
+                                +-- gdal + proj: matching data
+                                +-- python: osgeo_utils
+                                +-- build provenance</code></pre>
+<p>The staged package replaces the destination only after compilation and vendoring succeed. This prevents a failed build or locked destination from leaving a partially updated package.</p>
+</section><section class="level2"><h2 id="fresh-session-loading">Fresh-session loading<a class="anchor" aria-label="anchor" href="#fresh-session-loading"></a>
 </h2>
-<p>C++ has no standardized ABI across compilers. Name mangling, vtable layout, exception unwinding, and object layout all differ between MSVC and MinGW/GCC, and can drift between incompatible GCC configurations. <a href="https://firelab.github.io/gdalraster/" class="external-link"><code>gdalraster</code></a> binds to GDAL’s C++ API through <a href="https://www.rcpp.org/" class="external-link">Rcpp</a> (not a C <code>extern "C"</code> shim), so <code>gdalraster.dll</code> and <code>libgdal-*.dll</code> must come from the same ABI world.</p>
-<p>That is why <code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> builds from source against the bundle’s headers and import library rather than reusing the CRAN binary (which is linked — statically — against Rtools’ own GDAL):</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdalraster.html">install_gdalraster</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-</div>
-<p>Internally this uses <a href="https://withr.r-lib.org/reference/with_makevars.html" class="external-link"><code>withr::with_makevars()</code></a>, which writes a scoped Makevars file and points the <code>R_MAKEVARS_USER</code> environment variable at it for the duration of the install — compile/link flags never leak into your persistent configuration.</p>
-</section><section class="level2"><h2 id="key-build-flags">Key build flags<a class="anchor" aria-label="anchor" href="#key-build-flags"></a>
+<p>R’s Windows loader calls <code><a href="https://rdrr.io/r/base/library.dynam.html" class="external-link">library.dynam()</a></code> with the installed package’s <code>libs/x64</code> directory. That directory becomes the search location for the entire load-time dependency graph, so the vendored <code>libgdal</code> and dependency DLLs resolve next to <code>gdalraster.dll</code>.</p>
+<p>GDAL and PROJ data are package-internal, matching the GDAL version used at compile time. No startup hook, DLL preload, <code>PATH</code> mutation, or GDAL/PROJ environment export is part of the package architecture.</p>
+</section><section class="level2"><h2 id="multi-gdal-machines">Multi-GDAL machines<a class="anchor" aria-label="anchor" href="#multi-gdal-machines"></a>
 </h2>
-<p>From <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/tools/build_gdal.sh" class="external-link"><code>tools/build_gdal.sh</code></a>:</p>
-<table class="table caption-top">
-<thead><tr class="header">
-<th>Flag</th>
-<th>Purpose</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>-DGDAL_USE_MUPARSER=ON</code></td>
-<td>Algorithm API support (expression evaluation)</td>
-</tr>
-<tr class="even">
-<td><code>-DGDAL_USE_ARROW/PARQUET/HDF5/NETCDF/GEOS/SPATIALITE=ON</code></td>
-<td>Extended driver profile beyond the lean Rtools build</td>
-</tr>
-<tr class="odd">
-<td>
-<code>-DGDAL_ENABLE_DRIVER_PDF=OFF</code> (+ poppler/podofo/pdfium <code>OFF</code>)</td>
-<td>The MSYS2 <code>libpodofo.dll</code> fails its DLL initialization routine (Windows error 1114) in any process; a <code>libgdal</code> that imports it cannot be loaded at all, so the PDF driver is excluded from the bundle</td>
-</tr>
-<tr class="even">
-<td><code>-DGDAL_HIDE_INTERNAL_SYMBOLS=ON</code></td>
-<td>Restricts the export table to the public API (PE/COFF DLLs cap export ordinals at 65,535 and GDAL’s full symbol set exceeds it — see <a href="https://github.com/OSGeo/gdal/issues/4706" class="external-link">OSGeo/gdal#4706</a>)</td>
-</tr>
-<tr class="odd">
-<td><code>-Wl,--kill-at</code></td>
-<td>Strips <code>@N</code> stdcall decoration from exports so symbol names match what loaders expect</td>
-</tr>
-<tr class="even">
-<td>
-<code>-static-libgcc -static-libstdc++</code> + whole-archive <code>winpthread</code>
-</td>
-<td>Embeds the GCC runtime into the DLLs — end users need neither Rtools nor MSYS2 at runtime</td>
-</tr>
-</tbody>
-</table></section><section class="level2"><h2 id="dependency-closure-collect_dlls-sh">Dependency closure: <code>collect_dlls.sh</code>
-<a class="anchor" aria-label="anchor" href="#dependency-closure-collect_dlls-sh"></a>
+<p>Another GDAL on <code>PATH</code> does not override the vendored DLL while <code>gdalraster.dll</code> is loading. The remaining process-level exception is an identically named GDAL DLL already loaded before <code>gdalraster</code>; Windows module resolution can reuse an existing loaded module by name. <code><a href="../reference/gdal_sitrep.html">gdal_sitrep()</a></code> reports both competing <code>PATH</code> locations and loaded GDAL modules.</p>
+<p>Command-line GDAL installations from pixi, conda, OSGeo4W, or MSYS2 remain independent. Their executables can coexist with the vendored R package.</p>
+</section><section class="level2"><h2 id="bundle-responsibilities">Bundle responsibilities<a class="anchor" aria-label="anchor" href="#bundle-responsibilities"></a>
 </h2>
-<p>Producing <code>libgdal-*.dll</code> is half the job; it imports dozens of transitive DLLs (<a href="https://libgeos.org/" class="external-link">GEOS</a>, <a href="https://proj.org/" class="external-link">PROJ</a>, <a href="https://arrow.apache.org/" class="external-link">Arrow</a>’s deep tree, <a href="https://www.hdfgroup.org/solutions/hdf5/" class="external-link">HDF5</a>, …). <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/tools/collect_dlls.sh" class="external-link"><code>tools/collect_dlls.sh</code></a> walks the full PE import tree with <a href="https://github.com/LRN/ntldd" class="external-link"><code>ntldd -R</code></a>, copies every dependency that resolves to the UCRT64 prefix into the bundle’s <code>bin/</code>, and <strong>fails</strong> if any non-Windows-system dependency remains unresolved. The bundle is therefore a verified-closed set: the only external imports are Windows system DLLs.</p>
-<p>Final bundle layout:</p>
-<pre class="text"><code>&lt;gdal_home&gt;/
-├── bin/        libgdal-*.dll + closed transitive DLL set
-├── include/    headers (compile-time, for install_gdalraster())
-├── lib/        libgdal.dll.a import library (compile-time)
-├── share/      gdal/ + proj/ runtime data
-└── python/     osgeo_utils (pure-python, for embedded-python algorithms)</code></pre>
-<p>No executables ship in the bundle (<code>BUILD_APPS=OFF</code>): consumers are R processes loading the DLL, not command-line users.</p>
-</section><section class="level2"><h2 id="runtime-activation-why-loading-needs-help">Runtime activation: why loading needs help<a class="anchor" aria-label="anchor" href="#runtime-activation-why-loading-needs-help"></a>
-</h2>
-<p>Windows resolves a DLL’s import table at load time using a fixed search order (executable directory, System32, then <code>PATH</code>). When <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> loads <code>gdalraster.dll</code>, Windows immediately needs <code>libgdal-*.dll</code> — if the bundle’s <code>bin/</code> is not discoverable at that exact moment, loading fails with <code>LoadLibrary failure</code>.</p>
-<p><code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> handles this, session-scoped:</p>
-<ul>
-<li>prepends <code>&lt;gdal_home&gt;/bin</code> to <code>PATH</code>
-</li>
-<li>sets <code>GDAL_DATA</code>, <code>PROJ_LIB</code>, <code>PROJ_DATA</code> (GDAL and PROJ require their runtime data trees for CRS operations)</li>
-<li>prepends <code>&lt;gdal_home&gt;/python</code> to <code>PYTHONPATH</code> (next section)</li>
-<li>preloads the GDAL DLL via <code>dyn.load(..., local = FALSE, now = TRUE)</code> — mapping it into the process’s loaded-module list <em>before</em> <code>gdalraster.dll</code> asks for it; <code>local = FALSE</code> loads into the global symbol namespace so subsequent DLLs resolve against it</li>
-</ul></section><section class="level2"><h2 id="the-embedded-python-layer">The embedded Python layer<a class="anchor" aria-label="anchor" href="#the-embedded-python-layer"></a>
-</h2>
-<p>Some GDAL algorithms (e.g. <a href="https://gdal.org/en/stable/programs/gdal_driver_gpkg_validate.html" class="external-link"><code>gdal driver gpkg validate</code></a>) are thin C++ entry points around Python implementations. At first use, <code>libgdal</code> locates a <code>python.exe</code> on <code>PATH</code>, dynamically loads the matching <code>libpython</code> DLL (no static CPython link), calls <code>Py_Initialize()</code>, and imports <code>osgeo_utils.samples.validate_gpkg</code>.</p>
-<p><a href="https://github.com/OSGeo/gdal/tree/master/swig/python/gdal-utils" class="external-link"><code>osgeo_utils</code></a> (GDAL’s <code>gdal-utils</code> distribution) is pure Python — no compiled extension modules, hence no CPython version/ABI coupling. The bundle ships it under <code>&lt;gdal_home&gt;/python</code>, version-locked to the built GDAL tag, and activation exposes it via <code>PYTHONPATH</code>. The compiled <code>osgeo</code> SWIG bindings are deliberately <strong>not</strong> bundled: they would pin the bundle to a single CPython ABI, and the Python-implemented validators degrade gracefully without them.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">alg</span> <span class="op">&lt;-</span> <span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_alg</a></span><span class="op">(</span>cmd <span class="op">=</span> <span class="st">"driver gpkg validate"</span><span class="op">)</span></span>
-<span><span class="va">alg</span><span class="op">$</span><span class="fu">setArg</span><span class="op">(</span><span class="st">"dataset"</span>, <span class="st">"file.gpkg"</span><span class="op">)</span></span>
-<span><span class="va">alg</span><span class="op">$</span><span class="fu">setArg</span><span class="op">(</span><span class="st">"full-check"</span>, <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">alg</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">alg</span><span class="op">$</span><span class="fu">output</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-</div>
-</section><section class="level2"><h2 id="compile-time-vs-runtime-paths">Compile-time vs runtime paths<a class="anchor" aria-label="anchor" href="#compile-time-vs-runtime-paths"></a>
-</h2>
-<p>These are independent concerns, and conflating them is the most common source of confusion:</p>
+<p>The build workflow and scripts are authoritative for the distributable GDAL SDK:</p>
 <ul>
 <li>
-<strong>Compile-time</strong> (during <code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code>): <code>PKG_CPPFLAGS</code> points at <code>&lt;gdal_home&gt;/include</code>, <code>PKG_LIBS</code> at <code>&lt;gdal_home&gt;/lib</code> — scoped via <code>withr</code>.</li>
+<code>.github/workflows/build.yml</code>;</li>
 <li>
-<strong>Runtime</strong> (every session): the Windows loader resolves DLLs through <code>PATH</code>/preload state — handled by <code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code>.</li>
+<code>tools/build_gdal.sh</code>; and</li>
+<li>
+<code>tools/collect_dlls.sh</code>.</li>
 </ul>
-<p>A successful link does not imply a loadable session, and vice versa.</p>
-</section><section class="level2"><h2 id="reproducing-the-bundle">Reproducing the bundle<a class="anchor" aria-label="anchor" href="#reproducing-the-bundle"></a>
+<p>They build GDAL, collect the non-Windows dependency closure, validate bundle layout and loadability, and publish release assets. The package does not reimplement those tasks.</p>
+<p>The Arrow/Parquet TLS correction belongs to this bundle layer. The package contains no session-order or Parquet initialization workaround. Package CI instead verifies a first Parquet open in a fresh process so bundle regressions are observable.</p>
+</section><section class="level2"><h2 id="package-responsibilities">Package responsibilities<a class="anchor" aria-label="anchor" href="#package-responsibilities"></a>
 </h2>
-<p>The bundle is built entirely from the repository — no local machine state. For a new GDAL release:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> tag gdal-v3.14.0 <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push origin gdal-v3.14.0</span></code></pre></div>
-<p>or dispatch the <a href="https://github.com/jimbrig/gdalraster.windows/actions/workflows/build.yml" class="external-link">build workflow</a> with <code>gdal_version=v3.14.0</code>. The version string drives the GDAL source checkout, cache key, asset name (<code>gdal-ucrt64-v3.14.0-windows-x64.zip</code>), and release tag. CI cache keys hash the build scripts, so any build-logic change forces a fresh compile. Published bundles are available on the <a href="https://github.com/jimbrig/gdalraster.windows/releases" class="external-link">releases page</a>.</p>
-<p>Local (non-CI) reproduction from an MSYS2 UCRT64 shell:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GDAL_VER</span><span class="op">=</span>v3.14.0</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">INSTALL_DIR</span><span class="op">=</span>/c/gdal-install</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">BUNDLE_DIR</span><span class="op">=</span>/c/gdal-bundle</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> tools/build_gdal.sh</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> tools/collect_dlls.sh</span></code></pre></div>
-</section><section class="level2"><h2 id="upstream-references">Upstream references<a class="anchor" aria-label="anchor" href="#upstream-references"></a>
+<p>The R package:</p>
+<ol type="1">
+<li>installs and stamps the SDK;</li>
+<li>compiles <code>gdalraster</code> with scoped Makevars and environment state;</li>
+<li>vendors DLLs, data, and Python utilities;</li>
+<li>provisions the managed Python <code>.pth</code>; and</li>
+<li>verifies the result in fresh processes.</li>
+</ol>
+<p>The end-to-end workflow consumes these exported functions exactly as users do.</p>
+</section><section class="level2"><h2 id="provenance-boundary">Provenance boundary<a class="anchor" aria-label="anchor" href="#provenance-boundary"></a>
 </h2>
-<ul>
-<li>
-<a href="https://github.com/firelab/gdalraster/issues/826" class="external-link">firelab/gdalraster#826</a> — algorithm-registry failure mode</li>
-<li>
-<a href="https://github.com/firelab/gdalraster/issues/982" class="external-link">firelab/gdalraster#982</a> — working Windows workflow this package productized</li>
-<li>
-<a href="https://github.com/OSGeo/gdal/pull/13592" class="external-link">OSGeo/gdal#13592</a> — upstream registration fix (GDAL 3.12.2)</li>
-<li><a href="https://cran.r-project.org/bin/windows/Rtools/rtools45/news.html" class="external-link">Rtools45 news</a></li>
-</ul></section><script id="quarto-html-after-body" type="application/javascript">
+<p><code>MANIFEST.dcf</code> identifies the installed SDK. <code>gdalraster.windows-build.dcf</code> identifies the SDK used for a package build. Comparing their bundle tags turns an ABI-sensitive update into an explicit state transition: a new SDK always requires a new <code>gdalraster</code> build.</p>
+</section><script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
@@ -322,7 +218,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

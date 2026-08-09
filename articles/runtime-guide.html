@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,7 @@
 
 
 
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.3.1/vignettes/runtime-guide.qmd" class="external-link"><code>vignettes/runtime-guide.qmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/runtime-guide.qmd" class="external-link"><code>vignettes/runtime-guide.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
     </div>
 
@@ -76,135 +76,83 @@
 
 
 
-    <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jimbrig/gdalraster.windows" class="external-link">gdalraster.windows</a></span><span class="op">)</span></span></code></pre></div>
-</div>
-<p>This guide covers how the <a href="https://gdal.org/" class="external-link">GDAL</a> runtime is located, activated, and used from day to day: session activation, configuration, source builds of <a href="https://firelab.github.io/gdalraster/" class="external-link"><code>gdalraster</code></a>, startup hooks, and embedded-python algorithms. For the build internals behind the runtime bundle, see the <a href="architecture.html">Architecture</a> article.</p>
-<section class="level2"><h2 id="how-the-runtime-home-is-resolved">How the runtime home is resolved<a class="anchor" aria-label="anchor" href="#how-the-runtime-home-is-resolved"></a>
+    <section class="level2"><h2 id="runtime-and-installed-package-roles">Runtime and installed-package roles<a class="anchor" aria-label="anchor" href="#runtime-and-installed-package-roles"></a>
 </h2>
-<p>Every helper in this package resolves the runtime location (<code>gdal_home</code>) through the same precedence chain:</p>
+<p>The managed GDAL runtime is a build-time SDK. It provides headers, import libraries, DLLs, data, and Python utilities to <code><a href="../reference/gdal_build_gdalraster.html">gdal_build_gdalraster()</a></code>. Runtime use is served entirely by files vendored inside the resulting <code>gdalraster</code> package.</p>
+<pre class="text"><code>managed gdal_home/
+  bin/*.dll
+  include/
+  lib/
+  share/gdal/
+  share/proj/
+  python/osgeo_utils/
+  MANIFEST.dcf
+
+installed gdalraster/
+  libs/x64/gdalraster.dll
+  libs/x64/libgdal-*.dll
+  libs/x64/&lt;dependency DLLs&gt;
+  gdal/
+  proj/
+  python/osgeo_utils/
+  gdalraster.windows-build.dcf</code></pre>
+<p><code><a href="https://rdrr.io/r/base/library.dynam.html" class="external-link">library.dynam()</a></code> loads <code>gdalraster.dll</code> with the package’s <code>libs/x64</code> directory as its DLL path. Windows resolves the dependent <code>libgdal</code> and its dependency closure from that same directory, including when another GDAL is earlier on <code>PATH</code>.</p>
+</section><section class="level2"><h2 id="runtime-location">Runtime location<a class="anchor" aria-label="anchor" href="#runtime-location"></a>
+</h2>
+<p><code><a href="../reference/gdal_home.html">gdal_home()</a></code> resolves:</p>
 <ol type="1">
-<li><code>options(gdalraster.windows.gdal_home = "...")</code></li>
-<li>the <code>GDALRASTER_WINDOWS_GDAL_HOME</code> environment variable</li>
-<li>the package-managed user data directory (<code>tools::R_user_dir("gdalraster.windows", "data")</code>)</li>
+<li>
+<code>options(gdalraster.windows.gdal_home = "...")</code>;</li>
+<li>
+<code>GDALRASTER_WINDOWS_GDAL_HOME</code>; then</li>
+<li>the package-managed user data directory.</li>
 </ol>
+<p>The option and environment variable are useful for tests, CI, and offline SDKs. They do not affect later loading of a vendored <code>gdalraster</code>.</p>
+</section><section class="level2"><h2 id="plumbing-api">Plumbing API<a class="anchor" aria-label="anchor" href="#plumbing-api"></a>
+</h2>
+<p>Use the lower-level functions when setup must be split:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># where the active runtime lives</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_home.html">gdal_home</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># point the session at a different runtime (option or env var, not persisted)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/configure_gdal_home.html">configure_gdal_home</a></span><span class="op">(</span><span class="st">"D:/gdal/custom-runtime"</span>, mode <span class="op">=</span> <span class="st">"option"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_install_runtime.html">gdal_install_runtime</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_build_gdalraster.html">gdal_build_gdalraster</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_enable_python.html">gdal_enable_python</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_verify.html">gdal_verify</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
-<p><code><a href="../reference/configure_gdal_home.html">configure_gdal_home()</a></code> is session-scoped by design — it never writes to profile files or machine state.</p>
-</section><section class="level2"><h2 id="session-activation">Session activation<a class="anchor" aria-label="anchor" href="#session-activation"></a>
+<p><code><a href="../reference/gdal_install_runtime.html">gdal_install_runtime()</a></code> is idempotent. A matching <code>Bundle-Tag</code> in <code>MANIFEST.dcf</code> is skipped. A newer release is reported without destructive replacement; <code><a href="../reference/gdal_update.html">gdal_update()</a></code> or <code>force = TRUE</code> performs replacement.</p>
+<p><code><a href="../reference/gdal_build_gdalraster.html">gdal_build_gdalraster()</a></code> stages a complete package before replacing an existing installation. If the destination is locked, the old package remains unchanged.</p>
+</section><section class="level2"><h2 id="provenance-and-staleness">Provenance and staleness<a class="anchor" aria-label="anchor" href="#provenance-and-staleness"></a>
 </h2>
-<p>Windows resolves a DLL’s imports at load time, so the bundle’s <code>bin/</code> directory must be discoverable <em>before</em> <code>gdalraster.dll</code> loads. <code><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime()</a></code> prepares the session:</p>
+<p>The runtime manifest records:</p>
 <ul>
-<li>prepends <code>&lt;gdal_home&gt;/bin</code> to <code>PATH</code>
-</li>
-<li>sets <code>GDAL_DATA</code>, <code>PROJ_LIB</code>, and <code>PROJ_DATA</code> to the bundle’s <code>share/</code> data trees (GDAL and <a href="https://proj.org/" class="external-link">PROJ</a> need their runtime data for CRS operations)</li>
-<li>prepends <code>&lt;gdal_home&gt;/python</code> to <code>PYTHONPATH</code> for embedded-python algorithms</li>
-<li>preloads <code>libgdal-*.dll</code> into the process (when <code>preload = TRUE</code>, the default), so the DLL is already mapped when <code>gdalraster</code> asks for it</li>
+<li>bundle tag and GDAL version;</li>
+<li>release asset name;</li>
+<li>installation time; and</li>
+<li>installer package version.</li>
 </ul>
-<p>All of this is session-scoped: no machine or user environment variables are modified. When preloading fails — most commonly because a dependency DLL is missing — activation fails immediately with an informative error instead of deferring to <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code>, where the Windows loader would only report a generic “module could not be found”.</p>
+<p>The build manifest records the bundle tag and GDAL version plus R, platform, compiler, build time, and builder package version. <code><a href="../reference/gdal_sitrep.html">gdal_sitrep()</a></code> compares the two tags. A mismatch means <code>gdalraster</code> must be rebuilt.</p>
+</section><section class="level2"><h2 id="embedded-python">Embedded Python<a class="anchor" aria-label="anchor" href="#embedded-python"></a>
+</h2>
+<p>Some algorithms, including <code>gdal driver gpkg validate</code>, embed CPython and import <code>osgeo_utils</code>. <code><a href="../reference/gdal_enable_python.html">gdal_enable_python()</a></code> writes a managed file named <code>gdalraster-windows-osgeo-utils.pth</code> into system CPython’s <code>site-packages</code>. The file points at the vendored <code>gdalraster/python</code> directory.</p>
+<p>This design does not set <code>PYTHONPATH</code>, does not modify user or machine environment variables, and does not affect isolated virtual environments. When no system CPython is available, core <code>gdalraster</code> remains usable and the Python-specific check is reported as unavailable.</p>
+</section><section class="level2"><h2 id="updates">Updates<a class="anchor" aria-label="anchor" href="#updates"></a>
+</h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/activate_gdal_runtime.html">activate_gdal_runtime</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; v gdal runtime activated from C:/Users/you/AppData/Roaming/R/data/R/gdalraster.windows/...</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_update.html">gdal_update</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
-<p><code><a href="../reference/load_gdal_dll.html">load_gdal_dll()</a></code> is a convenience wrapper that activates with <code>preload = TRUE</code>:</p>
+<p>For a user-library installation:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/load_gdal_dll.html">load_gdal_dll</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_update.html">gdal_update</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
-</section><section class="level2"><h2 id="automatic-activation-on-load">Automatic activation on load<a class="anchor" aria-label="anchor" href="#automatic-activation-on-load"></a>
+<p>An update replaces the SDK, rebuilds from source, re-vendors every runtime component, re-points the managed <code>.pth</code>, and verifies in a fresh process.</p>
+</section><section class="level2"><h2 id="uninstall">Uninstall<a class="anchor" aria-label="anchor" href="#uninstall"></a>
 </h2>
-<p>Attaching the package triggers a bootstrap that activates an installed runtime and prepends the isolated <code>gdalraster</code> library to <code><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths()</a></code>, so in an already-set-up session this is all you need:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jimbrig/gdalraster.windows" class="external-link">gdalraster.windows</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_uninstall.html">gdal_uninstall</a></span><span class="op">(</span>force <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
-<p>Two options control this behavior:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># disable the load-time bootstrap entirely</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>gdalraster.windows.auto_bootstrap <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># additionally auto-attach gdalraster from the isolated library at load time</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>gdalraster.windows.auto_load_gdalraster <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-</section><section class="level2"><h2 id="building-gdalraster-against-the-runtime">Building gdalraster against the runtime<a class="anchor" aria-label="anchor" href="#building-gdalraster-against-the-runtime"></a>
-</h2>
-<p><code><a href="../reference/install_gdalraster.html">install_gdalraster()</a></code> downloads (or accepts) a <code>gdalraster</code> source tarball from <a href="https://github.com/firelab/gdalraster" class="external-link">firelab/gdalraster</a> and builds it against the bundle’s headers and import library:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># default: latest source from firelab/gdalraster, into the isolated library</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdalraster.html">install_gdalraster</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># pin a specific ref, or build from a local tarball</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdalraster.html">install_gdalraster</a></span><span class="op">(</span>ref <span class="op">=</span> <span class="st">"v2.1.0"</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdalraster.html">install_gdalraster</a></span><span class="op">(</span>source_tarball <span class="op">=</span> <span class="st">"C:/tmp/gdalraster_2.1.0.tar.gz"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># pre-install gdalraster's R dependencies from CRAN before the source build</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdalraster.html">install_gdalraster</a></span><span class="op">(</span>upgrade <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-<p>Compile and link flags (<code>GDAL_HOME</code>, <code>PKG_CPPFLAGS</code>, <code>PKG_LIBS</code>) are applied through a scoped Makevars file via <a href="https://withr.r-lib.org/reference/with_makevars.html" class="external-link"><code>withr::with_makevars()</code></a>, and the runtime’s <code>bin/</code> and data directories are exposed through scoped environment variables for the duration of the install. Nothing leaks into your persistent configuration.</p>
-<p>The default destination is an isolated library (<code>&lt;user data dir&gt;/library</code>), so an existing CRAN <code>gdalraster</code> is left untouched. Loading from that isolated library is what <code><a href="../reference/load_gdalraster.html">load_gdalraster()</a></code> does:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># activates the runtime, prepends the isolated library, attaches gdalraster</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/load_gdalraster.html">load_gdalraster</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-</div>
-<p>To make the source build your regular <code>gdalraster</code> instead, install it into your user library — accepting that it replaces whatever <code>gdalraster</code> is there:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdalraster.html">install_gdalraster</a></span><span class="op">(</span>lib <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths</a></span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-</div>
-</section><section class="level2"><h2 id="startup-hooks">Startup hooks<a class="anchor" aria-label="anchor" href="#startup-hooks"></a>
-</h2>
-<p>For sessions that should bootstrap without attaching this package, a managed <code>.Rprofile</code> hook loads the bundled GDAL DLL and prepends the isolated library at startup:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># preview the generated code without writing anything</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_rprofile_snippet.html">gdal_rprofile_snippet</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># write (or update) the managed block in ~/.Rprofile</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/add_gdal_rprofile_hook.html">add_gdal_rprofile_hook</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># preview the resulting file contents without writing</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/add_gdal_rprofile_hook.html">add_gdal_rprofile_hook</a></span><span class="op">(</span>dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-<p>The hook is wrapped in <code># &gt;&gt;&gt; gdalraster.windows hook &gt;&gt;&gt;</code> / <code># &lt;&lt;&lt; gdalraster.windows hook &lt;&lt;&lt;</code> markers, guards itself with <code><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace()</a></code> and an OS check, and is updated in place on subsequent calls rather than appended repeatedly.</p>
-</section><section class="level2"><h2 id="embedded-python-algorithms">Embedded-python algorithms<a class="anchor" aria-label="anchor" href="#embedded-python-algorithms"></a>
-</h2>
-<p>Some GDAL algorithms (e.g. <a href="https://gdal.org/en/stable/programs/gdal_driver_gpkg_validate.html" class="external-link"><code>gdal driver gpkg validate</code></a>) are thin C++ entry points around Python implementations: <code>libgdal</code> embeds a CPython interpreter at first use and imports the pure-python <a href="https://github.com/OSGeo/gdal/tree/master/swig/python/gdal-utils" class="external-link"><code>osgeo_utils</code></a> package. The runtime bundle ships <code>osgeo_utils</code> under <code>&lt;gdal_home&gt;/python</code>, version-locked to the built GDAL, and activation exposes it via <code>PYTHONPATH</code>:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jimbrig/gdalraster.windows" class="external-link">gdalraster.windows</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">alg</span> <span class="op">&lt;-</span> <span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_alg</a></span><span class="op">(</span>cmd <span class="op">=</span> <span class="st">"driver gpkg validate"</span><span class="op">)</span></span>
-<span><span class="va">alg</span><span class="op">$</span><span class="fu">setArg</span><span class="op">(</span><span class="st">"dataset"</span>, <span class="st">"path/to/file.gpkg"</span><span class="op">)</span></span>
-<span><span class="va">alg</span><span class="op">$</span><span class="fu">setArg</span><span class="op">(</span><span class="st">"full-check"</span>, <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">alg</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">alg</span><span class="op">$</span><span class="fu">output</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "Checking gpkg_spatial_ref_sys\n...\nValidation succeeded"</span></span></code></pre></div>
-</div>
-<p>A <code>python.exe</code> must be discoverable on <code>PATH</code> for GDAL to embed an interpreter at all — Rtools’ UCRT64 python works, as does any system python. The compiled <code>osgeo</code> SWIG bindings are deliberately not bundled (they would pin the bundle to a single CPython ABI); the python-implemented validators degrade gracefully without them.</p>
-</section><section class="level2"><h2 id="upgrading-the-runtime">Upgrading the runtime<a class="anchor" aria-label="anchor" href="#upgrading-the-runtime"></a>
-</h2>
-<p>After a new <a href="https://github.com/jimbrig/gdalraster.windows/releases" class="external-link">GDAL runtime release</a>, reinstall the bundle and rebuild <code>gdalraster</code> against it — the previous <code>gdalraster.dll</code> is bound to the previous GDAL’s ABI and import names:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># in a fresh session, before gdalraster is loaded</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdal_runtime.html">install_gdal_runtime</a></span><span class="op">(</span>overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/install_gdalraster.html">install_gdalraster</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/verify_gdalraster_runtime.html">verify_gdalraster_runtime</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-</div>
-<p>Overwriting is refused while <code>gdalraster</code> is loaded, because its DLL pins the runtime files in the current process; restart R first. See the <a href="troubleshooting.html">Troubleshooting</a> article if deletion still fails.</p>
+<p>Set <code>user_lib = TRUE</code> only when the managed build was placed in the regular user library. The uninstall removes the selected package, SDK, and managed Python path file.</p>
 </section><script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
@@ -298,7 +246,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

@@ -1,37 +1,30 @@
 # Package index
 
-## Runtime Setup
+## Setup and Maintenance
 
-Setup the necessary runtime environment for gdalraster on Windows.
+Install, update, inspect, verify, and remove managed resources.
+
+- [`gdal_setup()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_setup.md)
+  : Set up a self-contained gdalraster installation
+- [`gdal_update()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_update.md)
+  : Update the GDAL runtime and rebuild gdalraster
+- [`gdal_sitrep()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_sitrep.md)
+  : Report GDAL and gdalraster installation state
+- [`gdal_verify()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_verify.md)
+  : Verify the self-contained gdalraster installation
+- [`gdal_uninstall()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_uninstall.md)
+  : Uninstall managed GDAL resources
+
+## Plumbing
+
+Install the build SDK, compile the vendored package, and provision
+Python.
 
 - [`gdal_home()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_home.md)
-  : Resolve active GDAL home path
-- [`configure_gdal_home()`](https://docs.jimbrig.com/gdalraster.windows/reference/configure_gdal_home.md)
-  : Configure GDAL home for current session
-- [`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
-  : Install precompiled GDAL runtime
-- [`activate_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.md)
-  : Activate GDAL runtime for current R session
-- [`load_gdal_dll()`](https://docs.jimbrig.com/gdalraster.windows/reference/load_gdal_dll.md)
-  : Load GDAL DLL from runtime bundle
-
-## gdalraster Integration
-
-Integrate gdalraster with the GDAL runtime on Windows.
-
-- [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
-  : Install gdalraster from source against bundled GDAL
-- [`load_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/load_gdalraster.md)
-  : Load gdalraster using bundled GDAL runtime
-- [`verify_gdalraster_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/verify_gdalraster_runtime.md)
-  : Verify gdalraster algorithm API availability
-
-## Startup Hooks
-
-Configure R to automatically load the GDAL runtime and gdalraster
-package on startup.
-
-- [`gdal_rprofile_snippet()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_rprofile_snippet.md)
-  : Build an .Rprofile hook snippet for bundled GDAL
-- [`add_gdal_rprofile_hook()`](https://docs.jimbrig.com/gdalraster.windows/reference/add_gdal_rprofile_hook.md)
-  : Add or update an .Rprofile hook for bundled GDAL
+  : Resolve the managed GDAL runtime directory
+- [`gdal_install_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_install_runtime.md)
+  : Install a self-contained GDAL build runtime
+- [`gdal_build_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_build_gdalraster.md)
+  : Build a self-contained gdalraster package
+- [`gdal_enable_python()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_enable_python.md)
+  : Enable GDAL embedded-Python utilities

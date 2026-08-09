@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,9 +38,53 @@
     </div>
 
     <div class="section level2">
-      <h2 id="runtime-setup">Runtime Setup<a class="anchor" aria-label="anchor" href="#runtime-setup"></a></h2>
+      <h2 id="setup-and-maintenance">Setup and Maintenance<a class="anchor" aria-label="anchor" href="#setup-and-maintenance"></a></h2>
 
-      <div class="section-desc"><p>Setup the necessary runtime environment for gdalraster on Windows.</p></div>
+      <div class="section-desc"><p>Install, update, inspect, verify, and remove managed resources.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="gdal_setup.html">gdal_setup()</a></code>
+
+        </dt>
+        <dd>Set up a self-contained gdalraster installation</dd>
+
+        <dt>
+
+          <code><a href="gdal_update.html">gdal_update()</a></code>
+
+        </dt>
+        <dd>Update the GDAL runtime and rebuild gdalraster</dd>
+
+        <dt>
+
+          <code><a href="gdal_sitrep.html">gdal_sitrep()</a></code>
+
+        </dt>
+        <dd>Report GDAL and gdalraster installation state</dd>
+
+        <dt>
+
+          <code><a href="gdal_verify.html">gdal_verify()</a></code>
+
+        </dt>
+        <dd>Verify the self-contained gdalraster installation</dd>
+
+        <dt>
+
+          <code><a href="gdal_uninstall.html">gdal_uninstall()</a></code>
+
+        </dt>
+        <dd>Uninstall managed GDAL resources</dd>
+      </dl></div><div class="section level2">
+      <h2 id="plumbing">Plumbing<a class="anchor" aria-label="anchor" href="#plumbing"></a></h2>
+
+      <div class="section-desc"><p>Install the build SDK, compile the vendored package, and provision Python.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -52,88 +96,28 @@
           <code><a href="gdal_home.html">gdal_home()</a></code>
 
         </dt>
-        <dd>Resolve active GDAL home path</dd>
+        <dd>Resolve the managed GDAL runtime directory</dd>
 
         <dt>
 
-          <code><a href="configure_gdal_home.html">configure_gdal_home()</a></code>
+          <code><a href="gdal_install_runtime.html">gdal_install_runtime()</a></code>
 
         </dt>
-        <dd>Configure GDAL home for current session</dd>
+        <dd>Install a self-contained GDAL build runtime</dd>
 
         <dt>
 
-          <code><a href="install_gdal_runtime.html">install_gdal_runtime()</a></code>
+          <code><a href="gdal_build_gdalraster.html">gdal_build_gdalraster()</a></code>
 
         </dt>
-        <dd>Install precompiled GDAL runtime</dd>
+        <dd>Build a self-contained gdalraster package</dd>
 
         <dt>
 
-          <code><a href="activate_gdal_runtime.html">activate_gdal_runtime()</a></code>
+          <code><a href="gdal_enable_python.html">gdal_enable_python()</a></code>
 
         </dt>
-        <dd>Activate GDAL runtime for current R session</dd>
-
-        <dt>
-
-          <code><a href="load_gdal_dll.html">load_gdal_dll()</a></code>
-
-        </dt>
-        <dd>Load GDAL DLL from runtime bundle</dd>
-      </dl></div><div class="section level2">
-      <h2 id="gdalraster-integration">gdalraster Integration<a class="anchor" aria-label="anchor" href="#gdalraster-integration"></a></h2>
-
-      <div class="section-desc"><p>Integrate gdalraster with the GDAL runtime on Windows.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="install_gdalraster.html">install_gdalraster()</a></code>
-
-        </dt>
-        <dd>Install gdalraster from source against bundled GDAL</dd>
-
-        <dt>
-
-          <code><a href="load_gdalraster.html">load_gdalraster()</a></code>
-
-        </dt>
-        <dd>Load gdalraster using bundled GDAL runtime</dd>
-
-        <dt>
-
-          <code><a href="verify_gdalraster_runtime.html">verify_gdalraster_runtime()</a></code>
-
-        </dt>
-        <dd>Verify gdalraster algorithm API availability</dd>
-      </dl></div><div class="section level2">
-      <h2 id="startup-hooks">Startup Hooks<a class="anchor" aria-label="anchor" href="#startup-hooks"></a></h2>
-
-      <div class="section-desc"><p>Configure R to automatically load the GDAL runtime and gdalraster package on startup.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="gdal_rprofile_snippet.html">gdal_rprofile_snippet()</a></code>
-
-        </dt>
-        <dd>Build an .Rprofile hook snippet for bundled GDAL</dd>
-
-        <dt>
-
-          <code><a href="add_gdal_rprofile_hook.html">add_gdal_rprofile_hook()</a></code>
-
-        </dt>
-        <dd>Add or update an .Rprofile hook for bundled GDAL</dd>
+        <dd>Enable GDAL embedded-Python utilities</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
@@ -144,7 +128,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

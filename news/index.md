@@ -1,19 +1,91 @@
 # Changelog
 
+## gdalraster.windows 0.4.0
+
+### Breaking redesign
+
+- [`gdal_build_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_build_gdalraster.md)
+  now stages and installs a fully self-contained `gdalraster` package.
+  GDAL and dependency DLLs are vendored beside `gdalraster.dll`;
+  matching GDAL/PROJ data and pure-Python `osgeo_utils` are vendored
+  into the package.
+- Added provenance manifests for installed GDAL SDKs and built
+  `gdalraster` packages. Runtime installation is idempotent, and setup
+  detects stale builds after a bundle update.
+- Added the porcelain API:
+  [`gdal_setup()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_setup.md),
+  [`gdal_update()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_update.md),
+  [`gdal_sitrep()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_sitrep.md),
+  [`gdal_verify()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_verify.md),
+  and
+  [`gdal_uninstall()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_uninstall.md).
+- Added
+  [`gdal_enable_python()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_enable_python.md),
+  which provisions a managed system-CPython `.pth` file without setting
+  `PYTHONPATH`.
+- Removed `activate_gdal_runtime()`, `load_gdal_dll()`,
+  `load_gdalraster()`, `configure_gdal_home()`,
+  `gdal_rprofile_snippet()`, `add_gdal_rprofile_hook()`,
+  `install_gdal_runtime()`, `install_gdalraster()`, and
+  `verify_gdalraster_runtime()`. There are no old aliases.
+- Removed load-time bootstrap, `PATH` mutation, DLL preloading,
+  GDAL/PROJ environment exports, and profile-hook machinery.
+
+### GDAL runtime bundle
+
+- Baseline runtime is now GDAL **v3.13.2** (`gdal-v3.13.2`).
+- Apache Arrow / Parquet / Thrift are built statically and folded into
+  `libgdal-*.dll`. Shared `libarrow*.dll`, `libparquet*.dll`, and
+  `libthrift*.dll` are banned from the published closure. Arrow’s
+  mimalloc/jemalloc allocators are disabled. This removes the MinGW
+  emulated-TLS first-Parquet-open crash class from the import graph
+  ([\#38](https://github.com/jimbrig/gdalraster.windows/issues/38)).
+- Bundle CI gates now include LoadLibrary smoke testing, the
+  shared-Arrow ban,
+  [`gdal_verify()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_verify.md),
+  and a TLS-noisy first Parquet open (httpuv/later + a Rust cdylib)
+  before release publication.
+- Published bundles embed `MANIFEST.dcf` for provenance-aware installs.
+
+### Verification and CI
+
+- [`gdal_verify()`](https://docs.jimbrig.com/gdalraster.windows/reference/gdal_verify.md)
+  runs in fresh processes and checks the Algorithm API, GEOS, CRS
+  resolution, Arrow/Parquet/HDF5/netCDF registration, a first Parquet
+  open against a bundled smoke fixture, and the GeoPackage Python
+  validator when Python is ready.
+- The e2e workflow now proves plain
+  [`library(gdalraster)`](https://firelab.github.io/gdalraster/) in a
+  separate session. A dirty-machine scenario workflow covers competing
+  GDALs, legacy hooks, self-lock overwrite, locked package replacement,
+  foreign installs, and no-Python operation.
+- There is no Parquet initialization workaround in the package. The
+  Arrow/TLS correction is owned by the GDAL bundle build and is enforced
+  through first-open verification.
+
+### Migration
+
+1.  Remove legacy managed blocks from `~/.Rprofile` and personal calls
+    to the removed activation helpers.
+2.  Remove persistent GDAL-related `PATH`, `GDAL_DATA`, `PROJ_DATA`,
+    `PROJ_LIB`, and `PYTHONPATH` workarounds.
+3.  Run `gdal_setup(user_lib = TRUE)` once for plain
+    [`library(gdalraster)`](https://firelab.github.io/gdalraster/)
+    discovery, or omit `user_lib` for an isolated install.
+
 ## gdalraster.windows 0.3.1
 
 ### Package
 
-- [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
-  now checks for a working Rtools toolchain up front
+- `install_gdalraster()` now checks for a working Rtools toolchain up
+  front
   ([`pkgbuild::has_build_tools()`](https://pkgbuild.r-lib.org/reference/has_build_tools.html))
   and aborts with installation guidance when none is found, instead of
   failing mid-compile with a raw make/gcc error. Rtools is documented as
   the one prerequisite the prebuilt runtime bundle cannot eliminate — in
   the README, the Getting Started vignette, and the
-  [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
-  help page (which also gains an Upgrading section: rebuild gdalraster
-  after every runtime bundle upgrade).
+  `install_gdalraster()` help page (which also gains an Upgrading
+  section: rebuild gdalraster after every runtime bundle upgrade).
 
 ### GDAL runtime bundle
 
@@ -37,6 +109,30 @@
 
 ### Fixes
 
+- `install_gdalraster()` now replaces the installed package’s `gdal/`
+  and `proj/` data directories with the runtime bundle’s `share/gdal`
+  and `share/proj` after the source install succeeds
+  ([\#25](https://github.com/jimbrig/gdalraster.windows/issues/25)).
+  Upstream gdalraster’s `Makevars.win` populates those directories from
+  the Rtools static tree, so builds compiled against the bundle GDAL
+  previously shipped — and activated via
+  `GDAL_DATA`/[`proj_search_paths()`](https://firelab.github.io/gdalraster/reference/proj_search_paths.html)
+  — data files from a different GDAL/PROJ version.
+- `install_gdal_runtime(overwrite = TRUE)` no longer fails with a
+  spurious “locked by another process” error when the *current* session
+  holds the locks. The auto-bootstrap preloads the runtime at package
+  load and prepends its `bin` to `PATH`, so DLLs loaded later in the
+  session resolve dependencies from the runtime directory by module name
+  — the release download itself loads the curl package, which maps the
+  runtime’s `zlib1.dll` outside R’s DLL registry, where
+  [`dyn.unload()`](https://rdrr.io/r/base/dynload.html) cannot release
+  it. The session therefore could never delete its own runtime. Leftover
+  mapped DLLs are now moved aside into a stale sibling directory
+  (`<gdal_home>.stale-<pid>-<timestamp>`) — Windows allows renaming,
+  though not deleting, mapped DLLs — and the install proceeds; stale
+  directories are deleted opportunistically by later installs, and the
+  installer advises an R restart before rebuilding or loading
+  `gdalraster`.
 - `install_gdal_runtime(tag = "latest")` no longer trusts GitHub’s
   single “latest release” pointer, which broke the default install path
   whenever an R package release (`v*`, no bundle asset) was marked
@@ -73,10 +169,9 @@
   (MinGW-w64, MSYS2, UCRT64, Rtools45), GDAL/PROJ/driver references,
   upstream issues, and build scripts. The README package guide now
   points at the pkgdown-hosted articles.
-- [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
-  and the runtime guide document installing the source build into the
-  regular user library via the existing `lib` argument
-  (e.g. `lib = .libPaths()[1]`).
+- `install_gdalraster()` and the runtime guide document installing the
+  source build into the regular user library via the existing `lib`
+  argument (e.g. `lib = .libPaths()[1]`).
 - Troubleshooting vignette covers dependency DLLs that resolve in CI but
   not on user machines, and runtime deletion blocked by file locks.
 
@@ -91,9 +186,8 @@
   conditionally-used dependency, but development tooling no longer
   requires it to be installed (attachment config: `pkg_ignore` +
   `extra.suggests` + `check_if_suggests_is_installed: no`). The
-  package’s own installer
-  ([`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md))
-  is the supported way to provision it.
+  package’s own installer (`install_gdalraster()`) is the supported way
+  to provision it.
 - Reproducible hex logo generation script (`dev/scripts/pkg_logo.R`).
 
 ### Fixes
@@ -108,33 +202,28 @@
   `System32` DLLs so this class of runner-image leak fails CI instead of
   shipping
   ([\#13](https://github.com/jimbrig/gdalraster.windows/issues/13)).
-- [`activate_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.md)
-  now fails loudly when preloading `libgdal-*.dll` fails, with the DLL
-  path and a troubleshooting pointer, instead of silently swallowing the
-  error and deferring it to
+- `activate_gdal_runtime()` now fails loudly when preloading
+  `libgdal-*.dll` fails, with the DLL path and a troubleshooting
+  pointer, instead of silently swallowing the error and deferring it to
   [`library(gdalraster)`](https://firelab.github.io/gdalraster/) where
   Windows reports only a generic “module could not be found”.
-- [`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
-  overwrite handling is now robust to DLL file locks: the destination
-  check happens before any download, the current session’s own preloaded
-  runtime DLLs (from the load-time auto-bootstrap) are released before
-  deletion, reinstalling while `gdalraster` is loaded aborts up front
-  with restart guidance, and deletion is verified so a runtime locked by
-  another process aborts cleanly instead of leaving a half-deleted
-  install behind.
-- [`load_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/load_gdalraster.md)
-  validates the gdalraster library path before activating the runtime,
-  so a missing source build errors immediately.
-- [`verify_gdalraster_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/verify_gdalraster_runtime.md)
-  returns `FALSE` (with a message) when runtime activation fails,
-  instead of erroring.
+- `install_gdal_runtime()` overwrite handling is now robust to DLL file
+  locks: the destination check happens before any download, the current
+  session’s own preloaded runtime DLLs (from the load-time
+  auto-bootstrap) are released before deletion, reinstalling while
+  `gdalraster` is loaded aborts up front with restart guidance, and
+  deletion is verified so a runtime locked by another process aborts
+  cleanly instead of leaving a half-deleted install behind.
+- `load_gdalraster()` validates the gdalraster library path before
+  activating the runtime, so a missing source build errors immediately.
+- `verify_gdalraster_runtime()` returns `FALSE` (with a message) when
+  runtime activation fails, instead of erroring.
 
 ## gdalraster.windows 0.2.1
 
 ### Fixes
 
-- [`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)
-  now passes `repos = NULL` to
+- `install_gdalraster()` now passes `repos = NULL` to
   [`utils::install.packages()`](https://rdrr.io/r/utils/install.packages.html)
   when installing from a local source tarball. Previously, `repos` was
   set to the active CRAN mirror, which caused R to treat the tarball
@@ -167,9 +256,8 @@
   in its final verification instead of hardcoding the SONAME, and fails
   loudly when no DLL is produced
   ([\#2](https://github.com/jimbrig/gdalraster.windows/issues/2)).
-- [`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
-  now emits actionable guidance on download failure: the releases URL
-  and the `local_zip` offline install path
+- `install_gdal_runtime()` now emits actionable guidance on download
+  failure: the releases URL and the `local_zip` offline install path
   ([\#5](https://github.com/jimbrig/gdalraster.windows/issues/5)).
 
 ### Build
@@ -183,23 +271,19 @@
 
 - The GDAL runtime bundle now ships GDAL’s pure-python `osgeo_utils`
   package (`gdal-utils`) under `<gdal_home>/python`, version-locked to
-  the built GDAL tag.
-  [`activate_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.md)
-  prepends this directory to `PYTHONPATH` (session-scoped) so GDAL
-  algorithms that embed a Python interpreter at runtime
-  (e.g. `gdal driver gpkg validate`) can import it.
-- [`activate_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/activate_gdal_runtime.md)
-  now returns `gdal_python` in its invisible result alongside the other
-  configured paths.
+  the built GDAL tag. `activate_gdal_runtime()` prepends this directory
+  to `PYTHONPATH` (session-scoped) so GDAL algorithms that embed a
+  Python interpreter at runtime (e.g. `gdal driver gpkg validate`) can
+  import it.
+- `activate_gdal_runtime()` now returns `gdal_python` in its invisible
+  result alongside the other configured paths.
 
 ### Documentation
 
 - New README technical section on the embedded CPython layer and why the
   compiled `osgeo` SWIG bindings are intentionally not bundled.
 - Offline / air-gapped installation documented in the README, vignette,
-  and
-  [`install_gdal_runtime()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdal_runtime.md)
-  help (`local_zip` workflow).
+  and `install_gdal_runtime()` help (`local_zip` workflow).
 - Troubleshooting guide gains a triage entry for
   `ModuleNotFoundError: No module named 'osgeo_utils'`.
 - Maintainer docs aligned with the current bundle contract (`bin`,
@@ -210,8 +294,7 @@
 - CI is now scoped to its single responsibility: build, verify, and
   publish the GDAL runtime bundle. The `gdalraster` source-build
   verification job was removed; building `gdalraster` against the bundle
-  is package functionality
-  ([`install_gdalraster()`](https://docs.jimbrig.com/gdalraster.windows/reference/install_gdalraster.md)).
+  is package functionality (`install_gdalraster()`).
 - Every CI run now produces durable output: a 30-day workflow artifact
   and the distributable zip are always created; release publication is
   gated on tag pushes or the `publish_release` dispatch input (default

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,81 +35,80 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>AGENTS.md</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.3.1/AGENTS.md" class="external-link"><code>AGENTS.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/AGENTS.md" class="external-link"><code>AGENTS.md</code></a></small>
     </div>
 
 <div id="agentsmd" class="section level1">
 
 <div class="section level2">
 <h2 id="primary-outcome">primary outcome<a class="anchor" aria-label="anchor" href="#primary-outcome"></a></h2>
-<p>Provide a reliable Windows workflow for using <code>gdalraster</code> against a self-contained GDAL runtime built in CI.</p>
+<p>Provide a reliable Windows workflow for building a self-contained <code>gdalraster</code> package against the GDAL runtime produced by this repository.</p>
 <p>Primary user flow:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jimbrig/gdalraster.windows"</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/install_gdal_runtime.html">install_gdal_runtime</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/install_gdalraster.html">install_gdalraster</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/load_gdalraster.html">load_gdalraster</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Auto-bootstrap flow (when runtime and source-built <code>gdalraster</code> are already installed):</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jimbrig/gdalraster.windows" class="external-link">gdalraster.windows</a></span><span class="op">)</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># every later session</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span>
 <span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Also support explicit runtime activation:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/load_gdal_dll.html">load_gdal_dll</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span>
-<span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>The non-destructive setup default uses an isolated package-managed library. Users opt into replacement in <code>.libPaths()[1]</code> with <code>user_lib = TRUE</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="required-system-behavior">required system behavior<a class="anchor" aria-label="anchor" href="#required-system-behavior"></a></h2>
-<ol style="list-style-type: decimal"><li>Build modern GDAL (currently 3.13+) from source in Windows CI using MSYS2 UCRT64 / Rtools45-compatible MinGW toolchain.</li>
-<li>Build with required features for this project, including <code>muparser</code>, and keep runtime self-contained.</li>
-<li>Produce a standalone GDAL runtime bundle archive with:
-<ul><li>a top-level GDAL runtime DLL (<code>libgdal-*.dll</code>)</li>
-<li>all required non-Windows dependent DLLs</li>
-<li>required runtime data directories (<code>share/gdal</code>, <code>share/proj</code>)</li>
-<li>pure-python GDAL utilities (<code>python/osgeo_utils</code>) for embedded-python algorithms (e.g. <code>gdal driver gpkg validate</code>)</li>
+<ol style="list-style-type: decimal"><li>Build modern GDAL from source in Windows CI using the MSYS2 UCRT64 / Rtools-compatible MinGW toolchain.</li>
+<li>Build required features, including <code>muparser</code>, and keep the runtime self-contained.</li>
+<li>Publish a standalone GDAL SDK bundle containing:
+<ul><li>a top-level GDAL runtime DLL;</li>
+<li>all required non-Windows dependency DLLs;</li>
+<li>headers and import libraries;</li>
+<li>
+<code>share/gdal</code> and <code>share/proj</code>; and</li>
+<li>
+<code>python/osgeo_utils</code>.</li>
 </ul></li>
-<li>Build <code>gdalraster</code> from source against that bundled GDAL runtime.</li>
-<li>Ensure runtime loading is configured so <code>gdalraster</code> resolves bundled DLL dependencies at runtime (without relying on a matching user-installed Rtools environment), and so GDAL’s embedded python can import bundled <code>osgeo_utils</code> (session-scoped <code>PYTHONPATH</code>).</li>
-<li>Verify success with <code><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdalraster::gdal_global_reg_names()</a></code> returning non-empty output and the <code>driver gpkg validate</code> algorithm running end-to-end.</li>
-<li>Keep installs non-destructive by default:
-<ul><li>runtime installs under package-managed user data paths</li>
-<li>source builds target an isolated library path unless explicitly overridden</li>
-</ul></li>
+<li>Install and stamp the SDK idempotently.</li>
+<li>Build <code>gdalraster</code> from source against the SDK with scoped Makevars.</li>
+<li>Vendor the DLL closure, data, and Python utilities into the installed <code>gdalraster</code> package.</li>
+<li>Use a managed system-CPython <code>.pth</code> for embedded-Python algorithms; never persist or export <code>PYTHONPATH</code>.</li>
+<li>Verify in fresh processes that the Algorithm API, required drivers, first Parquet open, CRS support, and GeoPackage validator work.</li>
+<li>Keep installs non-destructive by default.</li>
 </ol></div>
 <div class="section level2">
 <h2 id="responsibility-split">responsibility split<a class="anchor" aria-label="anchor" href="#responsibility-split"></a></h2>
-<ul><li>The build workflow’s only responsibility is the GDAL runtime bundle: build, verify the bundle contract, and publish durable artifacts (workflow artifact
-<ul><li>release asset). A scheduled job in the same workflow checks upstream OSGeo/gdal releases and opens a tracking issue when a newer GDAL exists (never builds or publishes on its own).</li>
-</ul></li>
-<li>Building <code>gdalraster</code> against the bundle is package functionality (<code><a href="reference/install_gdalraster.html">install_gdalraster()</a></code> with scoped Makevars via <code>withr</code>), exercised on user machines and by package tests — never reimplemented inside CI.</li>
-<li>The e2e workflow (<a href=".github/workflows/e2e.yml"><code>.github/workflows/e2e.yml</code></a>) proves the full user workflow on a clean Windows runner by consuming the exported package functions (<code><a href="reference/install_gdal_runtime.html">install_gdal_runtime()</a></code>, <code><a href="reference/install_gdalraster.html">install_gdalraster()</a></code>, <code><a href="reference/verify_gdalraster_runtime.html">verify_gdalraster_runtime()</a></code>, <code><a href="reference/add_gdal_rprofile_hook.html">add_gdal_rprofile_hook()</a></code>) exactly as a user machine would; it runs on dispatch, weekly, and whenever a <code>gdal-v*</code> bundle release is published.</li>
+<ul><li>The build workflow and scripts own only the GDAL bundle: <code>.github/workflows/build.yml</code>, <code>tools/build_gdal.sh</code>, and <code>tools/collect_dlls.sh</code>.</li>
+<li>The R package owns runtime installation, provenance, source compilation, vendoring, Python provisioning, setup/update/status/uninstall, and fresh-process verification.</li>
+<li>
+<code>.github/workflows/e2e.yml</code> consumes exported package functions on a clean Windows runner and proves plain <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> in a new session.</li>
+<li>
+<code>.github/workflows/edge-cases.yml</code> constructs adversarial machine states and checks isolation and failure behavior.</li>
 </ul></div>
 <div class="section level2">
-<h2 id="source-of-truth">source of truth<a class="anchor" aria-label="anchor" href="#source-of-truth"></a></h2>
-<ul><li>CI workflow and scripts are authoritative for build/release behavior:
-<ul><li><a href=".github/workflows/build.yml"><code>.github/workflows/build.yml</code></a></li>
-<li><a href="tools/build_gdal.sh"><code>tools/build_gdal.sh</code></a></li>
-<li><a href="tools/collect_dlls.sh"><code>tools/collect_dlls.sh</code></a></li>
-</ul></li>
-</ul></div>
+<h2 id="package-architecture">package architecture<a class="anchor" aria-label="anchor" href="#package-architecture"></a></h2>
+<p>The managed GDAL runtime is a build-time SDK. Runtime files are copied into the installed <code>gdalraster</code> package:</p>
+<ul><li>
+<code>libs/x64</code>: <code>gdalraster.dll</code>, <code>libgdal-*.dll</code>, and dependencies;</li>
+<li>
+<code>gdal</code> and <code>proj</code>: matching runtime data;</li>
+<li>
+<code>python</code>: pure-Python <code>osgeo_utils</code>; and</li>
+<li>
+<code>gdalraster.windows-build.dcf</code>: build provenance.</li>
+</ul><p>There is no runtime activation API, auto-bootstrap, <code>.Rprofile</code> hook, <code>PATH</code> mutation, DLL preload, or GDAL/PROJ/Python environment export.</p>
+</div>
 <div class="section level2">
-<h2 id="r-package-implementation-constraints">R package implementation constraints<a class="anchor" aria-label="anchor" href="#r-package-implementation-constraints"></a></h2>
-<ul><li>use modern package-style R with explicit namespacing.</li>
-<li>use <code>cli</code> for user-facing messaging and <code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_abort()</a></code> for errors.</li>
-<li>use <code><a href="https://rlang.r-lib.org/reference/stack.html" class="external-link">rlang::caller_env()</a></code> and <code><a href="https://rlang.r-lib.org/reference/caller_arg.html" class="external-link">rlang::caller_arg()</a></code> in validators/errors.</li>
-<li>use <code>withr</code> for scoped state (<code>with_makevars</code>, env vars, lib paths); avoid leaking persistent session/user config.</li>
-<li>default source-install target for <code>gdalraster</code> must be non-destructive (isolated library path), not overwrite existing user/global installs unless explicitly requested.</li>
-<li>keep docs implementation-anchored and general; avoid session-specific claims.</li>
+<h2 id="r-implementation-constraints">R implementation constraints<a class="anchor" aria-label="anchor" href="#r-implementation-constraints"></a></h2>
+<ul><li>Use modern package-style R with explicit namespacing.</li>
+<li>Use <code>cli</code> for user-facing messages and <code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_abort()</a></code> for errors.</li>
+<li>Use <code><a href="https://rlang.r-lib.org/reference/stack.html" class="external-link">rlang::caller_env()</a></code> and <code><a href="https://rlang.r-lib.org/reference/caller_arg.html" class="external-link">rlang::caller_arg()</a></code> in validators.</li>
+<li>Use <code>withr</code> for scoped state.</li>
+<li>Stage complete package replacements before changing an installed package.</li>
+<li>Preserve the isolated library as the default build destination.</li>
+<li>Never add Parquet initialization or session-order workarounds; Arrow/TLS correctness belongs to the bundle build.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="documentation-hierarchy">documentation hierarchy<a class="anchor" aria-label="anchor" href="#documentation-hierarchy"></a></h2>
-<ul><li>canonical user-facing docs: <code>vignettes/</code> (published via pkgdown) and roxygen help pages. Any user-facing behavior change MUST update these.</li>
-<li>
-<code>dev/docs/</code> is non-normative maintainer/agent scratch context; it may lag the implementation and must never be treated as a source of truth over vignettes, roxygen, or code.</li>
-</ul></div>
+<p>Canonical user-facing behavior lives in <code>vignettes/</code>, roxygen help, and the README. <code>dev/docs/</code> is non-normative scratch context and may lag code.</p>
+</div>
 </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -121,7 +120,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>
