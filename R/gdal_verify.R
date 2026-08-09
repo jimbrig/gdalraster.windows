@@ -40,13 +40,16 @@ gdal_verify <- function(
   parquet <- file.path(work, "first-open.parquet")
   run_python <- isTRUE(python) && python_is_ready(package_dir)
 
+  # Create a minimal Parquet dataset via GDAL. Field types must use OGR
+  # descriptors (e.g. OFTInteger); bare "Integer" fails with
+  # "unrecognized OGR field type descriptor" on current gdalraster.
   generator <- c(
     sprintf("library(gdalraster, lib.loc = %s)", deparse(lib)),
     sprintf("path <- %s", deparse(parquet)),
     paste0(
       "gdalraster::ogr_ds_create(",
       "format = 'Parquet', dsn = path, layer = 'verify', ",
-      "geom_type = 'Point', fld_name = 'id', fld_type = 'Integer', ",
+      "geom_type = 'Point', fld_name = 'id', fld_type = 'OFTInteger', ",
       "return_obj = FALSE)"
     ),
     "stopifnot(file.exists(path))"
@@ -81,7 +84,7 @@ gdal_verify <- function(
         paste0(
           "gdalraster::ogr_ds_create(",
           "format = 'GPKG', dsn = gpkg, layer = 'points', ",
-          "geom_type = 'Point', fld_name = 'id', fld_type = 'Integer', ",
+          "geom_type = 'Point', fld_name = 'id', fld_type = 'OFTInteger', ",
           "return_obj = FALSE)"
         ),
         "validator <- gdalraster::gdal_alg(cmd = 'driver gpkg validate')",

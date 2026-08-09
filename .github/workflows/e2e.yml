@@ -101,7 +101,7 @@ jobs:
             layer = "points",
             geom_type = "Point",
             fld_name = "id",
-            fld_type = "Integer",
+            fld_type = "OFTInteger",
             return_obj = FALSE
           )
           validator <- gdalraster::gdal_alg(cmd = "driver gpkg validate")
