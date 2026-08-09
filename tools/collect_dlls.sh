@@ -265,6 +265,26 @@ if (( ${#banned_bundle_files[@]} > 0 )); then
 fi
 echo "✓ PASS — No shared Arrow, Parquet, Thrift, or PDF dependency DLLs"
 
+# ── Provenance manifest for gdalraster.windows installs ───────────────────────
+# Written into the published zip so gdal_install_runtime(local_zip=...) and
+# release downloads share the same Bundle-Tag / GDAL-Version contract.
+release_tag="${RELEASE_TAG:-}"
+gdal_ver="${GDAL_VER:-}"
+if [[ -z "${release_tag}" && -n "${gdal_ver}" ]]; then
+    release_tag="gdal-v${gdal_ver#v}"
+fi
+if [[ -n "${release_tag}" ]]; then
+    gdal_ver_field="${gdal_ver:-${release_tag#gdal-}}"
+    echo ""
+    echo ">>> Writing MANIFEST.dcf (${release_tag})"
+    cat > "${BUNDLE_DIR}/MANIFEST.dcf" <<EOF
+Bundle-Tag: ${release_tag}
+GDAL-Version: ${gdal_ver_field}
+Asset-Name: gdal-ucrt64-${gdal_ver_field}-windows-x64.zip
+Built-At: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+EOF
+fi
+
 # ── Final inventory ───────────────────────────────────────────────────────────
 echo ""
 echo "============================================"

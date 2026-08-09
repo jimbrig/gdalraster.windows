@@ -4,7 +4,7 @@
 #
 # Scope: this workflow's only responsibility is producing the GDAL runtime
 # bundle. Building gdalraster against it is package functionality
-# (gdalraster.windows::install_gdalraster() with scoped Makevars via withr)
+# (gdalraster.windows::gdal_setup() / gdal_build_gdalraster() with scoped Makevars)
 # and is exercised by the package's own tests, not by CI here.
 #
 # Triggers:
@@ -39,7 +39,7 @@ on:
         required: true
         # current bundle baseline — keep in sync with env.GDAL_VERSION below
         # and the "Latest GDAL runtime release" line in README.md
-        default: 'v3.13.1'
+        default: 'v3.13.2'
       force_rebuild_gdal:
         description: 'Force full GDAL rebuild, ignoring cache'
         required: false
@@ -69,7 +69,7 @@ permissions:
 # Centralise defaults for manual runs.
 # keep the fallback in sync with the gdal_version input default above
 env:
-  GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.1' }}
+  GDAL_VERSION: ${{ github.event.inputs.gdal_version || 'v3.13.2' }}
   ARROW_VERSION: '25.0.0'
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -309,6 +309,8 @@ jobs:
         env:
           BUNDLE_DIR:  ${{ github.workspace }}/gdal-bundle
           INSTALL_DIR: ${{ github.workspace }}/gdal-install
+          GDAL_VER:    ${{ steps.names.outputs.gdal_ver }}
+          RELEASE_TAG: ${{ steps.names.outputs.release_tag }}
         run: bash tools/collect_dlls.sh
 
       # ── 6. Save GDAL bundle to cache (only when freshly built) ───────────
@@ -450,26 +452,34 @@ jobs:
             any::nanoparquet
             local::.
 
-      - name: Install candidate runtime and gdalraster
+      - name: Install candidate runtime and build vendored gdalraster
         shell: Rscript {0}
         env:
           BUNDLE_ZIP: ${{ steps.make-zip.outputs.zip_path }}
           GDAL_TLS_HOME: ${{ runner.temp }}/gdal-tls-runtime
           GDALRASTER_TLS_LIB: ${{ runner.temp }}/gdalraster-tls-lib
+          GDAL_BUNDLE_TAG: ${{ steps.names.outputs.release_tag }}
         run: |
-          gdalraster.windows::install_gdal_runtime(
+          gdalraster.windows::gdal_install_runtime(
+            tag = Sys.getenv("GDAL_BUNDLE_TAG"),
             local_zip = Sys.getenv("BUNDLE_ZIP"),
-            gdal_home = Sys.getenv("GDAL_TLS_HOME")
-          )
-          gdalraster.windows::install_gdalraster(
             gdal_home = Sys.getenv("GDAL_TLS_HOME"),
-            lib = Sys.getenv("GDALRASTER_TLS_LIB")
+            force = TRUE
           )
+          gdalraster.windows::gdal_build_gdalraster(
+            gdal_home = Sys.getenv("GDAL_TLS_HOME"),
+            lib = Sys.getenv("GDALRASTER_TLS_LIB"),
+            force = TRUE,
+            enable_python = TRUE
+          )
+          stopifnot(isTRUE(gdalraster.windows::gdal_verify(
+            lib = Sys.getenv("GDALRASTER_TLS_LIB"),
+            python = TRUE
+          )))
 
       - name: Test first Parquet open in TLS-noisy process
         shell: Rscript --vanilla {0}
         env:
-          GDAL_TLS_HOME: ${{ runner.temp }}/gdal-tls-runtime
           GDALRASTER_TLS_LIB: ${{ runner.temp }}/gdalraster-tls-lib
         run: |
           source("tools/test_arrow_tls.R", echo = TRUE)
@@ -513,10 +523,12 @@ jobs:
 
             ### R package usage (local machine)
             ```r
-            gdalraster.windows::install_gdal_runtime(
-              repo = "${{ github.repository }}",
+            pak::pak("${{ github.repository }}")
+            gdalraster.windows::gdal_setup(
+              user_lib = TRUE,
               tag = "${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.names.outputs.release_tag }}"
             )
+            library(gdalraster)
             ```
 
       # ── 12. Build transparency summary ────────────────────────────────────
