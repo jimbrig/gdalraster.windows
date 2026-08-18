@@ -6,7 +6,8 @@
 \usage{
 gdal_uninstall(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   runtime = TRUE,
   package = TRUE,
   python = TRUE,
@@ -14,9 +15,14 @@ gdal_uninstall(
 )
 }
 \arguments{
-\item{lib}{Library containing the managed \code{gdalraster} package.}
+\item{lib}{Library containing the managed \code{gdalraster} package. Defaults to
+\code{.libPaths()[1]}.}
 
-\item{user_lib}{Use \code{.libPaths()[1]}.}
+\item{isolated}{Remove the package-managed isolated library instead of
+\code{.libPaths()[1]}. Ignored when \code{lib} is set.}
+
+\item{user_lib}{Deprecated. \code{user_lib = TRUE} is now the default;
+\code{user_lib = FALSE} is equivalent to \code{isolated = TRUE}.}
 
 \item{runtime}{Remove the GDAL build runtime.}
 

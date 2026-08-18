@@ -2,7 +2,7 @@
 #'
 #' Resolution order is the `gdalraster.windows.gdal_home` option, the
 #' `GDALRASTER_WINDOWS_GDAL_HOME` environment variable, then the package-managed
-#' user data directory.
+#' user data directory. The returned path is normalized to forward slashes.
 #'
 #' @return A single path.
 #' @export
@@ -95,8 +95,11 @@ gdal_install_runtime <- function(
   ) {
     cli::cli_alert_warning(
       paste0(
-        "GDAL runtime ", manifest_value(installed, "Bundle-Tag", "unknown"),
-        " is installed; ", asset$tag, " is available. Run gdal_update() to upgrade."
+        "GDAL runtime ",
+        manifest_value(installed, "Bundle-Tag", "unknown"),
+        " is installed; ",
+        asset$tag,
+        " is available. Run gdal_update() to upgrade."
       )
     )
     return(invisible(gdal_home))

@@ -5,8 +5,12 @@
 #' registration, a first Parquet dataset open, and the GeoPackage Python
 #' validator when embedded Python has been provisioned.
 #'
-#' @param lib Library containing the managed `gdalraster` package.
-#' @param user_lib Use `.libPaths()[1]`.
+#' @param lib Library containing the managed `gdalraster` package. Defaults to
+#'   `.libPaths()[1]`.
+#' @param isolated Verify the package-managed isolated library instead of
+#'   `.libPaths()[1]`. Ignored when `lib` is set.
+#' @param user_lib Deprecated. `user_lib = TRUE` is now the default;
+#'   `user_lib = FALSE` is equivalent to `isolated = TRUE`.
 #' @param python Run the embedded-Python validation when its managed `.pth`
 #'   file is ready.
 #' @param quiet Suppress verification output.
@@ -15,17 +19,19 @@
 #' @export
 gdal_verify <- function(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   python = TRUE,
   quiet = FALSE
 ) {
   abort_if_not_windows()
-  check_flag(user_lib)
+  check_flag(isolated)
+  check_optional_flag(user_lib)
   check_flag(python)
   check_flag(quiet)
   check_optional_string(lib)
 
-  lib <- resolve_gdalraster_lib(lib, user_lib)
+  lib <- resolve_gdalraster_lib(lib, isolated = isolated, user_lib = user_lib)
   package_dir <- file.path(lib, "gdalraster")
   if (!dir.exists(package_dir)) {
     if (!isTRUE(quiet)) {

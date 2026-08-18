@@ -130,7 +130,7 @@ jobs:
               "" \
               "or dispatch the Build GDAL (Windows) workflow with \`gdal_version=${upstream_tag}\`." \
               "" \
-              "After publishing, rebuild gdalraster against the new bundle and verify with \`gdalraster.windows::verify_gdalraster_runtime()\`, then update the README latest-release line and the default \`gdal_version\` in build.yml.")"
+              "After publishing, rebuild gdalraster against the new bundle and verify with \`gdalraster.windows::gdal_verify()\`, then update the README latest-release line and the default \`gdal_version\` in build.yml.")"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # JOB 1 — Build GDAL from source
@@ -525,7 +525,6 @@ jobs:
             ```r
             pak::pak("${{ github.repository }}")
             gdalraster.windows::gdal_setup(
-              user_lib = TRUE,
               tag = "${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.names.outputs.release_tag }}"
             )
             library(gdalraster)

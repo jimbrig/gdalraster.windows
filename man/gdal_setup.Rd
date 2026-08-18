@@ -6,7 +6,8 @@
 \usage{
 gdal_setup(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   update = FALSE,
   force = FALSE,
   tag = "latest",
@@ -18,9 +19,14 @@ gdal_setup(
 )
 }
 \arguments{
-\item{lib}{Destination library for \code{gdalraster}.}
+\item{lib}{Destination library for \code{gdalraster}. Defaults to
+\code{.libPaths()[1]}.}
 
-\item{user_lib}{Use \code{.libPaths()[1]} instead of the isolated managed library.}
+\item{isolated}{Install into the package-managed isolated library instead of
+\code{.libPaths()[1]}. Ignored when \code{lib} is set.}
+
+\item{user_lib}{Deprecated. \code{user_lib = TRUE} is now the default;
+\code{user_lib = FALSE} is equivalent to \code{isolated = TRUE}.}
 
 \item{update}{Upgrade the runtime to the requested/latest bundle and rebuild.}
 
@@ -44,5 +50,5 @@ Invisibly, a list describing performed actions.
 \description{
 Installs the GDAL build runtime when needed, builds and vendors
 \code{gdalraster}, provisions embedded Python when available, and verifies the
-result in fresh processes.
+result in fresh processes. The default destination is \code{.libPaths()[1]}.
 }

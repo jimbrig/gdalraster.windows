@@ -4,12 +4,23 @@
 \alias{gdal_verify}
 \title{Verify the self-contained gdalraster installation}
 \usage{
-gdal_verify(lib = NULL, user_lib = FALSE, python = TRUE, quiet = FALSE)
+gdal_verify(
+  lib = NULL,
+  isolated = FALSE,
+  user_lib = NULL,
+  python = TRUE,
+  quiet = FALSE
+)
 }
 \arguments{
-\item{lib}{Library containing the managed \code{gdalraster} package.}
+\item{lib}{Library containing the managed \code{gdalraster} package. Defaults to
+\code{.libPaths()[1]}.}
 
-\item{user_lib}{Use \code{.libPaths()[1]}.}
+\item{isolated}{Verify the package-managed isolated library instead of
+\code{.libPaths()[1]}. Ignored when \code{lib} is set.}
+
+\item{user_lib}{Deprecated. \code{user_lib = TRUE} is now the default;
+\code{user_lib = FALSE} is equivalent to \code{isolated = TRUE}.}
 
 \item{python}{Run the embedded-Python validation when its managed \code{.pth}
 file is ready.}

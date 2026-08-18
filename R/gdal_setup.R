@@ -2,10 +2,14 @@
 #'
 #' Installs the GDAL build runtime when needed, builds and vendors
 #' `gdalraster`, provisions embedded Python when available, and verifies the
-#' result in fresh processes.
+#' result in fresh processes. The default destination is `.libPaths()[1]`.
 #'
-#' @param lib Destination library for `gdalraster`.
-#' @param user_lib Use `.libPaths()[1]` instead of the isolated managed library.
+#' @param lib Destination library for `gdalraster`. Defaults to
+#'   `.libPaths()[1]`.
+#' @param isolated Install into the package-managed isolated library instead of
+#'   `.libPaths()[1]`. Ignored when `lib` is set.
+#' @param user_lib Deprecated. `user_lib = TRUE` is now the default;
+#'   `user_lib = FALSE` is equivalent to `isolated = TRUE`.
 #' @param update Upgrade the runtime to the requested/latest bundle and rebuild.
 #' @param force Reinstall and rebuild even when provenance is current.
 #' @param tag Runtime bundle release tag or `"latest"`.
@@ -19,7 +23,8 @@
 #' @export
 gdal_setup <- function(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   update = FALSE,
   force = FALSE,
   tag = "latest",
@@ -30,7 +35,8 @@ gdal_setup <- function(
   verify = TRUE
 ) {
   abort_if_not_windows()
-  check_flag(user_lib)
+  check_flag(isolated)
+  check_optional_flag(user_lib)
   check_flag(update)
   check_flag(force)
   check_flag(upgrade)
@@ -41,7 +47,7 @@ gdal_setup <- function(
   check_optional_string(fallback_zip)
   check_optional_string(source_tarball)
 
-  lib <- resolve_gdalraster_lib(lib, user_lib)
+  lib <- resolve_gdalraster_lib(lib, isolated = isolated, user_lib = user_lib)
   before <- gdal_sitrep(lib = lib, network = FALSE, quiet = TRUE)
   install_runtime <- !before$runtime_installed || isTRUE(update) || isTRUE(force)
   build_package <- !before$gdalraster_installed ||
@@ -88,7 +94,6 @@ gdal_setup <- function(
     gdal_build_gdalraster(
       gdal_home = default_gdal_home(),
       lib = lib,
-      user_lib = FALSE,
       source_tarball = source_tarball,
       upgrade = upgrade,
       force = after_runtime$gdalraster_installed || isTRUE(force) || isTRUE(update),
@@ -131,7 +136,8 @@ gdal_setup <- function(
 #' @export
 gdal_update <- function(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   tag = "latest",
   local_zip = NULL,
   fallback_zip = NULL,
@@ -141,6 +147,7 @@ gdal_update <- function(
 ) {
   gdal_setup(
     lib = lib,
+    isolated = isolated,
     user_lib = user_lib,
     update = TRUE,
     force = TRUE,
@@ -155,8 +162,12 @@ gdal_update <- function(
 
 #' Uninstall managed GDAL resources
 #'
-#' @param lib Library containing the managed `gdalraster` package.
-#' @param user_lib Use `.libPaths()[1]`.
+#' @param lib Library containing the managed `gdalraster` package. Defaults to
+#'   `.libPaths()[1]`.
+#' @param isolated Remove the package-managed isolated library instead of
+#'   `.libPaths()[1]`. Ignored when `lib` is set.
+#' @param user_lib Deprecated. `user_lib = TRUE` is now the default;
+#'   `user_lib = FALSE` is equivalent to `isolated = TRUE`.
 #' @param runtime Remove the GDAL build runtime.
 #' @param package Remove the managed `gdalraster` package.
 #' @param python Remove managed embedded-Python `.pth` files.
@@ -166,21 +177,23 @@ gdal_update <- function(
 #' @export
 gdal_uninstall <- function(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   runtime = TRUE,
   package = TRUE,
   python = TRUE,
   force = FALSE
 ) {
   abort_if_not_windows()
-  check_flag(user_lib)
+  check_flag(isolated)
+  check_optional_flag(user_lib)
   check_flag(runtime)
   check_flag(package)
   check_flag(python)
   check_flag(force)
   check_optional_string(lib)
 
-  lib <- resolve_gdalraster_lib(lib, user_lib)
+  lib <- resolve_gdalraster_lib(lib, isolated = isolated, user_lib = user_lib)
   package_dir <- file.path(lib, "gdalraster")
   targets_exist <- (runtime && dir.exists(default_gdal_home())) ||
     (package && dir.exists(package_dir)) ||

@@ -23,20 +23,40 @@ pkg_version <- function() {
 
 # paths -----------------------------------------------------------------------------------------------------------
 
+#' Normalize package-managed paths to forward slashes
+#' @keywords internal
+#' @noRd
+normalize_pkg_path <- function(path, mustWork = FALSE) {
+  if (!is.character(path) || length(path) == 0L) {
+    return(path)
+  }
+  vapply(
+    path,
+    function(item) {
+      if (is.na(item) || !nzchar(item)) {
+        return(item)
+      }
+      normalizePath(item, winslash = "/", mustWork = mustWork)
+    },
+    character(1),
+    USE.NAMES = FALSE
+  )
+}
+
 #' @keywords internal
 #' @noRd
 default_gdal_home <- function() {
   opt_home <- getOption("gdalraster.windows.gdal_home", default = "")
   if (is.character(opt_home) && length(opt_home) == 1L && nzchar(opt_home)) {
-    return(normalizePath(opt_home, winslash = "/", mustWork = FALSE))
+    return(normalize_pkg_path(opt_home))
   }
 
   env_home <- Sys.getenv("GDALRASTER_WINDOWS_GDAL_HOME", unset = "")
   if (nzchar(env_home)) {
-    return(normalizePath(env_home, winslash = "/", mustWork = FALSE))
+    return(normalize_pkg_path(env_home))
   }
 
-  file.path(tools::R_user_dir(pkg_name(), which = "data"), "gdal")
+  normalize_pkg_path(file.path(tools::R_user_dir(pkg_name(), which = "data"), "gdal"))
 }
 
 #' @keywords internal
@@ -131,7 +151,7 @@ cleanup_stale_runtimes <- function(gdal_home) {
 #' @keywords internal
 #' @noRd
 default_gdalraster_lib <- function() {
-  file.path(tools::R_user_dir(pkg_name(), which = "data"), "library")
+  normalize_pkg_path(file.path(tools::R_user_dir(pkg_name(), which = "data"), "library"))
 }
 
 #' @keywords internal
@@ -207,6 +227,19 @@ check_optional_string <- function(
 check_flag <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
   if (!is.logical(x) || length(x) != 1L || is.na(x)) {
     cli::cli_abort("{.arg {arg}} must be {.val TRUE} or {.val FALSE}.", call = call)
+  }
+  invisible(x)
+}
+
+#' @keywords internal
+#' @noRd
+check_optional_flag <- function(
+  x,
+  arg = rlang::caller_arg(x),
+  call = rlang::caller_env()
+) {
+  if (!is.null(x)) {
+    check_flag(x, arg = arg, call = call)
   }
   invisible(x)
 }
@@ -303,20 +336,38 @@ github_api_json <- function(url, pat = github_pat()) {
   httr2::resp_body_json(resp, simplifyVector = FALSE)
 }
 
-#' Pick the first (newest) non-draft, non-prerelease release carrying an
-#' asset that matches `asset_pattern`.
+#' Pick the newest published non-draft, non-prerelease `gdal-v*` release
+#' carrying an asset that matches `asset_pattern`.
 #'
 #' The repository publishes two kinds of releases: GDAL runtime bundle
-#' releases (`gdal-v*`, with a bundle zip asset) and R package releases
-#' (`v*`, no bundle asset). GitHub's single "latest release" pointer usually
-#' tracks the package releases, so "latest" here is resolved by scanning the
-#' release list for bundle assets instead of trusting `/releases/latest`.
+#' releases (`gdal-v*` tags, with a bundle zip asset) and R package releases
+#' (`v*` tags). Package releases may still carry a leftover bundle zip from
+#' earlier publishing, so "latest" ignores `v*` tags even when an asset
+#' matches. GitHub's `/releases/latest` pointer tracks the package releases,
+#' so this scans the release list instead.
 #'
 #' @keywords internal
 #' @noRd
 select_release_asset <- function(releases, asset_pattern, call = rlang::caller_env()) {
+  published_at <- vapply(
+    releases,
+    function(release) {
+      value <- release$published_at
+      if (is.null(value) || !nzchar(value)) {
+        return("1970-01-01T00:00:00Z")
+      }
+      as.character(value)
+    },
+    character(1)
+  )
+  releases <- releases[order(published_at, decreasing = TRUE)]
+
   for (release in releases) {
     if (isTRUE(release$draft) || isTRUE(release$prerelease)) {
+      next
+    }
+    tag <- release$tag_name
+    if (is.null(tag) || !grepl(.bundle_tag_pattern, tag)) {
       next
     }
     for (asset in release$assets) {
@@ -329,14 +380,14 @@ select_release_asset <- function(releases, asset_pattern, call = rlang::caller_e
           id = asset$id,
           name = asset_name,
           url = asset$browser_download_url,
-          tag = release$tag_name
+          tag = tag
         ))
       }
     }
   }
 
   cli::cli_abort(
-    "No release with an asset matching {.val {asset_pattern}} was found.",
+    "No {.val gdal-v*} release with an asset matching {.val {asset_pattern}} was found.",
     call = call
   )
 }

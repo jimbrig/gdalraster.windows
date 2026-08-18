@@ -6,17 +6,23 @@
 \usage{
 gdal_sitrep(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   network = rlang::is_interactive(),
   quiet = FALSE
 )
 }
 \arguments{
-\item{lib}{Library expected to contain the managed \code{gdalraster} build.}
+\item{lib}{Library expected to contain the managed \code{gdalraster} build.
+Defaults to \code{.libPaths()[1]}.}
 
-\item{user_lib}{Inspect \code{.libPaths()[1]} instead of the isolated library.}
+\item{isolated}{Inspect the package-managed isolated library instead of
+\code{.libPaths()[1]}. Ignored when \code{lib} is set.}
 
-\item{network}{Query GitHub for the latest bundle release.}
+\item{user_lib}{Deprecated. \code{user_lib = TRUE} is now the default;
+\code{user_lib = FALSE} is equivalent to \code{isolated = TRUE}.}
+
+\item{network}{Query GitHub for the latest GDAL runtime bundle (\verb{gdal-v*}).}
 
 \item{quiet}{Return state without printing it.}
 }
@@ -24,6 +30,12 @@ gdal_sitrep(
 Invisibly, a named list describing installation state.
 }
 \description{
-Reports bundle and build provenance, staleness, embedded-Python
-provisioning, and common collision risks without changing the session.
+Reports the installed GDAL runtime, the \code{gdalraster} build in the active
+library, staleness against the newest \verb{gdal-v*} bundle, embedded-Python
+provisioning, and session collision risks without changing the session.
+}
+\details{
+The default inspects \code{.libPaths()[1]}, the library used by
+\code{library(gdalraster)}. Pass \code{lib} for a custom library, or \code{isolated = TRUE}
+for the package-managed isolated library.
 }

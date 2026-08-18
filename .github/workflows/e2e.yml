@@ -56,7 +56,6 @@ jobs:
           tag <- Sys.getenv("RUNTIME_TAG", unset = "latest")
           if (!nzchar(tag)) tag <- "latest"
           gdalraster.windows::gdal_setup(
-            user_lib = TRUE,
             tag = tag,
             verify = TRUE
           )

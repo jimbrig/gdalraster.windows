@@ -5,14 +5,23 @@
 \title{Enable GDAL embedded-Python utilities}
 \usage{
 gdal_enable_python(
-  lib = default_gdalraster_lib(),
+  lib = NULL,
+  isolated = FALSE,
+  user_lib = NULL,
   python = NULL,
   site_packages = NULL,
   quiet = FALSE
 )
 }
 \arguments{
-\item{lib}{Library containing the self-contained \code{gdalraster} package.}
+\item{lib}{Library containing the self-contained \code{gdalraster} package.
+Defaults to \code{.libPaths()[1]}.}
+
+\item{isolated}{Use the package-managed isolated library instead of
+\code{.libPaths()[1]}. Ignored when \code{lib} is set.}
+
+\item{user_lib}{Deprecated. \code{user_lib = TRUE} is now the default;
+\code{user_lib = FALSE} is equivalent to \code{isolated = TRUE}.}
 
 \item{python}{Optional path to the CPython executable GDAL embeds.}
 

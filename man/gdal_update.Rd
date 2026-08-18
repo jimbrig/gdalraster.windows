@@ -6,7 +6,8 @@
 \usage{
 gdal_update(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   tag = "latest",
   local_zip = NULL,
   fallback_zip = NULL,
@@ -16,9 +17,14 @@ gdal_update(
 )
 }
 \arguments{
-\item{lib}{Destination library for \code{gdalraster}.}
+\item{lib}{Destination library for \code{gdalraster}. Defaults to
+\code{.libPaths()[1]}.}
 
-\item{user_lib}{Use \code{.libPaths()[1]} instead of the isolated managed library.}
+\item{isolated}{Install into the package-managed isolated library instead of
+\code{.libPaths()[1]}. Ignored when \code{lib} is set.}
+
+\item{user_lib}{Deprecated. \code{user_lib = TRUE} is now the default;
+\code{user_lib = FALSE} is equivalent to \code{isolated = TRUE}.}
 
 \item{tag}{Runtime bundle release tag or \code{"latest"}.}
 
