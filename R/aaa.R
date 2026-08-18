@@ -1,4 +1,3 @@
-
 #  ------------------------------------------------------------------------
 #
 # Title : Shared Package Resources
@@ -25,6 +24,11 @@
 #' @noRd
 #' @keywords internal
 .bundle_asset_pattern <- "gdal-(bundle|ucrt64)-.*\\.zip$"
+
+#' Regex selecting GDAL runtime bundle release tags
+#' @noRd
+#' @keywords internal
+.bundle_tag_pattern <- "^gdal-v"
 
 # stale runtime naming -------------------------------------------------------
 

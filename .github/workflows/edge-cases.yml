@@ -62,7 +62,7 @@ jobs:
           tag <- Sys.getenv("RUNTIME_TAG", unset = "latest")
           scenario <- Sys.getenv("SCENARIO")
           gdalraster.windows::gdal_setup(
-            user_lib = scenario != "foreign-gdalraster",
+            isolated = scenario == "foreign-gdalraster",
             tag = tag,
             verify = scenario != "foreign-gdalraster"
           )
@@ -104,7 +104,6 @@ jobs:
               path.expand("~/.Rprofile")
             )
             state <- gdalraster.windows::gdal_sitrep(
-              user_lib = TRUE,
               network = FALSE,
               quiet = TRUE
             )
@@ -150,6 +149,7 @@ jobs:
 
           if (scenario == "foreign-gdalraster") {
             state <- gdalraster.windows::gdal_sitrep(
+              isolated = TRUE,
               network = FALSE,
               quiet = TRUE
             )
@@ -168,7 +168,6 @@ jobs:
             )
             stopifnot(is.null(result))
             stopifnot(gdalraster.windows::gdal_verify(
-              user_lib = TRUE,
               python = FALSE,
               quiet = TRUE
             ))

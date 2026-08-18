@@ -90,7 +90,7 @@ installed_bundle_manifest <- function(gdal_home = default_gdal_home()) {
 
 #' @keywords internal
 #' @noRd
-installed_build_manifest <- function(lib = default_gdalraster_lib()) {
+installed_build_manifest <- function(lib = normalize_pkg_path(.libPaths()[[1L]])) {
   read_manifest(build_manifest_path(file.path(lib, "gdalraster")))
 }
 

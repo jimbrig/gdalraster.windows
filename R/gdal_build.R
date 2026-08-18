@@ -5,11 +5,11 @@
 #' installed package, then records build provenance.
 #'
 #' @param gdal_home Installed GDAL build runtime.
-#' @param lib Destination library. The default is an isolated package-managed
-#'   library.
-#' @param user_lib Install into `.libPaths()[1]`. This is destructive when an
-#'   existing `gdalraster` is installed there and requires `force = TRUE` in
-#'   non-interactive sessions.
+#' @param lib Destination library. Defaults to `.libPaths()[1]`.
+#' @param isolated Install into the package-managed isolated library instead of
+#'   `.libPaths()[1]`. Ignored when `lib` is set.
+#' @param user_lib Deprecated. `user_lib = TRUE` is now the default;
+#'   `user_lib = FALSE` is equivalent to `isolated = TRUE`.
 #' @param source_tarball Optional local `gdalraster` source tarball.
 #' @param repo Upstream source repository.
 #' @param ref Git reference used for the source archive.
@@ -24,7 +24,8 @@
 gdal_build_gdalraster <- function(
   gdal_home = default_gdal_home(),
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   source_tarball = NULL,
   repo = .gdalraster_repo,
   ref = "HEAD",
@@ -35,7 +36,8 @@ gdal_build_gdalraster <- function(
 ) {
   abort_if_not_windows()
   abort_if_no_build_tools()
-  check_flag(user_lib)
+  check_flag(isolated)
+  check_optional_flag(user_lib)
   check_flag(upgrade)
   check_flag(force)
   check_flag(enable_python)
@@ -57,7 +59,7 @@ gdal_build_gdalraster <- function(
     )
   }
 
-  lib <- resolve_gdalraster_lib(lib = lib, user_lib = user_lib)
+  lib <- resolve_gdalraster_lib(lib = lib, isolated = isolated, user_lib = user_lib)
   package_dir <- file.path(lib, "gdalraster")
   if ("gdalraster" %in% loadedNamespaces()) {
     cli::cli_abort(
@@ -106,8 +108,12 @@ gdal_build_gdalraster <- function(
   makevars <- c(
     GDAL_HOME = gdal_home,
     PKG_CPPFLAGS = paste0("-I\"", file.path(gdal_home, "include"), "\""),
+    # --allow-multiple-definition is a linker workaround for symbol overlap
+    # between the bundle import library and residual Rtools GDAL archives on
+    # the search path. see #3. do not treat this as a permanent contract.
     PKG_LIBS = paste0(
-      "-L\"", file.path(gdal_home, "lib"),
+      "-L\"",
+      file.path(gdal_home, "lib"),
       "\" -lgdal -Wl,--allow-multiple-definition"
     )
   )
@@ -180,12 +186,21 @@ gdal_build_gdalraster <- function(
 
 #' @keywords internal
 #' @noRd
-resolve_gdalraster_lib <- function(lib = NULL, user_lib = FALSE) {
-  if (isTRUE(user_lib)) {
-    return(normalizePath(.libPaths()[[1L]], winslash = "/", mustWork = FALSE))
+resolve_gdalraster_lib <- function(
+  lib = NULL,
+  isolated = FALSE,
+  user_lib = NULL
+) {
+  if (!is.null(user_lib)) {
+    isolated <- !isTRUE(user_lib)
   }
-  lib <- if (is.null(lib)) default_gdalraster_lib() else lib
-  normalizePath(lib, winslash = "/", mustWork = FALSE)
+  if (!is.null(lib)) {
+    return(normalize_pkg_path(lib))
+  }
+  if (isTRUE(isolated)) {
+    return(default_gdalraster_lib())
+  }
+  normalize_pkg_path(.libPaths()[[1L]])
 }
 
 #' @keywords internal

@@ -1,3 +1,33 @@
+# gdalraster.windows 0.5.0
+
+## Breaking changes
+
+- Porcelain functions (`gdal_setup()`, `gdal_sitrep()`, `gdal_verify()`,
+  `gdal_update()`, `gdal_uninstall()`, `gdal_build_gdalraster()`, and
+  `gdal_enable_python()`) now default to `.libPaths()[1]`, the library used
+  by `library(gdalraster)`. Pass `lib` for a custom library, or
+  `isolated = TRUE` for the package-managed isolated library. `user_lib`
+  remains accepted as a deprecated alias (`user_lib = FALSE` is equivalent
+  to `isolated = TRUE`).
+
+## Sitrep and runtime selection
+
+- `gdal_home()` and the default data/library paths are slash-normalized.
+- Latest runtime selection uses the newest published `gdal-v*` GDAL bundle,
+  not R package tags such as `v0.3.1` that still carry a leftover zip.
+- `gdal_sitrep()` reports the installed `gdalraster` package version on the
+  gdalraster line, not the GDAL runtime tag. It prints the inspected
+  `gdal_home` and library paths, reports missing build provenance instead of
+  `NA`, and no longer warns about other `libgdal` DLLs merely present on
+  `PATH`.
+
+## Migration from 0.4.0
+
+- Bare `gdal_setup()` / `gdal_sitrep()` now target `.libPaths()[1]`. Isolated
+  leftovers under `tools::R_user_dir("gdalraster.windows", "data")/library`
+  are unused unless you pass `isolated = TRUE`. Remove them with
+  `gdal_uninstall(isolated = TRUE, runtime = FALSE, python = FALSE)`.
+
 # gdalraster.windows 0.4.0
 
 ## Breaking redesign
@@ -54,8 +84,8 @@
    removed activation helpers.
 2. Remove persistent GDAL-related `PATH`, `GDAL_DATA`, `PROJ_DATA`, `PROJ_LIB`,
    and `PYTHONPATH` workarounds.
-3. Run `gdal_setup(user_lib = TRUE)` once for plain
-   `library(gdalraster)` discovery, or omit `user_lib` for an isolated install.
+3. Run `gdal_setup()` once for plain `library(gdalraster)` discovery, or
+   `gdal_setup(isolated = TRUE)` for an isolated install.
 
 # gdalraster.windows 0.3.1
 

@@ -52,7 +52,7 @@ Another GDAL on `PATH` does not override the vendored DLL while
 `gdalraster.dll` is loading. The remaining process-level exception is an
 identically named GDAL DLL already loaded before `gdalraster`; Windows module
 resolution can reuse an existing loaded module by name. `gdal_sitrep()` reports
-both competing `PATH` locations and loaded GDAL modules.
+an already-loaded `libgdal` module.
 
 Command-line GDAL installations from pixi, conda, OSGeo4W, or MSYS2 remain
 independent. Their executables can coexist with the vendored R package.

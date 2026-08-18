@@ -12,7 +12,7 @@
 # gdalraster is a soft dependency: declared in Suggests (extra.suggests) but
 # never required to be installed locally (pkg_ignore +
 # check_if_suggests_is_installed = FALSE) since this package builds its own
-# gdalraster from source into an isolated library.
+# gdalraster from source into `.libPaths()[1]` by default.
 attachment::att_amend_desc(
   pkg_ignore = "gdalraster",
   extra.suggests = "gdalraster",

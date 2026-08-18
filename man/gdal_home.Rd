@@ -12,5 +12,5 @@ A single path.
 \description{
 Resolution order is the \code{gdalraster.windows.gdal_home} option, the
 \code{GDALRASTER_WINDOWS_GDAL_HOME} environment variable, then the package-managed
-user data directory.
+user data directory. The returned path is normalized to forward slashes.
 }

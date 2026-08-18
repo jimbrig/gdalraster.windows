@@ -21,11 +21,12 @@ data, and `osgeo_utils`. Later sessions require no activation helper,
 
 ## Setup
 
-To install the self-contained build into the regular user library:
+Install the package, then build a self-contained `gdalraster` into the regular
+user library:
 
 ```r
 pak::pak("jimbrig/gdalraster.windows")
-gdalraster.windows::gdal_setup(user_lib = TRUE)
+gdalraster.windows::gdal_setup()
 ```
 
 Then, in any fresh session:
@@ -35,20 +36,15 @@ library(gdalraster)
 gdalraster::gdal_global_reg_names()
 ```
 
-The default remains non-destructive and targets an isolated managed library:
-
-```r
-gdalraster.windows::gdal_setup()
-```
-
-Pass `user_lib = TRUE` when plain `library(gdalraster)` discovery is required.
+Pass `lib` for a custom library, or `isolated = TRUE` for a package-managed
+library that does not replace `.libPaths()[1]`.
 
 ## Status, verification, and updates
 
 ```r
-gdalraster.windows::gdal_sitrep(user_lib = TRUE)
-gdalraster.windows::gdal_verify(user_lib = TRUE)
-gdalraster.windows::gdal_update(user_lib = TRUE)
+gdalraster.windows::gdal_sitrep()
+gdalraster.windows::gdal_verify()
+gdalraster.windows::gdal_update()
 ```
 
 Verification runs in fresh processes and checks:
@@ -63,7 +59,6 @@ Verification runs in fresh processes and checks:
 
 ```r
 gdalraster.windows::gdal_setup(
-  user_lib = TRUE,
   local_zip = "C:/Downloads/gdal-bundle-v3.13.2-windows-x64.zip"
 )
 ```

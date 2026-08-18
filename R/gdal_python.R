@@ -6,6 +6,11 @@
 #' does not affect isolated virtual environments.
 #'
 #' @param lib Library containing the self-contained `gdalraster` package.
+#'   Defaults to `.libPaths()[1]`.
+#' @param isolated Use the package-managed isolated library instead of
+#'   `.libPaths()[1]`. Ignored when `lib` is set.
+#' @param user_lib Deprecated. `user_lib = TRUE` is now the default;
+#'   `user_lib = FALSE` is equivalent to `isolated = TRUE`.
 #' @param python Optional path to the CPython executable GDAL embeds.
 #' @param site_packages Optional explicit `site-packages` directory.
 #' @param quiet Suppress status messages.
@@ -14,16 +19,21 @@
 #'   located.
 #' @export
 gdal_enable_python <- function(
-  lib = default_gdalraster_lib(),
+  lib = NULL,
+  isolated = FALSE,
+  user_lib = NULL,
   python = NULL,
   site_packages = NULL,
   quiet = FALSE
 ) {
   abort_if_not_windows()
-  check_string(lib)
+  check_flag(isolated)
+  check_optional_flag(user_lib)
   check_optional_string(python)
   check_optional_string(site_packages)
   check_flag(quiet)
+
+  lib <- resolve_gdalraster_lib(lib, isolated = isolated, user_lib = user_lib)
 
   package_python <- file.path(
     normalizePath(lib, winslash = "/", mustWork = FALSE),

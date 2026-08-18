@@ -7,7 +7,8 @@
 gdal_build_gdalraster(
   gdal_home = default_gdal_home(),
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   source_tarball = NULL,
   repo = .gdalraster_repo,
   ref = "HEAD",
@@ -20,12 +21,13 @@ gdal_build_gdalraster(
 \arguments{
 \item{gdal_home}{Installed GDAL build runtime.}
 
-\item{lib}{Destination library. The default is an isolated package-managed
-library.}
+\item{lib}{Destination library. Defaults to \code{.libPaths()[1]}.}
 
-\item{user_lib}{Install into \code{.libPaths()[1]}. This is destructive when an
-existing \code{gdalraster} is installed there and requires \code{force = TRUE} in
-non-interactive sessions.}
+\item{isolated}{Install into the package-managed isolated library instead of
+\code{.libPaths()[1]}. Ignored when \code{lib} is set.}
+
+\item{user_lib}{Deprecated. \code{user_lib = TRUE} is now the default;
+\code{user_lib = FALSE} is equivalent to \code{isolated = TRUE}.}
 
 \item{source_tarball}{Optional local \code{gdalraster} source tarball.}
 

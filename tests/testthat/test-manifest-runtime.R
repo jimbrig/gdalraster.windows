@@ -138,6 +138,54 @@ testthat::test_that("release selection ignores package and draft releases", {
   testthat::expect_identical(result$url, "winner")
 })
 
+testthat::test_that("release selection ignores package tags that still carry a bundle zip", {
+  releases <- list(
+    release_fixture(
+      "v0.3.1",
+      assets = list(
+        asset_fixture(1L, "gdal-ucrt64-v3.13.1-windows-x64.zip", "stale-package")
+      ),
+      published_at = "2026-07-04T01:43:56Z"
+    ),
+    release_fixture(
+      "gdal-v3.13.2",
+      assets = list(
+        asset_fixture(2L, "gdal-ucrt64-v3.13.2-windows-x64.zip", "bundle")
+      ),
+      published_at = "2026-08-09T05:13:21Z"
+    )
+  )
+
+  result <- gdalraster.windows:::select_release_asset(
+    releases,
+    gdalraster.windows:::.bundle_asset_pattern
+  )
+  testthat::expect_identical(result$tag, "gdal-v3.13.2")
+  testthat::expect_identical(result$url, "bundle")
+})
+
+testthat::test_that("release selection prefers the newest published gdal-v tag", {
+  releases <- list(
+    release_fixture(
+      "gdal-v9.9.0",
+      assets = list(asset_fixture(1L, "gdal-ucrt64-v9.9.0.zip", "older")),
+      published_at = "2026-01-01T00:00:00Z"
+    ),
+    release_fixture(
+      "gdal-v9.9.1",
+      assets = list(asset_fixture(2L, "gdal-ucrt64-v9.9.1.zip", "newer")),
+      published_at = "2026-06-01T00:00:00Z"
+    )
+  )
+
+  result <- gdalraster.windows:::select_release_asset(
+    releases,
+    gdalraster.windows:::.bundle_asset_pattern
+  )
+  testthat::expect_identical(result$tag, "gdal-v9.9.1")
+  testthat::expect_identical(result$url, "newer")
+})
+
 testthat::test_that("stale runtime helpers preserve unrelated directories", {
   root <- withr::local_tempdir()
   home <- file.path(root, "gdal")

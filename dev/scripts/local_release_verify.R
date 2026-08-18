@@ -1,12 +1,11 @@
-# non-interactive local verification for 0.4.0 + gdal-v3.13.2
+# non-interactive local verification for 0.5.0 + gdal-v3.13.2
 options(warn = 1)
 stopifnot(!interactive())
 
 library(gdalraster.windows)
 
-cat("== gdal_setup(user_lib=TRUE, tag=gdal-v3.13.2) ==\n")
+cat("== gdal_setup(tag=gdal-v3.13.2) ==\n")
 gdal_setup(
-  user_lib = TRUE,
   tag = "gdal-v3.13.2",
   force = TRUE,
   update = TRUE,
@@ -14,7 +13,7 @@ gdal_setup(
 )
 
 cat("== sitrep ==\n")
-print(gdal_sitrep(user_lib = TRUE, network = FALSE))
+print(gdal_sitrep(network = FALSE))
 
 cat("== fresh-session functional checks ==\n")
 script <- tempfile(fileext = ".R")

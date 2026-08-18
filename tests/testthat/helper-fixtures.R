@@ -36,8 +36,20 @@ create_bundle_zip <- function(path, tag = "gdal-v9.9.1") {
   path
 }
 
-release_fixture <- function(tag, assets = list(), draft = FALSE, prerelease = FALSE) {
-  list(tag_name = tag, draft = draft, prerelease = prerelease, assets = assets)
+release_fixture <- function(
+  tag,
+  assets = list(),
+  draft = FALSE,
+  prerelease = FALSE,
+  published_at = NULL
+) {
+  list(
+    tag_name = tag,
+    draft = draft,
+    prerelease = prerelease,
+    assets = assets,
+    published_at = published_at
+  )
 }
 
 asset_fixture <- function(id, name, url) {

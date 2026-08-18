@@ -9,15 +9,16 @@ Primary user flow:
 
 ```r
 pak::pak("jimbrig/gdalraster.windows")
-gdalraster.windows::gdal_setup(user_lib = TRUE)
+gdalraster.windows::gdal_setup()
 
 # every later session
 library(gdalraster)
 gdalraster::gdal_global_reg_names()
 ```
 
-The non-destructive setup default uses an isolated package-managed library.
-Users opt into replacement in `.libPaths()[1]` with `user_lib = TRUE`.
+Setup, sitrep, verify, and update default to `.libPaths()[1]`. Pass `lib`
+for a custom library, or `isolated = TRUE` for the package-managed isolated
+library under `tools::R_user_dir("gdalraster.windows", "data")/library`.
 
 ## required system behavior
 
@@ -39,7 +40,7 @@ Users opt into replacement in `.libPaths()[1]` with `user_lib = TRUE`.
    persist or export `PYTHONPATH`.
 8. Verify in fresh processes that the Algorithm API, required drivers, first
    Parquet open, CRS support, and GeoPackage validator work.
-9. Keep installs non-destructive by default.
+9. Default installs target the user library; isolated installs are opt-in.
 
 ## responsibility split
 
@@ -74,7 +75,8 @@ There is no runtime activation API, auto-bootstrap, `.Rprofile` hook,
 - Use `rlang::caller_env()` and `rlang::caller_arg()` in validators.
 - Use `withr` for scoped state.
 - Stage complete package replacements before changing an installed package.
-- Preserve the isolated library as the default build destination.
+- Default `gdalraster` installs to `.libPaths()[1]`; isolated library
+  installs are opt-in via `isolated = TRUE`.
 - Never add Parquet initialization or session-order workarounds; Arrow/TLS
   correctness belongs to the bundle build.
 
