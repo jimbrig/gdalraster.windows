@@ -4,6 +4,12 @@
 [Keep a Changelog](http://keepachangelog.com/) and this project adheres to
 [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+## Features
+
+- Default porcelain to the user library for 0.5.0 ([8c2ea1e](https://github.com/jimbrig/gdalraster.windows/commit/8c2ea1e5cf8e0d5b384da75239cacb3c2265ece6))  - (Jimmy Briggs)
+
 ## [0.4.0](https://github.com/jimbrig/gdalraster.windows/compare/v0.3.1...v0.4.0)- (2026-08-09)
 
 ## Bug Fixes
