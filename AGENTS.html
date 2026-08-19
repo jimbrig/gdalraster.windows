@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>AGENTS.md</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/AGENTS.md" class="external-link"><code>AGENTS.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/AGENTS.md" class="external-link"><code>AGENTS.md</code></a></small>
     </div>
 
 <div id="agentsmd" class="section level1">
@@ -46,12 +46,12 @@
 <p>Primary user flow:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jimbrig/gdalraster.windows"</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># every later session</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span>
 <span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>The non-destructive setup default uses an isolated package-managed library. Users opt into replacement in <code>.libPaths()[1]</code> with <code>user_lib = TRUE</code>.</p>
+<p>Setup, sitrep, verify, and update default to <code>.libPaths()[1]</code>. Pass <code>lib</code> for a custom library, or <code>isolated = TRUE</code> for the package-managed isolated library under <code>tools::R_user_dir("gdalraster.windows", "data")/library</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="required-system-behavior">required system behavior<a class="anchor" aria-label="anchor" href="#required-system-behavior"></a></h2>
@@ -71,7 +71,7 @@
 <li>Vendor the DLL closure, data, and Python utilities into the installed <code>gdalraster</code> package.</li>
 <li>Use a managed system-CPython <code>.pth</code> for embedded-Python algorithms; never persist or export <code>PYTHONPATH</code>.</li>
 <li>Verify in fresh processes that the Algorithm API, required drivers, first Parquet open, CRS support, and GeoPackage validator work.</li>
-<li>Keep installs non-destructive by default.</li>
+<li>Default installs target the user library; isolated installs are opt-in.</li>
 </ol></div>
 <div class="section level2">
 <h2 id="responsibility-split">responsibility split<a class="anchor" aria-label="anchor" href="#responsibility-split"></a></h2>
@@ -102,7 +102,7 @@
 <li>Use <code><a href="https://rlang.r-lib.org/reference/stack.html" class="external-link">rlang::caller_env()</a></code> and <code><a href="https://rlang.r-lib.org/reference/caller_arg.html" class="external-link">rlang::caller_arg()</a></code> in validators.</li>
 <li>Use <code>withr</code> for scoped state.</li>
 <li>Stage complete package replacements before changing an installed package.</li>
-<li>Preserve the isolated library as the default build destination.</li>
+<li>Default <code>gdalraster</code> installs to <code>.libPaths()[1]</code>; isolated library installs are opt-in via <code>isolated = TRUE</code>.</li>
 <li>Never add Parquet initialization or session-order workarounds; Arrow/TLS correctness belongs to the bundle build.</li>
 </ul></div>
 <div class="section level2">

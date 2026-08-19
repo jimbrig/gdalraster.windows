@@ -8,18 +8,31 @@ Python validator when embedded Python has been provisioned.
 ## Usage
 
 ``` r
-gdal_verify(lib = NULL, user_lib = FALSE, python = TRUE, quiet = FALSE)
+gdal_verify(
+  lib = NULL,
+  isolated = FALSE,
+  user_lib = NULL,
+  python = TRUE,
+  quiet = FALSE
+)
 ```
 
 ## Arguments
 
 - lib:
 
-  Library containing the managed `gdalraster` package.
+  Library containing the managed `gdalraster` package. Defaults to
+  `.libPaths()[1]`.
+
+- isolated:
+
+  Verify the package-managed isolated library instead of
+  `.libPaths()[1]`. Ignored when `lib` is set.
 
 - user_lib:
 
-  Use `.libPaths()[1]`.
+  Deprecated. `user_lib = TRUE` is now the default; `user_lib = FALSE`
+  is equivalent to `isolated = TRUE`.
 
 - python:
 

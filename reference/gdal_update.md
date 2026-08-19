@@ -7,7 +7,8 @@ Update the GDAL runtime and rebuild gdalraster
 ``` r
 gdal_update(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   tag = "latest",
   local_zip = NULL,
   fallback_zip = NULL,
@@ -21,11 +22,17 @@ gdal_update(
 
 - lib:
 
-  Destination library for `gdalraster`.
+  Destination library for `gdalraster`. Defaults to `.libPaths()[1]`.
+
+- isolated:
+
+  Install into the package-managed isolated library instead of
+  `.libPaths()[1]`. Ignored when `lib` is set.
 
 - user_lib:
 
-  Use `.libPaths()[1]` instead of the isolated managed library.
+  Deprecated. `user_lib = TRUE` is now the default; `user_lib = FALSE`
+  is equivalent to `isolated = TRUE`.
 
 - tag:
 

@@ -104,16 +104,16 @@ remains usable and the Python-specific check is reported as unavailable.
 gdalraster.windows::gdal_update()
 ```
 
-For a user-library installation:
-
-``` r
-
-gdalraster.windows::gdal_update(user_lib = TRUE)
-```
-
 An update replaces the SDK, rebuilds from source, re-vendors every
 runtime component, re-points the managed `.pth`, and verifies in a fresh
 process.
+
+For an isolated installation:
+
+``` r
+
+gdalraster.windows::gdal_update(isolated = TRUE)
+```
 
 ## Uninstall
 
@@ -122,6 +122,6 @@ process.
 gdalraster.windows::gdal_uninstall(force = TRUE)
 ```
 
-Set `user_lib = TRUE` only when the managed build was placed in the
-regular user library. The uninstall removes the selected package, SDK,
-and managed Python path file.
+The uninstall removes the selected package from `.libPaths()[1]`, the
+SDK, and the managed Python path file. Pass `isolated = TRUE` when the
+managed build was placed in the isolated library.

@@ -11,7 +11,7 @@ installed package, then records build provenance."><meta property="og:image" con
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,7 +39,7 @@ installed package, then records build provenance."><meta property="og:image" con
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Build a self-contained gdalraster package</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/R/gdal_build.R" class="external-link"><code>R/gdal_build.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/R/gdal_build.R" class="external-link"><code>R/gdal_build.R</code></a></small>
       <div class="d-none name"><code>gdal_build_gdalraster.Rd</code></div>
     </div>
 
@@ -54,7 +54,8 @@ installed package, then records build provenance.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">gdal_build_gdalraster</span><span class="op">(</span></span>
 <span>  gdal_home <span class="op">=</span> <span class="fu">default_gdal_home</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  lib <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  user_lib <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  isolated <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  user_lib <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  source_tarball <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  repo <span class="op">=</span> <span class="va">.gdalraster_repo</span>,</span>
 <span>  ref <span class="op">=</span> <span class="st">"HEAD"</span>,</span>
@@ -74,14 +75,17 @@ installed package, then records build provenance.</p>
 
 
 <dt id="arg-lib">lib<a class="anchor" aria-label="anchor" href="#arg-lib"></a></dt>
-<dd><p>Destination library. The default is an isolated package-managed
-library.</p></dd>
+<dd><p>Destination library. Defaults to <code>.libPaths()[1]</code>.</p></dd>
+
+
+<dt id="arg-isolated">isolated<a class="anchor" aria-label="anchor" href="#arg-isolated"></a></dt>
+<dd><p>Install into the package-managed isolated library instead of
+<code>.libPaths()[1]</code>. Ignored when <code>lib</code> is set.</p></dd>
 
 
 <dt id="arg-user-lib">user_lib<a class="anchor" aria-label="anchor" href="#arg-user-lib"></a></dt>
-<dd><p>Install into <code>.libPaths()[1]</code>. This is destructive when an
-existing <code>gdalraster</code> is installed there and requires <code>force = TRUE</code> in
-non-interactive sessions.</p></dd>
+<dd><p>Deprecated. <code>user_lib = TRUE</code> is now the default;
+<code>user_lib = FALSE</code> is equivalent to <code>isolated = TRUE</code>.</p></dd>
 
 
 <dt id="arg-source-tarball">source_tarball<a class="anchor" aria-label="anchor" href="#arg-source-tarball"></a></dt>

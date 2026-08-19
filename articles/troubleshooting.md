@@ -4,24 +4,26 @@
 
 ``` r
 
-gdalraster.windows::gdal_sitrep(user_lib = TRUE)
-gdalraster.windows::gdal_verify(user_lib = TRUE)
+gdalraster.windows::gdal_sitrep()
+gdalraster.windows::gdal_verify()
 ```
 
-Omit `user_lib = TRUE` for the default isolated installation. The sitrep
-reports runtime and build manifests, staleness, Python readiness,
-competing GDAL DLLs, already loaded modules, legacy profile hooks, and
-foreign `gdalraster` packages.
+The default inspects `.libPaths()[1]`. Pass `lib` for a custom library,
+or `isolated = TRUE` for the package-managed isolated library. The
+sitrep reports the GDAL runtime tag, build provenance, staleness, Python
+readiness, already loaded `libgdal` modules, legacy profile hooks, and a
+foreign `gdalraster` package when
+[`library(gdalraster)`](https://firelab.github.io/gdalraster/) would
+load a different tree.
 
 ## `library(gdalraster)` cannot find the package
 
-The non-destructive default installs into a package-managed isolated
-library. Either load from that location or rebuild into the regular user
-library:
+Rebuild into the regular user library, or load an isolated install from
+its library:
 
 ``` r
 
-gdalraster.windows::gdal_setup(user_lib = TRUE)
+gdalraster.windows::gdal_setup()
 library(gdalraster)
 ```
 
@@ -117,7 +119,7 @@ For a regular user-library build use:
 
 ``` r
 
-gdalraster.windows::gdal_enable_python(lib = .libPaths()[1])
+gdalraster.windows::gdal_enable_python()
 ```
 
 When no system CPython is available, core GDAL functionality remains

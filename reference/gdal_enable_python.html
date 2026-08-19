@@ -13,7 +13,7 @@ does not affect isolated virtual environments."><meta property="og:image" conten
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,7 @@ does not affect isolated virtual environments."><meta property="og:image" conten
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Enable GDAL embedded-Python utilities</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/R/gdal_python.R" class="external-link"><code>R/gdal_python.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/R/gdal_python.R" class="external-link"><code>R/gdal_python.R</code></a></small>
       <div class="d-none name"><code>gdal_enable_python.Rd</code></div>
     </div>
 
@@ -55,7 +55,9 @@ does not affect isolated virtual environments.</p>
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">gdal_enable_python</span><span class="op">(</span></span>
-<span>  lib <span class="op">=</span> <span class="fu">default_gdalraster_lib</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  lib <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  isolated <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  user_lib <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  python <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  site_packages <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  quiet <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -67,7 +69,18 @@ does not affect isolated virtual environments.</p>
 
 
 <dl><dt id="arg-lib">lib<a class="anchor" aria-label="anchor" href="#arg-lib"></a></dt>
-<dd><p>Library containing the self-contained <code>gdalraster</code> package.</p></dd>
+<dd><p>Library containing the self-contained <code>gdalraster</code> package.
+Defaults to <code>.libPaths()[1]</code>.</p></dd>
+
+
+<dt id="arg-isolated">isolated<a class="anchor" aria-label="anchor" href="#arg-isolated"></a></dt>
+<dd><p>Use the package-managed isolated library instead of
+<code>.libPaths()[1]</code>. Ignored when <code>lib</code> is set.</p></dd>
+
+
+<dt id="arg-user-lib">user_lib<a class="anchor" aria-label="anchor" href="#arg-user-lib"></a></dt>
+<dd><p>Deprecated. <code>user_lib = TRUE</code> is now the default;
+<code>user_lib = FALSE</code> is equivalent to <code>isolated = TRUE</code>.</p></dd>
 
 
 <dt id="arg-python">python<a class="anchor" aria-label="anchor" href="#arg-python"></a></dt>

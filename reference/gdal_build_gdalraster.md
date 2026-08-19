@@ -10,7 +10,8 @@ the installed package, then records build provenance.
 gdal_build_gdalraster(
   gdal_home = default_gdal_home(),
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   source_tarball = NULL,
   repo = .gdalraster_repo,
   ref = "HEAD",
@@ -29,14 +30,17 @@ gdal_build_gdalraster(
 
 - lib:
 
-  Destination library. The default is an isolated package-managed
-  library.
+  Destination library. Defaults to `.libPaths()[1]`.
+
+- isolated:
+
+  Install into the package-managed isolated library instead of
+  `.libPaths()[1]`. Ignored when `lib` is set.
 
 - user_lib:
 
-  Install into `.libPaths()[1]`. This is destructive when an existing
-  `gdalraster` is installed there and requires `force = TRUE` in
-  non-interactive sessions.
+  Deprecated. `user_lib = TRUE` is now the default; `user_lib = FALSE`
+  is equivalent to `isolated = TRUE`.
 
 - source_tarball:
 

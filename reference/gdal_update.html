@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Update the GDAL runtime and rebuild gdalraster</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/R/gdal_setup.R" class="external-link"><code>R/gdal_setup.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/R/gdal_setup.R" class="external-link"><code>R/gdal_setup.R</code></a></small>
       <div class="d-none name"><code>gdal_update.Rd</code></div>
     </div>
 
@@ -47,7 +47,8 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">gdal_update</span><span class="op">(</span></span>
 <span>  lib <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  user_lib <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  isolated <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  user_lib <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tag <span class="op">=</span> <span class="st">"latest"</span>,</span>
 <span>  local_zip <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fallback_zip <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -62,11 +63,18 @@
 
 
 <dl><dt id="arg-lib">lib<a class="anchor" aria-label="anchor" href="#arg-lib"></a></dt>
-<dd><p>Destination library for <code>gdalraster</code>.</p></dd>
+<dd><p>Destination library for <code>gdalraster</code>. Defaults to
+<code>.libPaths()[1]</code>.</p></dd>
+
+
+<dt id="arg-isolated">isolated<a class="anchor" aria-label="anchor" href="#arg-isolated"></a></dt>
+<dd><p>Install into the package-managed isolated library instead of
+<code>.libPaths()[1]</code>. Ignored when <code>lib</code> is set.</p></dd>
 
 
 <dt id="arg-user-lib">user_lib<a class="anchor" aria-label="anchor" href="#arg-user-lib"></a></dt>
-<dd><p>Use <code>.libPaths()[1]</code> instead of the isolated managed library.</p></dd>
+<dd><p>Deprecated. <code>user_lib = TRUE</code> is now the default;
+<code>user_lib = FALSE</code> is equivalent to <code>isolated = TRUE</code>.</p></dd>
 
 
 <dt id="arg-tag">tag<a class="anchor" aria-label="anchor" href="#arg-tag"></a></dt>

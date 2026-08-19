@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,7 @@
 
 
 
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/vignettes/architecture.qmd" class="external-link"><code>vignettes/architecture.qmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/architecture.qmd" class="external-link"><code>vignettes/architecture.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
     </div>
 
@@ -96,7 +96,7 @@
 <p>GDAL and PROJ data are package-internal, matching the GDAL version used at compile time. No startup hook, DLL preload, <code>PATH</code> mutation, or GDAL/PROJ environment export is part of the package architecture.</p>
 </section><section class="level2"><h2 id="multi-gdal-machines">Multi-GDAL machines<a class="anchor" aria-label="anchor" href="#multi-gdal-machines"></a>
 </h2>
-<p>Another GDAL on <code>PATH</code> does not override the vendored DLL while <code>gdalraster.dll</code> is loading. The remaining process-level exception is an identically named GDAL DLL already loaded before <code>gdalraster</code>; Windows module resolution can reuse an existing loaded module by name. <code><a href="../reference/gdal_sitrep.html">gdal_sitrep()</a></code> reports both competing <code>PATH</code> locations and loaded GDAL modules.</p>
+<p>Another GDAL on <code>PATH</code> does not override the vendored DLL while <code>gdalraster.dll</code> is loading. The remaining process-level exception is an identically named GDAL DLL already loaded before <code>gdalraster</code>; Windows module resolution can reuse an existing loaded module by name. <code><a href="../reference/gdal_sitrep.html">gdal_sitrep()</a></code> reports an already-loaded <code>libgdal</code> module.</p>
 <p>Command-line GDAL installations from pixi, conda, OSGeo4W, or MSYS2 remain independent. Their executables can coexist with the vendored R package.</p>
 </section><section class="level2"><h2 id="bundle-responsibilities">Bundle responsibilities<a class="anchor" aria-label="anchor" href="#bundle-responsibilities"></a>
 </h2>

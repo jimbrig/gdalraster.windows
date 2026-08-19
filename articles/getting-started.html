@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,7 @@
 
 
 
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/vignettes/getting-started.qmd" class="external-link"><code>vignettes/getting-started.qmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/getting-started.qmd" class="external-link"><code>vignettes/getting-started.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
     </div>
 
@@ -93,29 +93,29 @@
 <li>The matching <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> release. Compilation is the only step the prebuilt GDAL bundle cannot remove.</li>
 </ul></section><section class="level2"><h2 id="one-time-setup">One-time setup<a class="anchor" aria-label="anchor" href="#one-time-setup"></a>
 </h2>
-<p>Install the package, then build into your regular user library when you want plain <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> in every later session:</p>
+<p>Install the package, then build into your regular user library:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jimbrig/gdalraster.windows"</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <p><code><a href="../reference/gdal_setup.html">gdal_setup()</a></code> prints one plan, installs or skips the runtime idempotently, builds and vendors <code>gdalraster</code>, provisions embedded Python when a system CPython is available, and verifies the result in fresh processes.</p>
-<p>The package’s non-destructive default is an isolated managed library:</p>
+<p>Interactive sessions ask before replacing an existing <code>gdalraster</code> in the destination library; non-interactive replacement requires <code>force = TRUE</code>.</p>
+<p>For a non-destructive isolated library:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span>isolated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">result</span><span class="op">$</span><span class="va">lib</span></span></code></pre></div>
 </div>
-<p>Use <code>user_lib = TRUE</code> explicitly to replace a package in <code>.libPaths()[1]</code>. Interactive sessions ask before replacement; non-interactive replacement requires explicit arguments.</p>
 </section><section class="level2"><h2 id="everyday-use">Everyday use<a class="anchor" aria-label="anchor" href="#everyday-use"></a>
 </h2>
-<p>After a user-library setup, <code>gdalraster.windows</code> does not need to be attached:</p>
+<p>After setup, <code>gdalraster.windows</code> does not need to be attached:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span>
 <span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
-<p>For an isolated install, provide its library location:</p>
+<p>For an isolated install, load from that library:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span></span>
@@ -130,15 +130,15 @@
 </h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_sitrep.html">gdal_sitrep</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_verify.html">gdal_verify</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_sitrep.html">gdal_sitrep</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_verify.html">gdal_verify</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <p><code><a href="../reference/gdal_verify.html">gdal_verify()</a></code> uses fresh <code>Rscript --vanilla</code> processes. It checks the Algorithm API, GEOS and CRS support, Arrow, Parquet, HDF5, and netCDF driver registration, a first Parquet open, and the GeoPackage Python validator when Python provisioning is ready.</p>
 </section><section class="level2"><h2 id="updating">Updating<a class="anchor" aria-label="anchor" href="#updating"></a>
 </h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_update.html">gdal_update</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_update.html">gdal_update</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <p>The runtime and built package manifests let this operation distinguish a current build from one that must be rebuilt.</p>
 </section><section class="level2"><h2 id="offline-setup">Offline setup<a class="anchor" aria-label="anchor" href="#offline-setup"></a>
@@ -147,7 +147,6 @@
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span></span>
-<span>  user_lib <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  local_zip <span class="op">=</span> <span class="st">"C:/Downloads/gdal-bundle-v3.13.2-windows-x64.zip"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>

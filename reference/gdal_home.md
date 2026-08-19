@@ -2,7 +2,8 @@
 
 Resolution order is the `gdalraster.windows.gdal_home` option, the
 `GDALRASTER_WINDOWS_GDAL_HOME` environment variable, then the
-package-managed user data directory.
+package-managed user data directory. The returned path is normalized to
+forward slashes.
 
 ## Usage
 

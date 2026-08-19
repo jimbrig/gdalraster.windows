@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,26 +82,23 @@
 <div class="section level2">
 <h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
 </h2>
-<p>To install the self-contained build into the regular user library:</p>
+<p>Install the package, then build a self-contained <code>gdalraster</code> into the regular user library:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jimbrig/gdalraster.windows"</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Then, in any fresh session:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span>
 <span><span class="fu">gdalraster</span><span class="fu">::</span><span class="fu"><a href="https://firelab.github.io/gdalraster/reference/gdal_cli.html" class="external-link">gdal_global_reg_names</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>The default remains non-destructive and targets an isolated managed library:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Pass <code>user_lib = TRUE</code> when plain <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> discovery is required.</p>
+<p>Pass <code>lib</code> for a custom library, or <code>isolated = TRUE</code> for a package-managed library that does not replace <code>.libPaths()[1]</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="status-verification-and-updates">Status, verification, and updates<a class="anchor" aria-label="anchor" href="#status-verification-and-updates"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_sitrep.html">gdal_sitrep</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_verify.html">gdal_verify</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_update.html">gdal_update</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_sitrep.html">gdal_sitrep</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_verify.html">gdal_verify</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_update.html">gdal_update</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Verification runs in fresh processes and checks:</p>
 <ul>
 <li>the GDAL Algorithm API registry;</li>
@@ -115,9 +112,8 @@
 <div class="section level2">
 <h2 id="offline-installation">Offline installation<a class="anchor" aria-label="anchor" href="#offline-installation"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span></span>
-<span>  user_lib <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  local_zip <span class="op">=</span> <span class="st">"C:/Downloads/gdal-bundle-v3.13.2-windows-x64.zip"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Bundle assets are published at <a href="https://github.com/jimbrig/gdalraster.windows/releases" class="external-link uri">https://github.com/jimbrig/gdalraster.windows/releases</a>.</p>

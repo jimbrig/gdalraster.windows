@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,7 @@
 
 
 
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/vignettes/troubleshooting.qmd" class="external-link"><code>vignettes/troubleshooting.qmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/troubleshooting.qmd" class="external-link"><code>vignettes/troubleshooting.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
     </div>
 
@@ -80,17 +80,17 @@
 </h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_sitrep.html">gdal_sitrep</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_verify.html">gdal_verify</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_sitrep.html">gdal_sitrep</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_verify.html">gdal_verify</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
-<p>Omit <code>user_lib = TRUE</code> for the default isolated installation. The sitrep reports runtime and build manifests, staleness, Python readiness, competing GDAL DLLs, already loaded modules, legacy profile hooks, and foreign <code>gdalraster</code> packages.</p>
+<p>The default inspects <code>.libPaths()[1]</code>. Pass <code>lib</code> for a custom library, or <code>isolated = TRUE</code> for the package-managed isolated library. The sitrep reports the GDAL runtime tag, build provenance, staleness, Python readiness, already loaded <code>libgdal</code> modules, legacy profile hooks, and a foreign <code>gdalraster</code> package when <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> would load a different tree.</p>
 </section><section class="level2"><h2 id="librarygdalraster-cannot-find-the-package">
 <code>library(gdalraster)</code> cannot find the package<a class="anchor" aria-label="anchor" href="#librarygdalraster-cannot-find-the-package"></a>
 </h2>
-<p>The non-destructive default installs into a package-managed isolated library. Either load from that location or rebuild into the regular user library:</p>
+<p>Rebuild into the regular user library, or load an isolated install from its library:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_setup.html">gdal_setup</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://firelab.github.io/gdalraster/" class="external-link">gdalraster</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 </section><section class="level2"><h2 id="loadlibrary-reports-a-missing-module">
@@ -137,7 +137,7 @@
 <p>For a regular user-library build use:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_enable_python.html">gdal_enable_python</a></span><span class="op">(</span>lib <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths</a></span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_enable_python.html">gdal_enable_python</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <p>When no system CPython is available, core GDAL functionality remains ready, but Python-backed algorithms such as <code>driver gpkg validate</code> cannot run.</p>
 </section><section class="level2"><h2 id="offline-and-proxy-restricted-installation">Offline and proxy-restricted installation<a class="anchor" aria-label="anchor" href="#offline-and-proxy-restricted-installation"></a>

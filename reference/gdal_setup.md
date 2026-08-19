@@ -2,14 +2,16 @@
 
 Installs the GDAL build runtime when needed, builds and vendors
 `gdalraster`, provisions embedded Python when available, and verifies
-the result in fresh processes.
+the result in fresh processes. The default destination is
+`.libPaths()[1]`.
 
 ## Usage
 
 ``` r
 gdal_setup(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   update = FALSE,
   force = FALSE,
   tag = "latest",
@@ -25,11 +27,17 @@ gdal_setup(
 
 - lib:
 
-  Destination library for `gdalraster`.
+  Destination library for `gdalraster`. Defaults to `.libPaths()[1]`.
+
+- isolated:
+
+  Install into the package-managed isolated library instead of
+  `.libPaths()[1]`. Ignored when `lib` is set.
 
 - user_lib:
 
-  Use `.libPaths()[1]` instead of the isolated managed library.
+  Deprecated. `user_lib = TRUE` is now the default; `user_lib = FALSE`
+  is equivalent to `isolated = TRUE`.
 
 - update:
 

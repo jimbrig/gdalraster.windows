@@ -7,7 +7,8 @@ Uninstall managed GDAL resources
 ``` r
 gdal_uninstall(
   lib = NULL,
-  user_lib = FALSE,
+  isolated = FALSE,
+  user_lib = NULL,
   runtime = TRUE,
   package = TRUE,
   python = TRUE,
@@ -19,11 +20,18 @@ gdal_uninstall(
 
 - lib:
 
-  Library containing the managed `gdalraster` package.
+  Library containing the managed `gdalraster` package. Defaults to
+  `.libPaths()[1]`.
+
+- isolated:
+
+  Remove the package-managed isolated library instead of
+  `.libPaths()[1]`. Ignored when `lib` is set.
 
 - user_lib:
 
-  Use `.libPaths()[1]`.
+  Deprecated. `user_lib = TRUE` is now the default; `user_lib = FALSE`
+  is equivalent to `isolated = TRUE`.
 
 - runtime:
 

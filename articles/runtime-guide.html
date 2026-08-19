@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,7 @@
 
 
 
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/vignettes/runtime-guide.qmd" class="external-link"><code>vignettes/runtime-guide.qmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/vignettes/runtime-guide.qmd" class="external-link"><code>vignettes/runtime-guide.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
     </div>
 
@@ -140,19 +140,19 @@ installed gdalraster/
 <div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_update.html">gdal_update</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
-<p>For a user-library installation:</p>
+<p>An update replaces the SDK, rebuilds from source, re-vendors every runtime component, re-points the managed <code>.pth</code>, and verifies in a fresh process.</p>
+<p>For an isolated installation:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_update.html">gdal_update</a></span><span class="op">(</span>user_lib <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_update.html">gdal_update</a></span><span class="op">(</span>isolated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
-<p>An update replaces the SDK, rebuilds from source, re-vendors every runtime component, re-points the managed <code>.pth</code>, and verifies in a fresh process.</p>
 </section><section class="level2"><h2 id="uninstall">Uninstall<a class="anchor" aria-label="anchor" href="#uninstall"></a>
 </h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">gdalraster.windows</span><span class="fu">::</span><span class="fu"><a href="../reference/gdal_uninstall.html">gdal_uninstall</a></span><span class="op">(</span>force <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
-<p>Set <code>user_lib = TRUE</code> only when the managed build was placed in the regular user library. The uninstall removes the selected package, SDK, and managed Python path file.</p>
+<p>The uninstall removes the selected package from <code>.libPaths()[1]</code>, the SDK, and the managed Python path file. Pass <code>isolated = TRUE</code> when the managed build was placed in the isolated library.</p>
 </section><script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);

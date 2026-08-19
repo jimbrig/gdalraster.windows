@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,9 +35,28 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.0" id="gdalrasterwindows-050">gdalraster.windows 0.5.0<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-050"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-5-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-5-0"></a></h3>
+<ul><li>Porcelain functions (<code><a href="../reference/gdal_setup.html">gdal_setup()</a></code>, <code><a href="../reference/gdal_sitrep.html">gdal_sitrep()</a></code>, <code><a href="../reference/gdal_verify.html">gdal_verify()</a></code>, <code><a href="../reference/gdal_update.html">gdal_update()</a></code>, <code><a href="../reference/gdal_uninstall.html">gdal_uninstall()</a></code>, <code><a href="../reference/gdal_build_gdalraster.html">gdal_build_gdalraster()</a></code>, and <code><a href="../reference/gdal_enable_python.html">gdal_enable_python()</a></code>) now default to <code>.libPaths()[1]</code>, the library used by <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code>. Pass <code>lib</code> for a custom library, or <code>isolated = TRUE</code> for the package-managed isolated library. <code>user_lib</code> remains accepted as a deprecated alias (<code>user_lib = FALSE</code> is equivalent to <code>isolated = TRUE</code>).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="sitrep-and-runtime-selection-0-5-0">Sitrep and runtime selection<a class="anchor" aria-label="anchor" href="#sitrep-and-runtime-selection-0-5-0"></a></h3>
+<ul><li>
+<code><a href="../reference/gdal_home.html">gdal_home()</a></code> and the default data/library paths are slash-normalized.</li>
+<li>Latest runtime selection uses the newest published <code>gdal-v*</code> GDAL bundle, not R package tags such as <code>v0.3.1</code> that still carry a leftover zip.</li>
+<li>
+<code><a href="../reference/gdal_sitrep.html">gdal_sitrep()</a></code> reports the installed <code>gdalraster</code> package version on the gdalraster line, not the GDAL runtime tag. It prints the inspected <code>gdal_home</code> and library paths, reports missing build provenance instead of <code>NA</code>, and no longer warns about other <code>libgdal</code> DLLs merely present on <code>PATH</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="migration-from-0-5-0">Migration from 0.4.0<a class="anchor" aria-label="anchor" href="#migration-from-0-5-0"></a></h3>
+<ul><li>Bare <code><a href="../reference/gdal_setup.html">gdal_setup()</a></code> / <code><a href="../reference/gdal_sitrep.html">gdal_sitrep()</a></code> now target <code>.libPaths()[1]</code>. Isolated leftovers under <code>tools::R_user_dir("gdalraster.windows", "data")/library</code> are unused unless you pass <code>isolated = TRUE</code>. Remove them with <code>gdal_uninstall(isolated = TRUE, runtime = FALSE, python = FALSE)</code>.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.0" id="gdalrasterwindows-040">gdalraster.windows 0.4.0<a class="anchor" aria-label="anchor" href="#gdalrasterwindows-040"></a></h2>
 <div class="section level3">
@@ -68,7 +87,7 @@
 <h3 id="migration-0-4-0">Migration<a class="anchor" aria-label="anchor" href="#migration-0-4-0"></a></h3>
 <ol style="list-style-type: decimal"><li>Remove legacy managed blocks from <code>~/.Rprofile</code> and personal calls to the removed activation helpers.</li>
 <li>Remove persistent GDAL-related <code>PATH</code>, <code>GDAL_DATA</code>, <code>PROJ_DATA</code>, <code>PROJ_LIB</code>, and <code>PYTHONPATH</code> workarounds.</li>
-<li>Run <code>gdal_setup(user_lib = TRUE)</code> once for plain <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> discovery, or omit <code>user_lib</code> for an isolated install.</li>
+<li>Run <code><a href="../reference/gdal_setup.html">gdal_setup()</a></code> once for plain <code><a href="https://firelab.github.io/gdalraster/" class="external-link">library(gdalraster)</a></code> discovery, or <code>gdal_setup(isolated = TRUE)</code> for an isolated install.</li>
 </ol></div>
 </div>
     <div class="section level2">

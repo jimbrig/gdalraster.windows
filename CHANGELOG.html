@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">gdalraster.windows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/v0.4.0/CHANGELOG.md" class="external-link"><code>CHANGELOG.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jimbrig/gdalraster.windows/blob/main/CHANGELOG.md" class="external-link"><code>CHANGELOG.md</code></a></small>
     </div>
 
 <div id="changelog" class="section level1">
@@ -44,23 +44,33 @@
 <p>All notable changes to this project will be documented in this file. The format is based on <a href="http://keepachangelog.com/" class="external-link">Keep a Changelog</a> and this project adheres to <a href="http://semver.org/" class="external-link">Semantic Versioning</a>.</p>
 </blockquote>
 <div class="section level2">
-<h2 id="unreleased">[Unreleased]<a class="anchor" aria-label="anchor" href="#unreleased"></a></h2>
-</div>
-<div class="section level2">
-<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a></h2>
-<ul><li>
-<strong>readme:</strong> Add e2e workflow badge (<a href="https://github.com/jimbrig/gdalraster.windows/commit/93f31fbe0f0ab876481ef8b8e2a46d1e44632e29" class="external-link">93f31fb</a>) - (Jimmy Briggs)</li>
-</ul></div>
-<div class="section level2">
-<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a></h2>
-<ul><li>Preflight Rtools check in install_gdalraster() via pkgbuild; document prerequisites in README, getting-started, and help pages (<a href="https://github.com/jimbrig/gdalraster.windows/commit/e7d08b713734b7128e147b73f2dc7730c49798b9" class="external-link">e7d08b7</a>) - (Jimmy Briggs)</li>
-</ul></div>
-<div class="section level2">
-<h2 id="smoke-gdal-v3131--2026-07-04">
-<a href="https://github.com/jimbrig/gdalraster.windows/compare/v0.3.0...smoke-gdal-v3.13.1" class="external-link">smoke-gdal-v3.13.1</a>- (2026-07-04)<a class="anchor" aria-label="anchor" href="#smoke-gdal-v3131--2026-07-04"></a></h2>
+<h2 id="id_040--2026-08-09">
+<a href="https://github.com/jimbrig/gdalraster.windows/compare/v0.3.1...v0.4.0" class="external-link">0.4.0</a>- (2026-08-09)<a class="anchor" aria-label="anchor" href="#id_040--2026-08-09"></a></h2>
 </div>
 <div class="section level2">
 <h2 id="bug-fixes">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes"></a></h2>
+<ul><li>Ship Parquet smoke fixture for gdal_verify (<a href="https://github.com/jimbrig/gdalraster.windows/commit/608dc519fff9d29b32aa83045fa72952d262f32f" class="external-link">608dc51</a>) - (Jimmy Briggs)</li>
+<li>Create Parquet verify fixture via vectortranslate (<a href="https://github.com/jimbrig/gdalraster.windows/commit/6b6955e128bd83f3d375ff8b2337362366c11ae9" class="external-link">6b6955e</a>) - (Jimmy Briggs)</li>
+<li>Use OFTInteger in Parquet/GPKG verify fixtures (<a href="https://github.com/jimbrig/gdalraster.windows/commit/6af7fd6f7d3e03b1a8e9897e8d385429d4cee69d" class="external-link">6af7fd6</a>) - (Jimmy Briggs)</li>
+<li>Sync installed gdalraster gdal/ and proj/ data with the bundle share data (<a href="https://github.com/jimbrig/gdalraster.windows/commit/8fb2ca533308c6922a56e018e3c35435fc2ba8ec" class="external-link">8fb2ca5</a>) - (Jimmy Briggs)</li>
+<li>Move aside self-locked runtime DLLs during overwrite instead of failing (<a href="https://github.com/jimbrig/gdalraster.windows/commit/1e0278a952b62f455cc31d6842a339bac607f1d4" class="external-link">1e0278a</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a></h2>
+<ul><li>Finalize 0.4.0 NEWS for GDAL 3.13.2 static Arrow (<a href="https://github.com/jimbrig/gdalraster.windows/commit/9aeb2f6c2bec8ff1e56e905b1ef34603bfc7cd5a" class="external-link">9aeb2f6</a>) - (Jimmy Briggs)</li>
+<li>
+<strong>dev:</strong> Maintainer machine-state snapshot and move-aside repro script (<a href="https://github.com/jimbrig/gdalraster.windows/commit/a1a42c18e1f8646a13b784928dbdf2502a884a55" class="external-link">a1a42c1</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a></h2>
+<ul><li>Make gdalraster installs self-contained (<a href="https://github.com/jimbrig/gdalraster.windows/commit/06b90249a3828a9af30849b7146beb63ee39c6fa" class="external-link">06b9024</a>) - (Jimmy Briggs)</li>
+</ul></div>
+<div class="section level2">
+<h2 id="id_031--2026-07-04">
+<a href="https://github.com/jimbrig/gdalraster.windows/compare/v0.3.0...v0.3.1" class="external-link">0.3.1</a>- (2026-07-04)<a class="anchor" aria-label="anchor" href="#id_031--2026-07-04"></a></h2>
+</div>
+<div class="section level2">
+<h2 id="bug-fixes-1">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1"></a></h2>
 <ul><li>
 <strong>gdal:</strong> Disable PDF driver to fix DLL init failure; restore HDF5/NetCDF; gate bundles on loadability (<a href="https://github.com/jimbrig/gdalraster.windows/commit/a4c01ac2dc7c10a78a618b2c51dce60a88147c6c" class="external-link">a4c01ac</a>) - (Jimmy Briggs)</li>
 <li>Disable HDF5, NetCDF, Poppler in GDAL build to fix DLL init failure (<a href="https://github.com/jimbrig/gdalraster.windows/commit/66f4c77167aea839fb2947974c9ed2d5536a0a0f" class="external-link">66f4c77</a>) - (copilot-swe-agent[bot])</li>
@@ -69,13 +79,16 @@
 </ul></div>
 <div class="section level2">
 <h2 id="documentation-1">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1"></a></h2>
-<ul><li>Unwrap hard-wrapped markdown in new dev docs and NEWS; archive reference material under dev/archive (local-only) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/28d5e16d93f61ed722c1ed1095b85920c4f34f1d" class="external-link">28d5e16</a>) - (Jimmy Briggs)</li>
+<ul><li>
+<strong>readme:</strong> Add e2e workflow badge (<a href="https://github.com/jimbrig/gdalraster.windows/commit/93f31fbe0f0ab876481ef8b8e2a46d1e44632e29" class="external-link">93f31fb</a>) - (Jimmy Briggs)</li>
+<li>Unwrap hard-wrapped markdown in new dev docs and NEWS; archive reference material under dev/archive (local-only) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/28d5e16d93f61ed722c1ed1095b85920c4f34f1d" class="external-link">28d5e16</a>) - (Jimmy Briggs)</li>
 <li>
 <strong>dev:</strong> Add full-picture narrative and windows dll/abi deep dive; update troubleshooting and toolchain notes for the 1114 failure class (<a href="https://github.com/jimbrig/gdalraster.windows/commit/62abd2145ea6d77a0cca741e8b04778c0208b1b0" class="external-link">62abd21</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
 <h2 id="features-1">Features<a class="anchor" aria-label="anchor" href="#features-1"></a></h2>
-<ul><li>
+<ul><li>Preflight Rtools check in install_gdalraster() via pkgbuild; document prerequisites in README, getting-started, and help pages (<a href="https://github.com/jimbrig/gdalraster.windows/commit/e7d08b713734b7128e147b73f2dc7730c49798b9" class="external-link">e7d08b7</a>) - (Jimmy Briggs)</li>
+<li>
 <strong>cicd:</strong> Scheduled upstream GDAL check and e2e verification workflow (<a href="https://github.com/jimbrig/gdalraster.windows/issues/20" class="external-link">#20</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/d87de0090ab2dc0fd15491f7365cf65b320878a4" class="external-link">d87de00</a>) - (Jimmy Briggs)</li>
 </ul></div>
 <div class="section level2">
@@ -90,7 +103,7 @@
 <a href="https://github.com/jimbrig/gdalraster.windows/compare/gdal-v3.13.1...v0.3.0" class="external-link">0.3.0</a>- (2026-07-03)<a class="anchor" aria-label="anchor" href="#id_030--2026-07-03"></a></h2>
 </div>
 <div class="section level2">
-<h2 id="bug-fixes-1">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1"></a></h2>
+<h2 id="bug-fixes-2">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2"></a></h2>
 <ul><li>Address Copilot PR review - relative manifest icon paths, typo, GDAL release date (<a href="https://github.com/jimbrig/gdalraster.windows/issues/19" class="external-link">#19</a>) (<a href="https://github.com/jimbrig/gdalraster.windows/commit/c7cf87490fc0080022f141ea35ce5907e9fde9ac" class="external-link">c7cf874</a>) - (Jimmy Briggs)</li>
 <li>
 <strong>dev:</strong> Gh_labels.R passes named vectors to use_github_labels() (<a href="https://github.com/jimbrig/gdalraster.windows/commit/1366d9d6ede3c355fe2c1b0f137f8dd985a93f15" class="external-link">1366d9d</a>) - (Jimmy Briggs)</li>
@@ -176,7 +189,7 @@
 <a href="https://github.com/jimbrig/gdalraster.windows/tree/gdal-v3.13.0" class="external-link">gdal-v3.13.0</a>- (2026-05-23)<a class="anchor" aria-label="anchor" href="#gdal-v3130--2026-05-23"></a></h2>
 </div>
 <div class="section level2">
-<h2 id="bug-fixes-2">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2"></a></h2>
+<h2 id="bug-fixes-3">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-3"></a></h2>
 <ul><li>
 <strong>gdalraster:</strong> Add –no-test-load to source install to avoid test-load failures (<a href="https://github.com/jimbrig/gdalraster.windows/commit/326f2c2d752729abac7770e8ee2010c682adbc45" class="external-link">326f2c2</a>) - (Jimmy Briggs)</li>
 <li>

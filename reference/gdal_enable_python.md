@@ -9,7 +9,9 @@ inside the installed `gdalraster` package. This does not modify
 
 ``` r
 gdal_enable_python(
-  lib = default_gdalraster_lib(),
+  lib = NULL,
+  isolated = FALSE,
+  user_lib = NULL,
   python = NULL,
   site_packages = NULL,
   quiet = FALSE
@@ -20,7 +22,18 @@ gdal_enable_python(
 
 - lib:
 
-  Library containing the self-contained `gdalraster` package.
+  Library containing the self-contained `gdalraster` package. Defaults
+  to `.libPaths()[1]`.
+
+- isolated:
+
+  Use the package-managed isolated library instead of `.libPaths()[1]`.
+  Ignored when `lib` is set.
+
+- user_lib:
+
+  Deprecated. `user_lib = TRUE` is now the default; `user_lib = FALSE`
+  is equivalent to `isolated = TRUE`.
 
 - python:
 

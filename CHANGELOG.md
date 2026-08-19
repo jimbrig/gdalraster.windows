@@ -4,22 +4,44 @@
 > The format is based on [Keep a Changelog](http://keepachangelog.com/)
 > and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## \[Unreleased\]
+## [0.4.0](https://github.com/jimbrig/gdalraster.windows/compare/v0.3.1...v0.4.0)- (2026-08-09)
+
+## Bug Fixes
+
+- Ship Parquet smoke fixture for gdal_verify
+  ([608dc51](https://github.com/jimbrig/gdalraster.windows/commit/608dc519fff9d29b32aa83045fa72952d262f32f)) -
+  (Jimmy Briggs)
+- Create Parquet verify fixture via vectortranslate
+  ([6b6955e](https://github.com/jimbrig/gdalraster.windows/commit/6b6955e128bd83f3d375ff8b2337362366c11ae9)) -
+  (Jimmy Briggs)
+- Use OFTInteger in Parquet/GPKG verify fixtures
+  ([6af7fd6](https://github.com/jimbrig/gdalraster.windows/commit/6af7fd6f7d3e03b1a8e9897e8d385429d4cee69d)) -
+  (Jimmy Briggs)
+- Sync installed gdalraster gdal/ and proj/ data with the bundle share
+  data
+  ([8fb2ca5](https://github.com/jimbrig/gdalraster.windows/commit/8fb2ca533308c6922a56e018e3c35435fc2ba8ec)) -
+  (Jimmy Briggs)
+- Move aside self-locked runtime DLLs during overwrite instead of
+  failing
+  ([1e0278a](https://github.com/jimbrig/gdalraster.windows/commit/1e0278a952b62f455cc31d6842a339bac607f1d4)) -
+  (Jimmy Briggs)
 
 ## Documentation
 
-- **readme:** Add e2e workflow badge
-  ([93f31fb](https://github.com/jimbrig/gdalraster.windows/commit/93f31fbe0f0ab876481ef8b8e2a46d1e44632e29)) -
+- Finalize 0.4.0 NEWS for GDAL 3.13.2 static Arrow
+  ([9aeb2f6](https://github.com/jimbrig/gdalraster.windows/commit/9aeb2f6c2bec8ff1e56e905b1ef34603bfc7cd5a)) -
+  (Jimmy Briggs)
+- **dev:** Maintainer machine-state snapshot and move-aside repro script
+  ([a1a42c1](https://github.com/jimbrig/gdalraster.windows/commit/a1a42c18e1f8646a13b784928dbdf2502a884a55)) -
   (Jimmy Briggs)
 
 ## Features
 
-- Preflight Rtools check in install_gdalraster() via pkgbuild; document
-  prerequisites in README, getting-started, and help pages
-  ([e7d08b7](https://github.com/jimbrig/gdalraster.windows/commit/e7d08b713734b7128e147b73f2dc7730c49798b9)) -
+- Make gdalraster installs self-contained
+  ([06b9024](https://github.com/jimbrig/gdalraster.windows/commit/06b90249a3828a9af30849b7146beb63ee39c6fa)) -
   (Jimmy Briggs)
 
-## [smoke-gdal-v3.13.1](https://github.com/jimbrig/gdalraster.windows/compare/v0.3.0...smoke-gdal-v3.13.1)- (2026-07-04)
+## [0.3.1](https://github.com/jimbrig/gdalraster.windows/compare/v0.3.0...v0.3.1)- (2026-07-04)
 
 ## Bug Fixes
 
@@ -40,6 +62,9 @@
 
 ## Documentation
 
+- **readme:** Add e2e workflow badge
+  ([93f31fb](https://github.com/jimbrig/gdalraster.windows/commit/93f31fbe0f0ab876481ef8b8e2a46d1e44632e29)) -
+  (Jimmy Briggs)
 - Unwrap hard-wrapped markdown in new dev docs and NEWS; archive
   reference material under dev/archive (local-only)
   ([28d5e16](https://github.com/jimbrig/gdalraster.windows/commit/28d5e16d93f61ed722c1ed1095b85920c4f34f1d)) -
@@ -51,6 +76,10 @@
 
 ## Features
 
+- Preflight Rtools check in install_gdalraster() via pkgbuild; document
+  prerequisites in README, getting-started, and help pages
+  ([e7d08b7](https://github.com/jimbrig/gdalraster.windows/commit/e7d08b713734b7128e147b73f2dc7730c49798b9)) -
+  (Jimmy Briggs)
 - **cicd:** Scheduled upstream GDAL check and e2e verification workflow
   ([\#20](https://github.com/jimbrig/gdalraster.windows/issues/20))
   ([d87de00](https://github.com/jimbrig/gdalraster.windows/commit/d87de0090ab2dc0fd15491f7365cf65b320878a4)) -
